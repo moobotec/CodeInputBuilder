@@ -15,11 +15,24 @@
 
 ## Fonctionnalités
 
-- Saisie de nombres entiers ou flottants avec configuration de limites min/max.
-- Option de signe (+/-) pour les valeurs.
-- Gestion des événements comme `onValueChange` pour réagir aux changements en temps réel.
-- Défilement pour incrémenter ou décrémenter les valeurs.
-- Interactions visuelles pour guider l'utilisateur avec des valeurs limites affichées en périphérie.
+**CodeInputBuilder** propose une large gamme de fonctionnalités permettant une saisie numérique flexible et personnalisable. Voici les principales fonctionnalités disponibles :
+
+- **Saisie de nombres entiers ou flottants** : Prend en charge la saisie de valeurs de type `integer` (entiers) ou `float` (flottants), avec possibilité de configurer des limites minimales et maximales pour chaque champ de saisie.
+- **Configuration de limites min/max** : Chaque champ peut avoir des valeurs spécifiques minimales et maximales par position, permettant un contrôle précis des valeurs.
+- **Option de signe (+/-)** : Possibilité d’ajouter un signe (positif ou négatif) pour chaque valeur, avec une option de signe par défaut (paramètre `defaultSign`).
+- **Gestion des événements `onValueChange`** : Déclenche une fonction personnalisée lors de chaque changement de valeur, permettant de réagir en temps réel aux modifications d’entrée.
+- **Défilement pour incrémenter/décrémenter** : Ajustement des valeurs des champs en utilisant la molette de la souris pour faciliter les modifications.
+- **Affichage des valeurs limites en périphérie** : Visualisation des valeurs supérieures et inférieures à l’aide d’un effet de survol (hover) pour guider l'utilisateur.
+- **Nombre d'entrées configurables** : Possibilité de spécifier le nombre de champs de saisie pour les valeurs numériques (`numInputs`).
+- **Espacement personnalisable entre les champs** : Contrôle de l’espace entre chaque champ d’entrée, pour une mise en page adaptable.
+- **Position de la virgule** : Paramètre pour définir la position de la virgule dans les nombres flottants (`decimalPosition`), offrant plus de flexibilité pour la saisie de valeurs décimales.
+- **Valeurs maximales et minimales totales** : Définition de limites totales (`totalMax` et `totalMin`) pour contrôler la somme des valeurs saisies.
+- **Contrôle de validité des entrées** : Limite les caractères saisis aux chiffres et empêche les entrées non autorisées en fonction des valeurs min/max.
+- **Interactions copier-coller** : Gestion du copier-coller pour limiter la saisie à un seul caractère par champ et empêcher les entrées multiples.
+- **Styles visuels personnalisés pour les champs** : Apparence inspirée d’un style de titre `<h2>`, avec des classes CSS (`cla-h2-like`) pour les valeurs de survol (`.top-text`, `.bottom-text`) et les transitions pour un affichage fluide.
+- **Affichage et mise à jour des valeurs complètes** : Possibilité de récupérer et de définir la valeur complète via des méthodes (`setCompleteValue` et `getCompleteValue`).
+
+Ces fonctionnalités permettent une expérience utilisateur enrichie et une flexibilité avancée pour les saisies numériques dans les applications web.
   
 ## Installation
 

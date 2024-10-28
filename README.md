@@ -74,7 +74,7 @@
 
 ### Exemple pour un nombre entier
 
-<img src="img/exemple_input_integer.png" alt="Exemple pour un nombre entier" width="200"/>
+![Exemple pour un nombre entier](img/exemple_input_integer.png)
 
 ```javascript
 $('#codeInputInteger').codeInputBuilder({

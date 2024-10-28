@@ -34,7 +34,15 @@ File: Code Input Builder Js File
         let currentValue = ''; // Variable pour stocker la valeur complète des inputs
         let limitDigitMin = ( settings.totalMin !== undefined && settings.totalMin != null ) ? numberToDigitsArray(settings.totalMin) : null;
         let limitDigitMax = ( settings.totalMax !== undefined && settings.totalMax != null ) ? numberToDigitsArray(settings.totalMax) : null;
-         
+        let uniqueTypeShort = settings.type + '_' + uuidShort();
+        
+        function uuidShort() {
+            return 'xxxxxxxx'.replace(/[x]/g, function () {
+                const r = Math.random() * 16 | 0;
+                return r.toString(16);
+            });
+        }
+        
         function computeDigitToFloat(prefix,type) 
         {
             let numberString = '';
@@ -74,19 +82,19 @@ File: Code Input Builder Js File
             
             if (settings.type === 'integer') 
             {
-                let numberString = computeDigitToInteger('digit','integer');
+                let numberString = computeDigitToInteger('digit',type);
                 finalValue = parseInt(numberString,10);
                 if (settings.allowSign) {
-                    let sign = computeSign('sign','integer');
+                    let sign = computeSign('sign',type);
                     finalValue *= ((sign == '+')? 1 : -1 );
                 }
             }
             else if (settings.type === 'float') 
             {
-                let numberString = computeDigitToFloat('digit','float');
+                let numberString = computeDigitToFloat('digit',type);
                 finalValue = parseFloat(numberString,10);
                 if (settings.allowSign) {
-                    let sign = computeSign('sign','float');
+                    let sign = computeSign('sign',type);
                     finalValue *= ((sign == '+')? 1 : -1 );
                 }
             }
@@ -410,7 +418,7 @@ File: Code Input Builder Js File
             if( settings.totalMax !== undefined && settings.totalMax != null && baseValue >= settings.totalMax) baseValue = settings.totalMax;
 
             if (settings.allowSign) {
-                $(`[id^="sign_${settings.type}_input"]`).val((baseValue < 0) ? '-' : '+');
+                $(`[id^="sign_${uniqueTypeShort}_input"]`).val((baseValue < 0) ? '-' : '+');
             }
 
             let numericValue = Math.abs(baseValue);
@@ -426,7 +434,7 @@ File: Code Input Builder Js File
             const maxDecimalLength = settings.numInputs - settings.decimalPosition;
             decimalPart = (decimalPart || '').slice(0, maxDecimalLength).padEnd(maxDecimalLength, '0');
             
-            const digitInputs = $(`[id^="digit_${settings.type}_input_"]`).get();
+            const digitInputs = $(`[id^="digit_${uniqueTypeShort}_input_"]`).get();
             let index = digitInputs.length - 1;
             
             for (let pos = 0; pos < digitInputs.length; pos++) {
@@ -460,13 +468,13 @@ File: Code Input Builder Js File
             if( settings.totalMax !== undefined && settings.totalMax != null && baseValue >= settings.totalMax) baseValue = settings.totalMax;
 
             if (settings.allowSign) {
-                $(`[id^="sign_${settings.type}_input"]`).val((baseValue < 0) ? '-' : '+');
+                $(`[id^="sign_${uniqueTypeShort}_input"]`).val((baseValue < 0) ? '-' : '+');
             }
 
             let numericValue = Math.abs(baseValue);
 
             // Répartit les valeurs dans les inputs
-            const digitInputs = $(`[id^="digit_${settings.type}_input_"]`).get();
+            const digitInputs = $(`[id^="digit_${uniqueTypeShort}_input_"]`).get();
             let index = digitInputs.length - 1;
 
             for (let pos = 0; pos < digitInputs.length; pos++) {
@@ -486,7 +494,6 @@ File: Code Input Builder Js File
                 
                 index--;
             }
-            updateFinalValue($("#digit_" + settings.type + "_input_0"), 0, 'digit', settings.type);
         }
 
         function toggleHoverEffect(element, prefix , type, isMouseEnter) {
@@ -591,22 +598,22 @@ File: Code Input Builder Js File
 
                 // Élément texte supérieur
                 const $topTextDiv = $('<div>', {
-                    class: `cla-hover-text top-text-${settings.type}-${prefix}`,
-                    id: `${prefix}_${settings.type}_div_top`,
+                    class: `cla-hover-text top-text-${uniqueTypeShort}-${prefix}`,
+                    id: `${prefix}_${uniqueTypeShort}_div_top`,
                     text: "0"
                 });
                 
                 $topTextDiv.hover(
                     function() { // mouseenter
-                        toggleHoverEffect(this, prefix, settings.type, true);
+                        toggleHoverEffect(this, prefix, uniqueTypeShort, true);
                     },
                     function() { // mouseleave
-                        toggleHoverEffect(this, prefix, settings.type, false);
+                        toggleHoverEffect(this, prefix, uniqueTypeShort, false);
                     }
                 );
                 
                 $topTextDiv.on('click', function(event) {
-                    handleTextDivClick(this, prefix, settings.type);
+                    handleTextDivClick(this, prefix, uniqueTypeShort);
                 });
                 
                 $wrapperDiv.append($topTextDiv);
@@ -616,31 +623,31 @@ File: Code Input Builder Js File
                     type: 'text',
                     class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
                     maxLength: '1',
-                    id: `${prefix}_${settings.type}_input`,
+                    id: `${prefix}_${uniqueTypeShort}_input`,
                     name: `${prefix}${prefix}`,
                     autocomplete: 'off',
                     value: value
                 });
 
                 $input.on('keyup', function(event) {
-                    touchSign(event.currentTarget, event, prefix ,settings.type);
+                    touchSign(event.currentTarget, event, prefix ,uniqueTypeShort);
                 });
 
                 $input.on('wheel', function(event) {
-                    adjustOnScroll(event, event.currentTarget, prefix, settings.type);
+                    adjustOnScroll(event, event.currentTarget, prefix, uniqueTypeShort);
                 });
                 
                 $input.hover(
                     function() { // mouseenter
-                        hoverMouseEnter(this, prefix, settings.type);
+                        hoverMouseEnter(this, prefix, uniqueTypeShort);
                     },
                     function() { // mouseleave
-                        hoverMouseLeave(this, prefix, settings.type);
+                        hoverMouseLeave(this, prefix, uniqueTypeShort);
                     }
                 );
                 
                 $input.on('paste', function(event) {
-                    handlePasteEvent(this, event, settings.type, `${prefix}_${settings.type}_input`);
+                    handlePasteEvent(this, event, uniqueTypeShort, `${prefix}_${uniqueTypeShort}_input`);
                 });
                 
                 $input.on('copy', function(event) {
@@ -652,22 +659,22 @@ File: Code Input Builder Js File
 
                 // Élément texte inférieur
                 const $bottomTextDiv = $('<div>', {
-                    class: `cla-hover-text bottom-text-${settings.type}-${prefix}`,
-                    id: `${prefix}_${settings.type}_div_bottom`,
+                    class: `cla-hover-text bottom-text-${uniqueTypeShort}-${prefix}`,
+                    id: `${prefix}_${uniqueTypeShort}_div_bottom`,
                     text: "0"
                 });
                 
                 $bottomTextDiv.hover(
                     function() { // mouseenter
-                        toggleHoverEffect(this, prefix, settings.type, true);
+                        toggleHoverEffect(this, prefix, uniqueTypeShort, true);
                     },
                     function() { // mouseleave
-                        toggleHoverEffect(this, prefix, settings.type, false);
+                        toggleHoverEffect(this, prefix, uniqueTypeShort, false);
                     }
                 );
                 
                 $bottomTextDiv.on('click', function(event) {
-                    handleTextDivClick(this, prefix, settings.type);
+                    handleTextDivClick(this, prefix, uniqueTypeShort);
                 });
                 
                 $wrapperDiv.append($bottomTextDiv);
@@ -706,22 +713,22 @@ File: Code Input Builder Js File
 
                 // Élément texte supérieur
                 const $topTextDiv = $('<div>', {
-                    class: `cla-hover-text top-text-${settings.type}-${i}`,
-                    id: `${prefix}_${settings.type}_div_top_${i}`,
+                    class: `cla-hover-text top-text-${uniqueTypeShort}-${i}`,
+                    id: `${prefix}_${uniqueTypeShort}_div_top_${i}`,
                     text: min
                 });
                 
                 $topTextDiv.hover(
                     function() { // mouseenter
-                        toggleHoverEffect(this, prefix, settings.type, true);
+                        toggleHoverEffect(this, prefix, uniqueTypeShort, true);
                     },
                     function() { // mouseleave
-                        toggleHoverEffect(this, prefix, settings.type, false);
+                        toggleHoverEffect(this, prefix, uniqueTypeShort, false);
                     }
                 );
                 
                 $topTextDiv.on('click', function(event) {
-                    handleTextDivClick(this, prefix, settings.type);
+                    handleTextDivClick(this, prefix, uniqueTypeShort);
                 });
                 
                 $wrapperDiv.append($topTextDiv);
@@ -731,7 +738,7 @@ File: Code Input Builder Js File
                     type: 'text',
                     class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
                     maxLength: '1',
-                    id: `${prefix}_${settings.type}_input_${i}`,
+                    id: `${prefix}_${uniqueTypeShort}_input_${i}`,
                     name: `${prefix}${i}`,
                     autocomplete: 'off',
                     value: value,
@@ -740,24 +747,24 @@ File: Code Input Builder Js File
                 });
 
                 $input.on('keyup', function(event) {
-                    touchCode(event.currentTarget, event, prefix ,settings.type, (i + 1), settings.numInputs, max);
+                    touchCode(event.currentTarget, event, prefix ,uniqueTypeShort, (i + 1), settings.numInputs, max);
                 });
 
                 $input.on('wheel', function(event) {
-                    adjustOnScroll(event, event.currentTarget, prefix, settings.type);
+                    adjustOnScroll(event, event.currentTarget, prefix, uniqueTypeShort);
                 });
                 
                 $input.hover(
                     function() { // mouseenter
-                        hoverMouseEnter(this, prefix, settings.type);
+                        hoverMouseEnter(this, prefix, uniqueTypeShort);
                     },
                     function() { // mouseleave
-                        hoverMouseLeave(this, prefix, settings.type);
+                        hoverMouseLeave(this, prefix, uniqueTypeShort);
                     }
                 );
                 
                 $input.on('paste', function(event) {
-                    handlePasteEvent(this, event, settings.type, `${prefix}_${settings.type}_input`);
+                    handlePasteEvent(this, event, uniqueTypeShort, `${prefix}_${uniqueTypeShort}_input`);
                 });
                 
                 $input.on('copy', function(event) {
@@ -769,22 +776,22 @@ File: Code Input Builder Js File
 
                 // Élément texte inférieur
                 const $bottomTextDiv = $('<div>', {
-                    class: `cla-hover-text bottom-text-${settings.type}-${i}`,
-                    id: `${prefix}_${settings.type}_div_bottom_${i}`,
+                    class: `cla-hover-text bottom-text-${uniqueTypeShort}-${i}`,
+                    id: `${prefix}_${uniqueTypeShort}_div_bottom_${i}`,
                     text: min
                 });
                 
                 $bottomTextDiv.hover(
                     function() { // mouseenter
-                        toggleHoverEffect(this, prefix, settings.type, true);
+                        toggleHoverEffect(this, prefix, uniqueTypeShort, true);
                     },
                     function() { // mouseleave
-                        toggleHoverEffect(this, prefix, settings.type, false);
+                        toggleHoverEffect(this, prefix, uniqueTypeShort, false);
                     }
                 );
                 
                 $bottomTextDiv.on('click', function(event) {
-                    handleTextDivClick(this, prefix,settings.type);
+                    handleTextDivClick(this, prefix,uniqueTypeShort);
                 });
                 
                 $wrapperDiv.append($bottomTextDiv);
@@ -803,7 +810,7 @@ File: Code Input Builder Js File
 
                 // Borne la valeur entre min et max
                 value = Math.max(min, Math.min(value, max));
-                updateFinalValue($("#"+prefix+"_" + settings.type + "_input_" + i), value, prefix, settings.type , false);
+                updateFinalValue($("#"+prefix+"_" + uniqueTypeShort + "_input_" + i), value, prefix, uniqueTypeShort , false);
             }
 
         });

@@ -832,7 +832,7 @@ File: Code Input Builder Js File
         };
 
        // Fonction pour définir la valeur complète en répartissant les caractères dans les inputs
-        this.setCompleteValue = function(value) 
+        this.setCompleteValue = function(value,onchange = false) 
         { 
             // Vérifie si la valeur est un nombre flottant
             const isFloat = /^[-+]?\d+\.\d+$/.test(value);
@@ -855,6 +855,11 @@ File: Code Input Builder Js File
                     fillIntegerDigits(value);
                 }
                 currentValue = digitsArrayToNumber(currentDigit,(settings.type === 'float'),settings.decimalPosition);
+                
+                // Appel de onValueChange avec $input et newValue
+                if (onchange == true && typeof settings.onValueChange === 'function') {
+                    settings.onValueChange(null, currentValue);
+                }
             }
         };
 

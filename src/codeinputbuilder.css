@@ -1,0 +1,52 @@
+.cla-h2-like {
+    font-size: 1.5rem; /* Taille de police similaire à celle de <h2> dans Bootstrap */
+    font-weight: bold; /* Gras comme un titre <h2> */
+    /* Ajouter d\'autres styles de <h2> si nécessaire */
+}
+
+.cla-hover-text {
+    font-size: 1.3rem; /* Taille de police similaire à celle de <h2> dans Bootstrap */
+    color: lightgrey; /* Gris */
+    font-weight: bold; /* Gras comme un titre <h2> */
+    user-select: none;
+    cursor: pointer;
+    /* Ajouter d\'autres styles de <h2> si nécessaire */
+    /*pointer-events: none;*/ /* Empêche le texte d\'interférer avec les événements de la souris */
+}
+
+[class*="top-text"]
+{
+    width: 100%; 
+    text-align: center; 
+    display: block;
+    bottom: 100%; /* Position par rapport au haut de l\'input */
+    transform: translateY(-10px); /* Ajustez cette valeur pour décaler le texte vers le haut */
+    transition: visibility 0.2s, opacity 0.2s ease-in-out; /* Ajout d\'une transition pour le changement visuel */
+    opacity: 0; /* Rend le texte transparent initialement */
+    visibility: hidden; /* Rend le texte non visible initialement */
+}
+
+[class*="bottom-text"]
+{
+    width: 100%; 
+    text-align: center; 
+    display: block;
+    top: 100%; /* Position par rapport au bas de l\'input */
+    transform: translateY(10px); /* Ajustez cette valeur pour décaler le texte vers le bas */
+    transition: visibility 0.2s, opacity 0.2s ease-in-out; /* Ajout d\'une transition pour le changement visuel */
+    opacity: 0; /* Rend le texte transparent initialement */
+    visibility: hidden; /* Rend le texte non visible initialement */
+}
+
+.cla-input-wrapper
+{
+    position: relative;
+    padding-top: 10px; /* Ajuster selon besoin pour plus d\'espace au-dessus */
+    padding-bottom: 10px; /* Ajuster selon besoin pour plus d\'espace en dessous */
+    display: inline-block; /* Assurez-vous que le wrapper ne prend que l\'espace nécessaire */
+}
+
+.cla-input-container {
+    display: flex;
+    gap: 10px; /* Optionnel : espace entre les inputs */
+}

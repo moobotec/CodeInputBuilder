@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exemple CodeInputBuilder avec Bootstrap et jQuery</title>
+    
+    <!-- Chargement de Bootstrap CSS via CDN -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="src/codeinputbuilder.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-primary">Hello, world!</h1>
+        <p class="lead">Ceci est un exemple de test utilisant Bootstrap et jQuery avec deux types de CodeInputBuilder : un integer et un flottant.</p>
+
+        <hr>
+        <!-- Affichage du changement de valeur et de la valeur complète pour chaque codeInput -->
+        <div class="mt-4">
+             <div class="row text-center">
+                <div class="d-flex justify-content-around">
+                    <!-- CodeInput pour un nombre Integer -->
+                    <div>
+                        <h3>Test Code Input - Type Integer</h3>
+                        <code> { type: 'integer', <br>
+                numInputs: 5, <br>
+                values: [0, 0, 0, 0, 0], <br>
+                minValues: [0, 0, 0, 0, 0], <br>
+                maxValues: [9, 8, 7, 6, 5], <br>
+                allowSign: true, // Nouveau paramètre pour autoriser le signe <br>
+                defaultSign: '+', // Signe par défaut (peut être "+" ou "-") <br>
+                gap: '1px', // Espace entre les inputs  <br>
+                }</code>
+                        <div id="codeInputInteger"></div>
+                    </div>
+                </div>
+            </div>
+            <h4 class="mt-3">Valeur de l'input modifié (Integer) :</h4>
+            <p id="changeValueDisplayInteger">Aucun changement</p>
+            <h4>Valeur complète (Integer) :</h4>
+            <p id="completeValueDisplayInteger">Aucune valeur</p>
+            
+            <!-- Champ texte pour entrer une valeur à définir -->
+            <div class="form-group">
+                <label for="valueInputInteger">Entrez une valeur :</label>
+                <input type="text" id="valueInputInteger" class="form-control" placeholder="12345">
+            </div>
+            <button id="setCompleteValueButtonInteger" class="btn btn-primary mt-3">Définir la valeur complète (Integer)</button>
+            <button id="getCompleteValueButtonInteger" class="btn btn-primary mt-3">Afficher la valeur complète (Integer)</button>
+        </div>
+        <hr>
+        <div class="mt-4">
+            <div class="row text-center">
+                <div class="d-flex justify-content-around">
+                    <!-- CodeInput pour un nombre flottant -->
+                    <div>
+                        <h3>Test Code Input - Type Flottant</h3>
+                        
+                         <code> { type: 'float', <br>
+                numInputs: 7, <br>
+                values: [0, 0, 0, 0, 0, 0, 0], <br>
+                minValues: [0, 0, 0, 0, 0,0, 0], <br>
+                maxValues: [9, 9, 9, 9, 9, 9 ,9], <br>
+                decimalPosition : 3, <br>
+                totalMax: 180.0,<br>
+                separarator : ','<br>,
+                gap: '10px', // Espace entre les inputs <br>
+                }</code>
+                        
+                        <div id="codeInputFloat"></div>
+                    </div>
+                </div>
+            </div>
+            <h4 class="mt-3">Valeur de l'input modifié (Flottant) :</h4>
+            <p id="changeValueDisplayFloat">Aucun changement</p>
+            <h4>Valeur complète (Flottant) :</h4>
+            <p id="completeValueDisplayFloat">Aucune valeur</p>
+            
+               <!-- Champ texte pour entrer une valeur à définir -->
+            <div class="form-group">
+                <label for="valueInputFloat">Entrez une valeur :</label>
+                <input type="text" id="valueInputFloat" class="form-control" placeholder="+123.56">
+            </div>
+            <button id="setCompleteValueButtonFloat" class="btn btn-primary mt-3">Définir la valeur complète (Flottant)</button>
+            <button id="getCompleteValueButtonFloat" class="btn btn-primary mt-3">Afficher la valeur complète (Flottant)</button>
+        </div>
+    </div>
+
+    <!-- Chargement de jQuery via CDN -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    
+    <!-- Chargement de Bootstrap JS via CDN -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    
+    <script src="src/codeinputbuilder.js"></script>
+
+    <!-- Script pour initialiser le CodeInputBuilder et gérer les événements -->
+    <script>
+        $(document).ready(function () {
+            // Initialiser avec 5 inputs, avec des valeurs min et max différentes pour chaque input
+            let codeInputInteger = $('#codeInputInteger').codeInputBuilder({
+                type: 'integer',
+                numInputs: 5,
+                values: [0, 0, 0, 0, 0],
+                minValues: [0, 0, 0, 0, 0],
+                maxValues: [9, 8, 7, 6, 5],
+                allowSign: true, // Nouveau paramètre pour autoriser le signe
+                defaultSign: '+', // Signe par défaut (peut être "+" ou "-")
+                gap: '1px', // Espace entre les inputs
+                onValueChange: function($input, newValue) {
+                    // Affichage de la valeur de l'input modifié
+                    $('#changeValueDisplayInteger').text(`Input ${$input.attr('id')} a changé de valeur : ${newValue}`);
+                    
+                    // Met à jour l'affichage de la valeur complète
+                    const completeCode = codeInputInteger.getCompleteValue();
+                    $('#completeValueDisplayInteger').text(`Valeur complète actuelle : ${completeCode}`);
+                }
+            });
+            
+            // Gestionnaire de clic pour afficher la valeur complète
+            $('#getCompleteValueButtonInteger').on('click', function() {
+                const completeCode = codeInputInteger.getCompleteValue();
+                $('#completeValueDisplayInteger').text(`Valeur complète : ${completeCode}`);
+            });
+            
+            // Gestionnaire de clic pour afficher la valeur complète
+            $('#setCompleteValueButtonInteger').on('click', function() {
+                const completeValue = $('#valueInputInteger').val();
+                codeInputInteger.setCompleteValue(completeValue);
+            });
+            
+            // Initialiser avec 5 inputs, avec des valeurs min et max différentes pour chaque input
+            let codeInputFloat = $('#codeInputFloat').codeInputBuilder({
+                type: 'float',
+                numInputs: 7,
+                values: [0, 0, 0, 0, 0, 0, 0],
+                minValues: [0, 0, 0, 0, 0,0, 0],
+                maxValues: [9, 9, 9, 9, 9, 9 ,9],
+                decimalPosition : 3,
+                gap: '10px', // Espace entre les inputs
+                totalMax: 180.0,
+                separarator: ',',
+                onValueChange: function($input, newValue) {
+                    // Affichage de la valeur de l'input modifié
+                    $('#changeValueDisplayFloat').text(`Input ${$input.attr('id')} a changé de valeur : ${newValue}`);
+                    
+                    // Met à jour l'affichage de la valeur complète
+                    const completeCode = codeInputFloat.getCompleteValue();
+                    $('#completeValueDisplayFloat').text(`Valeur complète actuelle : ${completeCode}`);
+                }
+            });
+            
+            // Gestionnaire de clic pour afficher la valeur complète
+            $('#getCompleteValueButtonFloat').on('click', function() {
+                const completeCode = codeInputFloat.getCompleteValue();
+                $('#completeValueDisplayFloat').text(`Valeur complète : ${completeCode}`);
+            });
+            
+            // Gestionnaire de clic pour afficher la valeur complète
+            $('#setCompleteValueButtonFloat').on('click', function() {
+                const completeValue = $('#valueInputFloat').val();
+                codeInputFloat.setCompleteValue(completeValue);
+            });
+            
+            
+        });
+    </script>
+</body>
+</html>

@@ -94,7 +94,7 @@ $('#codeInputInteger').codeInputBuilder({
 
 ### Exemple pour un nombre flottant
 
-<img src="img/exemple_input_float.png" alt="Exemple pour un nombre flottant" width="200"/>
+![Exemple pour un nombre flottant](img/exemple_input_float.png)
 
 ```javascript
 $('#codeInputFloat').codeInputBuilder({

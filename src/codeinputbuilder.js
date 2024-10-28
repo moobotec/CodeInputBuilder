@@ -20,7 +20,7 @@ File: Code Input Builder Js File
             allowSign: false, // Nouveau paramètre pour autoriser le signe
             defaultSign: '+', // Signe par défaut (peut être "+" ou "-")
             decimalPosition : 1,
-            separarator : '.',
+            separator : '.',
             totalMax: null, // Valeur maximale totale
             totalMin: null, // Valeur minimale totale
             onValueChange: null // Fonction de surcharge pour les changements de valeur
@@ -681,7 +681,7 @@ File: Code Input Builder Js File
                 if (settings.type === 'float' && (i-1) === settings.decimalPosition) {
                     const $decimalPoint = $('<div>', {
                         class: 'col-1',
-                        html: '<div><h2 class="my-5">'+settings.separarator+'</h2></div>'
+                        html: '<div><h2 class="my-5">'+settings.separator+'</h2></div>'
                     });
                     $inputContainer.append($decimalPoint);
                 }                

@@ -119,7 +119,7 @@ $('#codeInputFloat').codeInputBuilder({
     decimalPosition: 3,
     gap: '10px',
     totalMax: 180.0,
-    separarator: ',',
+    separator: ',',
     onValueChange: function($input, newValue) {
         console.log(`Valeur complète : ${newValue}`);
     }

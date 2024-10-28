@@ -74,6 +74,8 @@
 
 ### Exemple pour un nombre entier
 
+<img src="img/exemple_input_integer.png" alt="Exemple pour un nombre entier" width="200"/>
+
 ```javascript
 $('#codeInputInteger').codeInputBuilder({
     type: 'integer',
@@ -91,6 +93,8 @@ $('#codeInputInteger').codeInputBuilder({
 ```
 
 ### Exemple pour un nombre flottant
+
+<img src="img/exemple_input_float.png" alt="Exemple pour un nombre flottant" width="200"/>
 
 ```javascript
 $('#codeInputFloat').codeInputBuilder({

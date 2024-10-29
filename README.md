@@ -127,9 +127,9 @@ $('#codeInputFloat').codeInputBuilder({
 });
 ```
 
-### Exemple pour un text
+### Exemple pour un texte
 
-![Exemple une un text](img/exemple_input_text.png)
+![Exemple une un texte](img/exemple_input_text.png)
 
 ```javascript
 $('#codeInputText').codeInputBuilder({

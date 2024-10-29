@@ -1,8 +1,72 @@
 /*
+Plugin: Code Input Builder
+Version: 1.0.0
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
-File: Code Input Builder Js File
+Description: Un plugin jQuery pour générer des champs d'input configurables pour saisir des codes numériques ou flottants.
+
+Options disponibles:
+    - `type`: (string) Définit le type de valeur acceptée par les inputs.
+        * Valeurs possibles : 'integer' ou 'float'.
+        * Par défaut : 'integer'.
+
+    - `numInputs`: (integer) Nombre total d'inputs affichés.
+        * Par défaut : 1.
+
+    - `minValues`: (array) Valeurs minimales pour chaque input. Le tableau doit contenir autant de valeurs que `numInputs`.
+        * Par défaut : [] (pas de minimum spécifique pour chaque input).
+
+    - `maxValues`: (array) Valeurs maximales pour chaque input. Utiliser autant de valeurs que `numInputs`.
+        * Par défaut : [] (pas de maximum spécifique pour chaque input).
+
+    - `values`: (array) Valeurs initiales pour chaque input. Utiliser autant de valeurs que `numInputs`.
+        * Par défaut : [].
+
+    - `defaultValue`: (integer ou float) Valeur par défaut à afficher si aucune valeur initiale n’est définie.
+        * Par défaut : 0.
+
+    - `gap`: (string) Espace entre les inputs, spécifié en pixels (ex. '10px').
+        * Par défaut : '10px'.
+
+    - `allowSign`: (boolean) Permet d'ajouter un signe (+ ou -) devant la valeur.
+        * Par défaut : false.
+
+    - `defaultSign`: (string) Signe par défaut si `allowSign` est activé.
+        * Valeurs possibles : '+' ou '-'.
+        * Par défaut : '+'.
+
+    - `decimalPosition`: (integer) Position du séparateur décimal dans le cas d’un `type` float.
+        * Par défaut : 1.
+
+    - `separator`: (string) Caractère à utiliser comme séparateur pour les décimales (ex. '.').
+        * Par défaut : '.'.
+
+    - `totalMax`: (number) Valeur maximale autorisée pour la somme de tous les inputs.
+        * Par défaut : null (pas de limite).
+
+    - `totalMin`: (number) Valeur minimale autorisée pour la somme de tous les inputs.
+        * Par défaut : null (pas de limite).
+
+    - `onValueChange`: (function) Fonction callback exécutée lorsque la valeur change. Reçoit deux paramètres : `$input` (l'élément input) et `newValue` (la nouvelle valeur).
+        * Par défaut : null.
+
+Usage:
+    // Initialisation de base
+    $('#element').codeInputBuilder({
+        type: 'float',
+        numInputs: 4,
+        minValues: [0, 0, 1, 2],
+        maxValues: [9, 9, 9, 5],
+        defaultSign: '-',
+        allowSign: true,
+        totalMax: 100
+    });
+
+Méthodes:
+    - `getCompleteValue()`: Récupère la valeur complète entrée par l'utilisateur sous forme de chaîne ou nombre.
+    - `setCompleteValue(value, onchange = false)`: Définit une nouvelle valeur complète et met à jour les inputs.
+
 */
 
 (function ($) {
@@ -10,25 +74,37 @@ File: Code Input Builder Js File
    $.fn.codeInputBuilder = function (options) {
         // Options par défaut
         const settings = $.extend({
-            type: 'integer', // integer ou float
-            numInputs: 1,
-            minValues: [],
-            maxValues: [],
-            values: [],
-            defaultvalue: 0,
+            type: 'integer', // integer ou float ou text
+            numInputs: 1, // seulement pour integer et float
+            minValues: [], // seulement pour integer et float
+            maxValues: [], // seulement pour integer et float
+            values: [], // seulement pour integer, float et text
+            defaultValue: 0, // seulement pour integer et float ou index de values pour le type text
+            allowSign: false, // Nouveau paramètre pour autoriser le signe , seulement pour integer et float
+            defaultSign: '+', // Signe par défaut (peut être "+" ou "-") seulement pour integer et float
+            decimalPosition : 1, // seulement pour integer et float
+            separator : '.', // seulement pour integer et float
+            totalMax: null, // Valeur maximale totale , seulement pour integer et float
+            totalMin: null, // Valeur minimale totale , seulement pour integer et float
             gap: '10px', // Espace entre les inputs
-            allowSign: false, // Nouveau paramètre pour autoriser le signe
-            defaultSign: '+', // Signe par défaut (peut être "+" ou "-")
-            decimalPosition : 1,
-            separator : '.',
-            totalMax: null, // Valeur maximale totale
-            totalMin: null, // Valeur minimale totale
-            onValueChange: null // Fonction de surcharge pour les changements de valeur
+            onValueChange: null, // Fonction de surcharge pour les changements de valeur
         }, options);
 
+        $.fn.codeInputBuilder.version = "0.0.2";
+        $.fn.codeInputBuilder.title = "Code Input Builder";
+        $.fn.codeInputBuilder.description = "Un plugin jQuery pour créer des champs d'input configurables pour des valeurs numériques ou flottantes.";
+
         let gIdHover = -1;
+        // decimal ( 0,1,2,3,4,5,6,7,8,9) - Chiffres (numériques)
         let digitMin = 0;
         let digitMax = 9;
+        // hexadecimal ( 0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f ) - Lettres (alphabétiques)
+        let digitHexaMin = 0x30; // 0
+        let digitHexaMax = 0x66; // f
+        // Lettres alphabétiques ( a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z ) - Lettres (alphabétiques)
+        let digiLetterMin = 0x61;
+        let digitLetterMax = 0x7A;
+
         let currentDigitSign = (settings.allowSign) ?  settings.defaultSign : null;
         let currentDigit = new Array(settings.numInputs);
         let currentValue = ''; // Variable pour stocker la valeur complète des inputs
@@ -36,6 +112,10 @@ File: Code Input Builder Js File
         let limitDigitMax = ( settings.totalMax !== undefined && settings.totalMax != null ) ? numberToDigitsArray(settings.totalMax) : null;
         let uniqueTypeShort = settings.type + '_' + uuidShort();
         
+        function findPosition(array, element) {
+            return array.indexOf(element);
+        }
+
         function uuidShort() {
             return 'xxxxxxxx'.replace(/[x]/g, function () {
                 const r = Math.random() * 16 | 0;
@@ -98,21 +178,28 @@ File: Code Input Builder Js File
                     finalValue *= ((sign == '+')? 1 : -1 );
                 }
             }
+            else if (settings.type === 'text') 
+            {
+                finalValue = newValue;
+            }
            
             currentValue = finalValue;
-            
-            if( settings.totalMin !== undefined && settings.totalMin != null && currentValue <= settings.totalMin) currentValue = settings.totalMin;
-            if( settings.totalMax !== undefined && settings.totalMax != null && currentValue >= settings.totalMax) currentValue = settings.totalMax;
-            
-            if (finalValue != currentValue)
+           
+            if (settings.type === 'integer' || settings.type === 'float' )
             {
-                if (settings.type === 'float') // Sépare la partie entière et décimale
-                {                    
-                   fillFloatDigits(currentValue);
-                }
-                else if (settings.type === 'integer')
+                if( settings.totalMin !== undefined && settings.totalMin != null && currentValue <= settings.totalMin) currentValue = settings.totalMin;
+                if( settings.totalMax !== undefined && settings.totalMax != null && currentValue >= settings.totalMax) currentValue = settings.totalMax;
+                
+                if (finalValue != currentValue)
                 {
-                   fillIntegerDigits(currentValue);
+                    if (settings.type === 'float') // Sépare la partie entière et décimale
+                    {                    
+                    fillFloatDigits(currentValue);
+                    }
+                    else if (settings.type === 'integer')
+                    {
+                    fillIntegerDigits(currentValue);
+                    }
                 }
             }
             
@@ -144,7 +231,6 @@ File: Code Input Builder Js File
                 $('.cla-input-wrapper .bottom-text-'+type+'-'+id).html(valueBottom);
                 $('.cla-input-wrapper .bottom-text-'+type+'-'+id).css("opacity","1");
             }
-            
         }
 
         function numberToDigitsArray(number) {
@@ -283,6 +369,26 @@ File: Code Input Builder Js File
             updatePeripheralDigit(type,prefix,showTop,showBottom,"+","-");
         }
 
+        function setValueInputList(inputElement,value,prefix,type) 
+        {
+            inputElement.value = settings.values[value];
+            updateFinalValue($(inputElement), settings.values[value], prefix, type);
+
+            let valueTop = parseInt(value) - 1;
+            let valueBottom =  parseInt(value) + 1;
+
+            let valueMin =  parseInt($(inputElement).attr('data-min'));
+            let valueMax =  parseInt($(inputElement).attr('data-max'));
+            
+            let showTop = (valueTop >= valueMin);
+            let showBottom = (valueBottom < (valueMax + 1));
+            
+            if (valueTop < valueMin ) valueTop = valueMin;
+            if (valueTop > valueMax ) valueBottom = valueMax;
+
+            updatePeripheralDigit(type,prefix,showTop,showBottom,settings.values[valueTop],settings.values[valueBottom]);
+        }
+
         function applySign(inputElement,codeTouche,event,prefix,type) 
         {
             if (event.key === '+' || event.key === '-') {
@@ -361,6 +467,24 @@ File: Code Input Builder Js File
                 if (currentValue < 0) setValueInputSign(inputElement,"+",prefix,type);
                 if (currentValue > 1) setValueInputSign(inputElement,"-",prefix,type);
             }
+            else if (prefix == 'list')
+            {
+                let currentValue = findPosition(settings.values,inputElement.value);
+                if (currentValue != -1)
+                {
+                    // Incrémenter ou décrémenter la valeur en fonction de la direction du scroll
+                    currentValue += delta < 0 ? -1 : 1;
+                    
+                    let valueMin = parseInt($(inputElement).attr('data-min'));
+                    let valueMax = parseInt($(inputElement).attr('data-max'));
+    
+                    // Contrôler les limites de la valeur
+                    if (currentValue < valueMin) currentValue = valueMin;
+                    if (currentValue > valueMax) currentValue = valueMax;
+                }
+                setValueInputList(inputElement,currentValue,prefix,type);
+            }
+            
         }
 
         function hoverMouseEnter(inputElement,prefix,type) 
@@ -390,6 +514,28 @@ File: Code Input Builder Js File
                 gIdHover = prefix;
                 updatePeripheralDigit(type,prefix,showTop,showBottom,"+","-");
             }
+            else if (prefix == "list")
+            {
+                let currentValue = findPosition(settings.values,inputElement.value);
+                if (currentValue != -1)
+                {
+                    gIdHover = prefix;
+
+                    let valueTop = parseInt(currentValue) - 1;
+                    let valueBottom =  parseInt(currentValue) + 1;
+        
+                    let valueMin =  parseInt($(inputElement).attr('data-min'));
+                    let valueMax =  parseInt($(inputElement).attr('data-max'));
+                    
+                    let showTop = (valueTop >= valueMin);
+                    let showBottom = (valueBottom < (valueMax + 1));
+                    
+                    if (valueTop < valueMin ) valueTop = valueMin;
+                    if (valueTop > valueMax ) valueBottom = valueMax;
+        
+                    updatePeripheralDigit(type,prefix,showTop,showBottom,settings.values[valueTop],settings.values[valueBottom]);
+                }
+            }
         }
 
         function hoverMouseLeave(inputElement,prefix,type) 
@@ -399,7 +545,7 @@ File: Code Input Builder Js File
                 let id = $(inputElement).attr('id').replace(prefix+'_'+type+'_input_', '');
                 updatePeripheralDigit(type,id, false, false, 0 ,0);
             }
-            else if (prefix == "sign")
+            else if (prefix == "sign" || prefix == "list")
             {
                 updatePeripheralDigit(type,prefix,false, false, 0 ,0);
             }
@@ -510,7 +656,7 @@ File: Code Input Builder Js File
                     selector = `.cla-input-wrapper .bottom-text-${type}-${id}`;
                 }
             }
-            else if ( prefix == "sign" )
+            else if ( prefix == "sign" || prefix == "list" )
             {
                 selector = `.cla-input-wrapper .${suffix}-text-${type}-${prefix}`;
             }
@@ -555,8 +701,33 @@ File: Code Input Builder Js File
             else if ( prefix == "sign" )
             {
                 $("#"+prefix+"_" + type + "_input").val($(element).html());
-                updateFinalValue($("#"+prefix+"_" + type + "_input_"),$(element).html(),prefix, type);
-                updatePeripheralDigit(type,'sign', false, false, 0 ,0);
+                updateFinalValue($("#"+prefix+"_" + type + "_input"),$(element).html(),prefix, type);
+                gIdHover = prefix;
+                updatePeripheralDigit(type,prefix, false, false, 0 ,0);
+                gIdHover = 0;
+            }
+            else if ( prefix == "list" )
+            {
+                $("#"+prefix+"_" + type + "_input").val($(element).html());
+                updateFinalValue($("#"+prefix+"_" + type + "_input"),$(element).html(),prefix, type);
+                gIdHover = prefix;
+
+                let currentValue = findPosition(settings.values,$(element).html());
+
+                if (suffix.includes('top')) {
+                    valueMin = parseInt($("#"+prefix+"_" + type + "_input").attr('data-min'));
+                    valueTop = currentValue - 1;
+                    showTop = (valueTop >= valueMin);
+                    if (valueTop <  valueMin)  valueTop = valueMin;
+                    updatePeripheralDigit(type, prefix, showTop, false, settings.values[valueTop], "...");
+                } else {
+                    valueMax = parseInt($("#"+prefix+"_"+ type + "_input").attr('data-max'));
+                    valueBottom = currentValue + 1;
+                    showBottom = (valueBottom < (valueMax + 1));
+                    if (valueTop > valueBottom)  valueBottom = valueMax
+                    updatePeripheralDigit(type, prefix, false, showBottom, "...", settings.values[valueBottom]);
+                }
+                gIdHover = 0;
             }
         }
 
@@ -573,7 +744,6 @@ File: Code Input Builder Js File
             applyCode(element, codeTouche, event, type, parseInt(id) + 1, settings.numInputs, valueMax);
         }
 
-
         // Création des inputs dans chaque élément sélectionné
         this.each(function () {
             const $container = $(this);
@@ -581,16 +751,244 @@ File: Code Input Builder Js File
             // Création d'un div parent avec la classe `cla-input-container` pour appliquer le `gap`
             const $inputContainer = $('<div>', {
                 class: 'cla-input-container',
-                css: { display: 'flex', gap: settings.gap } // Appliquer le gap défini dans les settings
+                css: { display: 'flex', 'justify-content': 'center', 'align-items' : 'center' , gap: settings.gap } // Appliquer le gap défini dans les settings
             });
 
-            if (settings.allowSign) {
-                
-                const prefix = "sign";
-                
-                const value = settings.defaultSign;
+            if (settings.type === "integer" || settings.type === "float" ) 
+            { 
 
-                 // Création du wrapper
+                if (settings.allowSign) {
+                    
+                    const prefix = "sign";
+                    
+                    // Création du wrapper
+                    const $wrapperDiv = $('<div>', {
+                        class: 'text-center cla-input-wrapper',
+                        css: { position: 'relative' }
+                    });
+
+                    // Élément texte supérieur
+                    const $topTextDiv = $('<div>', {
+                        class: `cla-hover-text top-text-${uniqueTypeShort}-${prefix}`,
+                        id: `${prefix}_${uniqueTypeShort}_div_top`,
+                        text: "0"
+                    });
+                    
+                    $topTextDiv.hover(
+                        function() { // mouseenter
+                            toggleHoverEffect(this, prefix, uniqueTypeShort, true);
+                        },
+                        function() { // mouseleave
+                            toggleHoverEffect(this, prefix, uniqueTypeShort, false);
+                        }
+                    );
+                    
+                    $topTextDiv.on('click', function(event) {
+                        handleTextDivClick(this, prefix, uniqueTypeShort);
+                    });
+                    
+                    $wrapperDiv.append($topTextDiv);
+
+                    // Création de l'input avec onkeyup, onwheel, et onhover, et onpaste
+                    const $input = $('<input>', {
+                        type: 'text',
+                        class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
+                        maxLength: '1',
+                        id: `${prefix}_${uniqueTypeShort}_input`,
+                        name: `${prefix}${prefix}`,
+                        autocomplete: 'off',
+                        value: currentDigitSign
+                    });
+
+                    $input.on('keyup', function(event) {
+                        touchSign(event.currentTarget, event, prefix ,uniqueTypeShort);
+                    });
+
+                    $input.on('wheel', function(event) {
+                        adjustOnScroll(event, event.currentTarget, prefix, uniqueTypeShort);
+                    });
+                    
+                    $input.hover(
+                        function() { // mouseenter
+                            hoverMouseEnter(this, prefix, uniqueTypeShort);
+                        },
+                        function() { // mouseleave
+                            hoverMouseLeave(this, prefix, uniqueTypeShort);
+                        }
+                    );
+                    
+                    $input.on('paste', function(event) {
+                        handlePasteEvent(this, event, uniqueTypeShort, `${prefix}_${uniqueTypeShort}_input`);
+                    });
+                    
+                    $input.on('copy', function(event) {
+                        event.preventDefault(); // Empêche le comportement par défaut
+                        navigator.clipboard.writeText($(this).val());
+                    });
+
+                    $wrapperDiv.append($input);
+
+                    // Élément texte inférieur
+                    const $bottomTextDiv = $('<div>', {
+                        class: `cla-hover-text bottom-text-${uniqueTypeShort}-${prefix}`,
+                        id: `${prefix}_${uniqueTypeShort}_div_bottom`,
+                        text: "0"
+                    });
+                    
+                    $bottomTextDiv.hover(
+                        function() { // mouseenter
+                            toggleHoverEffect(this, prefix, uniqueTypeShort, true);
+                        },
+                        function() { // mouseleave
+                            toggleHoverEffect(this, prefix, uniqueTypeShort, false);
+                        }
+                    );
+                    
+                    $bottomTextDiv.on('click', function(event) {
+                        handleTextDivClick(this, prefix, uniqueTypeShort);
+                    });
+                    
+                    $wrapperDiv.append($bottomTextDiv);
+                    $inputContainer.append($wrapperDiv);
+                
+                }
+
+                for (let i = 1; i <= settings.numInputs; i++) {
+                    
+                    // Insère le div du point décimal si l'index correspond à `decimalPosition`
+                    if (settings.type === 'float' && (i-1) === settings.decimalPosition) {
+                        const $decimalPoint = $('<div>', {
+                            class: 'col-1',
+                            html: '<div><h2 class="my-5">'+settings.separator+'</h2></div>'
+                        });
+                        $inputContainer.append($decimalPoint);
+                    }                
+                    
+                    const prefix = 'digit';
+                    
+                    // Utiliser les valeurs min et max spécifiques si fournies
+                    const min = settings.minValues[i - 1] !== undefined ? Math.max(digitMin, Math.min(settings.minValues[i - 1], digitMax)) : digitMin;
+                    const max = settings.maxValues[i - 1] !== undefined ? Math.max(digitMin, Math.min(settings.maxValues[i - 1], digitMax)) : digitMax;
+                    let value = settings.values[i - 1] !== undefined ? settings.values[i - 1] : settings.defaultValue;
+
+                    // Borne la valeur entre min et max
+                    value = Math.max(min, Math.min(value, max));
+
+                    currentDigit[i-1] = value;
+
+                    // Création du wrapper
+                    const $wrapperDiv = $('<div>', {
+                        class: 'text-center cla-input-wrapper',
+                        css: { position: 'relative' }
+                    });
+
+                    // Élément texte supérieur
+                    const $topTextDiv = $('<div>', {
+                        class: `cla-hover-text top-text-${uniqueTypeShort}-${i}`,
+                        id: `${prefix}_${uniqueTypeShort}_div_top_${i}`,
+                        text: min
+                    });
+                    
+                    $topTextDiv.hover(
+                        function() { // mouseenter
+                            toggleHoverEffect(this, prefix, uniqueTypeShort, true);
+                        },
+                        function() { // mouseleave
+                            toggleHoverEffect(this, prefix, uniqueTypeShort, false);
+                        }
+                    );
+                    
+                    $topTextDiv.on('click', function(event) {
+                        handleTextDivClick(this, prefix, uniqueTypeShort);
+                    });
+                    
+                    $wrapperDiv.append($topTextDiv);
+
+                    // Création de l'input avec onkeyup, onwheel, et onhover, et onpaste
+                    const $input = $('<input>', {
+                        type: 'text',
+                        class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
+                        maxLength: '1',
+                        id: `${prefix}_${uniqueTypeShort}_input_${i}`,
+                        name: `${prefix}${i}`,
+                        autocomplete: 'off',
+                        value: value,
+                        'data-min': min,
+                        'data-max': max,
+                    });
+
+                    $input.on('keyup', function(event) {
+                        touchCode(event.currentTarget, event, prefix ,uniqueTypeShort, (i + 1), settings.numInputs, max);
+                    });
+
+                    $input.on('wheel', function(event) {
+                        adjustOnScroll(event, event.currentTarget, prefix, uniqueTypeShort);
+                    });
+                    
+                    $input.hover(
+                        function() { // mouseenter
+                            hoverMouseEnter(this, prefix, uniqueTypeShort);
+                        },
+                        function() { // mouseleave
+                            hoverMouseLeave(this, prefix, uniqueTypeShort);
+                        }
+                    );
+                    
+                    $input.on('paste', function(event) {
+                        handlePasteEvent(this, event, uniqueTypeShort, `${prefix}_${uniqueTypeShort}_input`);
+                    });
+                    
+                    $input.on('copy', function(event) {
+                        event.preventDefault(); // Empêche le comportement par défaut
+                        navigator.clipboard.writeText($(this).val());
+                    });
+
+                    $wrapperDiv.append($input);
+
+                    // Élément texte inférieur
+                    const $bottomTextDiv = $('<div>', {
+                        class: `cla-hover-text bottom-text-${uniqueTypeShort}-${i}`,
+                        id: `${prefix}_${uniqueTypeShort}_div_bottom_${i}`,
+                        text: min
+                    });
+                    
+                    $bottomTextDiv.hover(
+                        function() { // mouseenter
+                            toggleHoverEffect(this, prefix, uniqueTypeShort, true);
+                        },
+                        function() { // mouseleave
+                            toggleHoverEffect(this, prefix, uniqueTypeShort, false);
+                        }
+                    );
+                    
+                    $bottomTextDiv.on('click', function(event) {
+                        handleTextDivClick(this, prefix,uniqueTypeShort);
+                    });
+                    
+                    $wrapperDiv.append($bottomTextDiv);
+                    $inputContainer.append($wrapperDiv);
+                    
+                }
+
+                $container.append($inputContainer);
+                
+                for (let i = 1; i <= settings.numInputs; i++) {
+                    const prefix = 'digit';
+                    // Utiliser les valeurs min et max spécifiques si fournies
+                    const min = settings.minValues[i - 1] !== undefined ? Math.max(digitMin, Math.min(settings.minValues[i - 1], digitMax)) : digitMin;
+                    const max = settings.maxValues[i - 1] !== undefined ? Math.max(digitMin, Math.min(settings.maxValues[i - 1], digitMax)) : digitMax;
+                    let value = settings.values[i - 1] !== undefined ? settings.values[i - 1] : settings.defaultValue;
+
+                    // Borne la valeur entre min et max
+                    value = Math.max(min, Math.min(value, max));
+                    updateFinalValue($("#"+prefix+"_" + uniqueTypeShort + "_input_" + i), value, prefix, uniqueTypeShort , false);
+                }
+            }
+            else if (settings.type === "text" )
+            {
+                const prefix = 'list';
+                    
+                // Création du wrapper
                 const $wrapperDiv = $('<div>', {
                     class: 'text-center cla-input-wrapper',
                     css: { position: 'relative' }
@@ -600,7 +998,7 @@ File: Code Input Builder Js File
                 const $topTextDiv = $('<div>', {
                     class: `cla-hover-text top-text-${uniqueTypeShort}-${prefix}`,
                     id: `${prefix}_${uniqueTypeShort}_div_top`,
-                    text: "0"
+                    text: "..."
                 });
                 
                 $topTextDiv.hover(
@@ -622,15 +1020,13 @@ File: Code Input Builder Js File
                 const $input = $('<input>', {
                     type: 'text',
                     class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
-                    maxLength: '1',
                     id: `${prefix}_${uniqueTypeShort}_input`,
-                    name: `${prefix}${prefix}`,
+                    name: `${prefix}`,
                     autocomplete: 'off',
-                    value: value
-                });
-
-                $input.on('keyup', function(event) {
-                    touchSign(event.currentTarget, event, prefix ,uniqueTypeShort);
+                    value: settings.values[settings.defaultValue],
+                    disabled: 'disabled',
+                    'data-min': 0,
+                    'data-max': settings.values.length - 1,
                 });
 
                 $input.on('wheel', function(event) {
@@ -645,11 +1041,7 @@ File: Code Input Builder Js File
                         hoverMouseLeave(this, prefix, uniqueTypeShort);
                     }
                 );
-                
-                $input.on('paste', function(event) {
-                    handlePasteEvent(this, event, uniqueTypeShort, `${prefix}_${uniqueTypeShort}_input`);
-                });
-                
+                   
                 $input.on('copy', function(event) {
                     event.preventDefault(); // Empêche le comportement par défaut
                     navigator.clipboard.writeText($(this).val());
@@ -661,124 +1053,7 @@ File: Code Input Builder Js File
                 const $bottomTextDiv = $('<div>', {
                     class: `cla-hover-text bottom-text-${uniqueTypeShort}-${prefix}`,
                     id: `${prefix}_${uniqueTypeShort}_div_bottom`,
-                    text: "0"
-                });
-                
-                $bottomTextDiv.hover(
-                    function() { // mouseenter
-                        toggleHoverEffect(this, prefix, uniqueTypeShort, true);
-                    },
-                    function() { // mouseleave
-                        toggleHoverEffect(this, prefix, uniqueTypeShort, false);
-                    }
-                );
-                
-                $bottomTextDiv.on('click', function(event) {
-                    handleTextDivClick(this, prefix, uniqueTypeShort);
-                });
-                
-                $wrapperDiv.append($bottomTextDiv);
-                $inputContainer.append($wrapperDiv);
-               
-            }
-
-            for (let i = 1; i <= settings.numInputs; i++) {
-                
-                // Insère le div du point décimal si l'index correspond à `decimalPosition`
-                if (settings.type === 'float' && (i-1) === settings.decimalPosition) {
-                    const $decimalPoint = $('<div>', {
-                        class: 'col-1',
-                        html: '<div><h2 class="my-5">'+settings.separator+'</h2></div>'
-                    });
-                    $inputContainer.append($decimalPoint);
-                }                
-                
-                const prefix = 'digit';
-                
-                // Utiliser les valeurs min et max spécifiques si fournies
-                const min = settings.minValues[i - 1] !== undefined ? Math.max(digitMin, Math.min(settings.minValues[i - 1], digitMax)) : digitMin;
-                const max = settings.maxValues[i - 1] !== undefined ? Math.max(digitMin, Math.min(settings.maxValues[i - 1], digitMax)) : digitMax;
-                let value = settings.values[i - 1] !== undefined ? settings.values[i - 1] : settings.defaultvalue;
-
-                // Borne la valeur entre min et max
-                value = Math.max(min, Math.min(value, max));
-
-                currentDigit[i-1] = value;
-
-                // Création du wrapper
-                const $wrapperDiv = $('<div>', {
-                    class: 'text-center cla-input-wrapper',
-                    css: { position: 'relative' }
-                });
-
-                // Élément texte supérieur
-                const $topTextDiv = $('<div>', {
-                    class: `cla-hover-text top-text-${uniqueTypeShort}-${i}`,
-                    id: `${prefix}_${uniqueTypeShort}_div_top_${i}`,
-                    text: min
-                });
-                
-                $topTextDiv.hover(
-                    function() { // mouseenter
-                        toggleHoverEffect(this, prefix, uniqueTypeShort, true);
-                    },
-                    function() { // mouseleave
-                        toggleHoverEffect(this, prefix, uniqueTypeShort, false);
-                    }
-                );
-                
-                $topTextDiv.on('click', function(event) {
-                    handleTextDivClick(this, prefix, uniqueTypeShort);
-                });
-                
-                $wrapperDiv.append($topTextDiv);
-
-                // Création de l'input avec onkeyup, onwheel, et onhover, et onpaste
-                const $input = $('<input>', {
-                    type: 'text',
-                    class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
-                    maxLength: '1',
-                    id: `${prefix}_${uniqueTypeShort}_input_${i}`,
-                    name: `${prefix}${i}`,
-                    autocomplete: 'off',
-                    value: value,
-                    'data-min': min,
-                    'data-max': max,
-                });
-
-                $input.on('keyup', function(event) {
-                    touchCode(event.currentTarget, event, prefix ,uniqueTypeShort, (i + 1), settings.numInputs, max);
-                });
-
-                $input.on('wheel', function(event) {
-                    adjustOnScroll(event, event.currentTarget, prefix, uniqueTypeShort);
-                });
-                
-                $input.hover(
-                    function() { // mouseenter
-                        hoverMouseEnter(this, prefix, uniqueTypeShort);
-                    },
-                    function() { // mouseleave
-                        hoverMouseLeave(this, prefix, uniqueTypeShort);
-                    }
-                );
-                
-                $input.on('paste', function(event) {
-                    handlePasteEvent(this, event, uniqueTypeShort, `${prefix}_${uniqueTypeShort}_input`);
-                });
-                
-                $input.on('copy', function(event) {
-                    event.preventDefault(); // Empêche le comportement par défaut
-                    navigator.clipboard.writeText($(this).val());
-                });
-
-                $wrapperDiv.append($input);
-
-                // Élément texte inférieur
-                const $bottomTextDiv = $('<div>', {
-                    class: `cla-hover-text bottom-text-${uniqueTypeShort}-${i}`,
-                    id: `${prefix}_${uniqueTypeShort}_div_bottom_${i}`,
-                    text: min
+                    text: "..."
                 });
                 
                 $bottomTextDiv.hover(
@@ -796,23 +1071,32 @@ File: Code Input Builder Js File
                 
                 $wrapperDiv.append($bottomTextDiv);
                 $inputContainer.append($wrapperDiv);
-                
+
+                $container.append($inputContainer);
+            } 
+            else
+            {
+                const prefix = 'not';
+                   // Création du wrapper
+                const $wrapperDiv = $('<div>', {
+                    class: 'text-center cla-input-wrapper',
+                    css: { position: 'relative' }
+                });
+
+                const $input = $('<input>', {
+                    type: 'text',
+                    class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
+                    id: `${prefix}_${uniqueTypeShort}_input`,
+                    name: `${prefix}${prefix}`,
+                    value: 'Not Implemented',
+                    disabled: 'disabled'
+                });
+
+                $wrapperDiv.append($input);
+                $inputContainer.append($wrapperDiv);
+
+                $container.append($inputContainer);
             }
-
-            $container.append($inputContainer);
-            
-            for (let i = 1; i <= settings.numInputs; i++) {
-                const prefix = 'digit';
-                // Utiliser les valeurs min et max spécifiques si fournies
-                const min = settings.minValues[i - 1] !== undefined ? Math.max(digitMin, Math.min(settings.minValues[i - 1], digitMax)) : digitMin;
-                const max = settings.maxValues[i - 1] !== undefined ? Math.max(digitMin, Math.min(settings.maxValues[i - 1], digitMax)) : digitMax;
-                let value = settings.values[i - 1] !== undefined ? settings.values[i - 1] : settings.defaultvalue;
-
-                // Borne la valeur entre min et max
-                value = Math.max(min, Math.min(value, max));
-                updateFinalValue($("#"+prefix+"_" + uniqueTypeShort + "_input_" + i), value, prefix, uniqueTypeShort , false);
-            }
-
         });
         
         // Méthode pour récupérer la valeur complète
@@ -822,44 +1106,73 @@ File: Code Input Builder Js File
         
         // Méthode pour récupérer un chiffre spécifique à un index donné
         this.getDigitAt = function(index) {
-            // Vérifie si l'index est dans la plage de currentValue
-            if (index >= 0 && index < currentDigit.length) {
-                const digit = currentDigit[index];
-                return parseInt(digit, 10); // Ignorer le point décimal
-            } else {
-                throw new Error("L'index est en dehors de la plage.");
+            if (settings.type === "integer" || settings.type === "float" ) 
+            { 
+                // Vérifie si l'index est dans la plage de currentValue
+                if (index >= 0 && index < currentDigit.length) {
+                    const digit = currentDigit[index];
+                    return parseInt(digit, 10); // Ignorer le point décimal
+                } else {
+                    throw new Error("L'index est en dehors de la plage.");
+                }
+            }
+            else{
+                throw new Error("Not implemented");
             }
         };
 
        // Fonction pour définir la valeur complète en répartissant les caractères dans les inputs
         this.setCompleteValue = function(value,onchange = false) 
         { 
-            // Vérifie si la valeur est un nombre flottant
-            const isFloat = /^[-+]?\d+\.\d+$/.test(value);
-            // Vérifie si la valeur est un entier
-            const isInteger = /^[-+]?\d+$/.test(value);
-            // Vérifie si la valeur est du texte non numérique
-            const isText = isNaN(value);
-         
-            if ( (isFloat || isInteger) && !isText )
-            {
-                if( settings.totalMin !== undefined && settings.totalMin != null && value <= settings.totalMin) value = settings.totalMin;
-                if( settings.totalMax !== undefined && settings.totalMax != null && value >= settings.totalMax) value = settings.totalMax;
-                
-                if (settings.type === 'float') // Sépare la partie entière et décimale
-                {                    
-                   fillFloatDigits(value);
-                }
-                else if (settings.type === 'integer')
+            if (settings.type === "integer" || settings.type === "float" ) 
+            { 
+                // Vérifie si la valeur est un nombre flottant
+                const isFloat = /^[-+]?\d+\.\d+$/.test(value);
+                // Vérifie si la valeur est un entier
+                const isInteger = /^[-+]?\d+$/.test(value);
+                // Vérifie si la valeur est du texte non numérique
+                const isText = isNaN(value);
+            
+                if ( (isFloat || isInteger) && !isText )
                 {
-                    fillIntegerDigits(value);
+                    if( settings.totalMin !== undefined && settings.totalMin != null && value <= settings.totalMin) value = settings.totalMin;
+                    if( settings.totalMax !== undefined && settings.totalMax != null && value >= settings.totalMax) value = settings.totalMax;
+                    
+                    if (settings.type === 'float') // Sépare la partie entière et décimale
+                    {                    
+                        fillFloatDigits(value);
+                    }
+                    else if (settings.type === 'integer')
+                    {
+                        fillIntegerDigits(value);
+                    }
+                    currentValue = digitsArrayToNumber(currentDigit,(settings.type === 'float'),settings.decimalPosition);
+                    
+                    // Appel de onValueChange avec $input et newValue
+                    if (onchange == true && typeof settings.onValueChange === 'function') {
+                        settings.onValueChange(null, currentValue);
+                    }
                 }
-                currentValue = digitsArrayToNumber(currentDigit,(settings.type === 'float'),settings.decimalPosition);
-                
-                // Appel de onValueChange avec $input et newValue
-                if (onchange == true && typeof settings.onValueChange === 'function') {
-                    settings.onValueChange(null, currentValue);
+            } else if (settings.type === "text" )
+            {
+                let index = findPosition(settings.values,value);
+                if (index != -1)
+                {
+                    $("#list_" + uniqueTypeShort + "_input").val(value);
+                    currentValue = value;
+                    // Appel de onValueChange avec $input et newValue
+                    if (onchange == true && typeof settings.onValueChange === 'function') {
+                        settings.onValueChange(null, currentValue);
+                    }
                 }
+                else
+                {
+                    throw new Error("Le texte n'est pas reconnu.");
+                }
+            } 
+            else
+            {
+                throw new Error("Not implemented");
             }
         };
 

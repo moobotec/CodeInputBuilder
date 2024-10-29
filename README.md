@@ -1,7 +1,7 @@
 
 # CodeInputBuilder
 
-**CodeInputBuilder** est un plugin JavaScript basé sur jQuery permettant de créer des champs de saisie numérique personnalisés. Il supporte plusieurs options de configuration pour gérer les entiers et les nombres flottants avec des limites de valeurs, des signes, et des interactions avancées.
+**CodeInputBuilder** est un plugin JavaScript basé sur jQuery permettant de créer des champs de saisie numérique personnalisés. Il supporte plusieurs options de configuration pour gérer les entiers et les nombres flottants avec des limites de valeurs, des signes,des textes et des interactions avancées.
 
 ## Table des matières
 - [Fonctionnalités](#fonctionnalités)
@@ -18,6 +18,7 @@
 **CodeInputBuilder** propose une large gamme de fonctionnalités permettant une saisie numérique flexible et personnalisable. Voici les principales fonctionnalités disponibles :
 
 - **Saisie de nombres entiers ou flottants** : Prend en charge la saisie de valeurs de type `integer` (entiers) ou `float` (flottants), avec possibilité de configurer des limites minimales et maximales pour chaque champ de saisie.
+- **Saisie d'un texte** : Prend en charge la selection d'un texte parmis une liste de texte.
 - **Configuration de limites min/max** : Chaque champ peut avoir des valeurs spécifiques minimales et maximales par position, permettant un contrôle précis des valeurs.
 - **Option de signe (+/-)** : Possibilité d’ajouter un signe (positif ou négatif) pour chaque valeur, avec une option de signe par défaut (paramètre `defaultSign`).
 - **Gestion des événements `onValueChange`** : Déclenche une fonction personnalisée lors de chaque changement de valeur, permettant de réagir en temps réel aux modifications d’entrée.
@@ -69,12 +70,12 @@ Ces fonctionnalités permettent une expérience utilisateur enrichie et une flex
 
 | Option              | Type         | Description                                                                                      | Valeur par défaut |
 |---------------------|--------------|--------------------------------------------------------------------------------------------------|--------------------|
-| `type`              | `string`     | Type de valeur (`integer` ou `float`).                                                           | `integer`         |
+| `type`              | `string`     | Type de valeur (`integer` ou `float` ou `text`).                                                 | `integer`         |
 | `numInputs`         | `integer`    | Nombre d'entrées/chiffres.                                                                       | `1`               |
 | `minValues`         | `array`      | Valeurs minimales par position.                                                                  | `[]`              |
 | `maxValues`         | `array`      | Valeurs maximales par position.                                                                  | `[]`              |
 | `values`            | `array`      | Valeurs par défaut par position.                                                                 | `[]`              |
-| `defaultvalue`      | `integer`    | Valeur par défaut des champs.                                                                    | `0`               |
+| `defaultValue`      | `integer`    | Valeur par défaut des champs.                                                                    | `0`               |
 | `gap`               | `string`     | Espace entre les champs d'entrée.                                                                | `'10px'`          |
 | `allowSign`         | `boolean`    | Autorise l'ajout d'un signe (+/-).                                                               | `false`           |
 | `defaultSign`       | `string`     | Signe par défaut (`+` ou `-`).                                                                   | `'+'`             |
@@ -120,6 +121,21 @@ $('#codeInputFloat').codeInputBuilder({
     gap: '10px',
     totalMax: 180.0,
     separator: ',',
+    onValueChange: function($input, newValue) {
+        console.log(`Valeur complète : ${newValue}`);
+    }
+});
+```
+
+### Exemple pour un text
+
+![Exemple une un text](img/exemple_input_text.png)
+
+```javascript
+$('#codeInputText').codeInputBuilder({
+    type: 'text',
+    values: ['Lorem', 'Consectetur', 'Eiusmod', 'Nulla', 'Vestibulum', 'Sollicitudin'], 
+    defaultValue : 0,
     onValueChange: function($input, newValue) {
         console.log(`Valeur complète : ${newValue}`);
     }

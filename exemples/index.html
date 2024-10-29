@@ -15,12 +15,10 @@
         <p class="lead">Ceci est un exemple de test utilisant Bootstrap et jQuery avec deux types de CodeInputBuilder : un integer et un flottant.</p>
 
         <hr>
-        <!-- Affichage du changement de valeur et de la valeur complète pour chaque codeInput -->
-        <div class="mt-4">
+       <div class="mt-4">
              <div class="row text-center">
-                <div class="d-flex justify-content-around">
-                    <!-- CodeInput pour un nombre Integer -->
-                    <div>
+                <div class="d-flex justify-content-around w-100">
+                    <div class = "w-100">
                         <h3>Test Code Input - Type Integer</h3>
                         <code> { type: 'integer', <br>
                 numInputs: 5, <br>
@@ -39,8 +37,6 @@
             <p id="changeValueDisplayInteger">Aucun changement</p>
             <h4>Valeur complète (Integer) :</h4>
             <p id="completeValueDisplayInteger">Aucune valeur</p>
-            
-            <!-- Champ texte pour entrer une valeur à définir -->
             <div class="form-group">
                 <label for="valueInputInteger">Entrez une valeur :</label>
                 <input type="text" id="valueInputInteger" class="form-control" placeholder="12345">
@@ -51,11 +47,9 @@
         <hr>
         <div class="mt-4">
             <div class="row text-center">
-                <div class="d-flex justify-content-around">
-                    <!-- CodeInput pour un nombre flottant -->
-                    <div>
+                <div class="d-flex justify-content-around w-100">
+                    <div class = "w-100">
                         <h3>Test Code Input - Type Flottant</h3>
-                        
                          <code> { type: 'float', <br>
                 numInputs: 7, <br>
                 values: [0, 0, 0, 0, 0, 0, 0], <br>
@@ -66,7 +60,6 @@
                 separator : ','<br>,
                 gap: '10px', // Espace entre les inputs <br>
                 }</code>
-                        
                         <div id="codeInputFloat"></div>
                     </div>
                 </div>
@@ -75,8 +68,6 @@
             <p id="changeValueDisplayFloat">Aucun changement</p>
             <h4>Valeur complète (Flottant) :</h4>
             <p id="completeValueDisplayFloat">Aucune valeur</p>
-            
-               <!-- Champ texte pour entrer une valeur à définir -->
             <div class="form-group">
                 <label for="valueInputFloat">Entrez une valeur :</label>
                 <input type="text" id="valueInputFloat" class="form-control" placeholder="+123.56">
@@ -84,14 +75,12 @@
             <button id="setCompleteValueButtonFloat" class="btn btn-primary mt-3">Définir la valeur complète (Flottant)</button>
             <button id="getCompleteValueButtonFloat" class="btn btn-primary mt-3">Afficher la valeur complète (Flottant)</button>
         </div>
-        
+        <hr>
         <div class="mt-4">
             <div class="row text-center">
-                <div class="d-flex justify-content-around">
-                    <!-- CodeInput pour un nombre flottant -->
-                    <div>
+                <div class="d-flex justify-content-around w-100">
+                    <div class = "w-100">
                         <h3>Test Code Input - Type Flottant</h3>
-                        
                          <code> { type: 'float', <br>
                 numInputs: 7, <br>
                 values: [0, 0, 0, 0, 0, 0], <br>
@@ -102,7 +91,6 @@
                 separator : ','<br>,
                 gap: '10px', // Espace entre les inputs <br>
                 }</code>
-                        
                         <div id="codeInputFloat1"></div>
                     </div>
                 </div>
@@ -111,8 +99,6 @@
             <p id="changeValueDisplayFloat1">Aucun changement</p>
             <h4>Valeur complète (Flottant) :</h4>
             <p id="completeValueDisplayFloat1">Aucune valeur</p>
-            
-               <!-- Champ texte pour entrer une valeur à définir -->
             <div class="form-group">
                 <label for="valueInputFloat1">Entrez une valeur :</label>
                 <input type="text" id="valueInputFloat1" class="form-control" placeholder="+123.56">
@@ -120,8 +106,54 @@
             <button id="setCompleteValueButtonFloat1" class="btn btn-primary mt-3">Définir la valeur complète (Flottant)</button>
             <button id="getCompleteValueButtonFloat1" class="btn btn-primary mt-3">Afficher la valeur complète (Flottant)</button>
         </div>
-        
+        <hr>
+        <div class="mt-4">
+            <div class="row text-center">
+                <div class="d-flex justify-content-around w-100">
+                    <div class = "w-100">
+                        <h3>Test Code Input - Type Text</h3>
+                         <code> { type: 'text', <br>
+                values: [Lorem, Consectetur, Eiusmod, Nulla, Vestibulum, Sollicitudin], <br>
+                defaultValue : 0, <br>
+                gap: '10px', // Espace entre les inputs <br>
+                }</code>
+                        <div id="codeInputText"></div>
+                    </div>
+                </div>
+            </div>
+            <h4 class="mt-3">Valeur de l'input modifié (Text) :</h4>
+            <p id="changeValueDisplayText">Aucun changement</p>
+            <h4>Valeur complète (Text) :</h4>
+            <p id="completeValueDisplayText">Aucune valeur</p>
+            
+            <div class="form-group">
+                <label for="valueInputText">Entrez une valeur :</label>
+                <input type="text" id="valueInputText" class="form-control" placeholder="Lorem">
+            </div>
+            <button id="setCompleteValueButtonText" class="btn btn-primary mt-3">Définir la valeur complète (Text)</button>
+            <button id="getCompleteValueButtonText" class="btn btn-primary mt-3">Afficher la valeur complète (Text)</button>
+        </div>
+        <hr>
+        <div class="mt-4">
+            <div class="row text-center">
+                <div class="d-flex justify-content-around w-100">
+                    <div class = "w-100">
+                        <h3>Test Code Input - Type Not</h3>
+                         <code> { type: 'xxxx' }</code>
+                        <div id="codeInputNot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <footer class="bg-dark text-center text-lg-start mt-5">
+        <!-- Copyright -->
+        <div class="text-center p-3 bg-light">
+            © 2024 Copyright
+            <a href="https://www.timecaps.io/">www.timecaps.io</a>
+        </div>
+    </footer>
 
     <!-- Chargement de jQuery via CDN -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -238,7 +270,38 @@
                 const completeValue = $('#valueInputFloat1').val();
                 codeInputFloat1.setCompleteValue(completeValue);
             });
+
+            // Initialiser avec 5 inputs, avec des valeurs min et max différentes pour chaque input
+            let codeInputText = $('#codeInputText').codeInputBuilder({ 
+                type: 'text', 
+                values: ['Lorem', 'Consectetur', 'Eiusmod', 'Nulla', 'Vestibulum', 'Sollicitudin'], 
+                defaultValue : 0,
+                onValueChange: function($input, newValue) {
+                    // Affichage de la valeur de l'input modifié
+                    $('#changeValueDisplayText').text(`Input ${$input.attr('id')} a changé de valeur : ${newValue}`);
+                    
+                    // Met à jour l'affichage de la valeur complète
+                    const completeText = codeInputText.getCompleteValue();
+                    $('#completeValueDisplayText').text(`Valeur complète actuelle : ${completeText}`);
+                }
+            });
             
+            // Gestionnaire de clic pour afficher la valeur complète
+            $('#getCompleteValueButtonText').on('click', function() {
+                const completeText = codeInputText.getCompleteValue();
+                $('#completeValueDisplayText').text(`Valeur complète : ${completeText}`);
+            });
+            
+            // Gestionnaire de clic pour afficher la valeur complète
+            $('#setCompleteValueButtonText').on('click', function() {
+                const completeValue = $('#valueInputText').val();
+                codeInputText.setCompleteValue(completeValue);
+            });
+            
+             // Initialiser avec 5 inputs, avec des valeurs min et max différentes pour chaque input
+            let codeInputNot = $('#codeInputNot').codeInputBuilder({ 
+                type: 'xxxxx'
+            });
             
         });
     </script>

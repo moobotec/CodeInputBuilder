@@ -22,7 +22,7 @@
 - **Configuration de limites min/max** : Chaque champ peut avoir des valeurs spécifiques minimales et maximales par position, permettant un contrôle précis des valeurs.
 - **Option de signe (+/-)** : Possibilité d’ajouter un signe (positif ou négatif) pour chaque valeur, avec une option de signe par défaut (paramètre `defaultSign`).
 - **Gestion des événements `onValueChange`** : Déclenche une fonction personnalisée lors de chaque changement de valeur, permettant de réagir en temps réel aux modifications d’entrée.
-- **Défilement pour incrémenter/décrémenter** : Ajustement des valeurs des champs en utilisant la molette de la souris pour faciliter les modifications.
+- **Défilement pour incrémenter/décrémenter** : Ajustement des valeurs des champs en utilisant la molette de la souris pour faciliter les modifications. 
 - **Affichage des valeurs limites en périphérie** : Visualisation des valeurs supérieures et inférieures à l’aide d’un effet de survol (hover) pour guider l'utilisateur.
 - **Nombre d'entrées configurables** : Possibilité de spécifier le nombre de champs de saisie pour les valeurs numériques (`numInputs`).
 - **Espacement personnalisable entre les champs** : Contrôle de l’espace entre chaque champ d’entrée, pour une mise en page adaptable.
@@ -82,6 +82,9 @@ Ces fonctionnalités permettent une expérience utilisateur enrichie et une flex
 | `decimalPosition`   | `integer`    | Position de la virgule pour les flottants.                                                       | `1`               |
 | `totalMax`          | `float`      | Valeur maximale totale possible.                                                                 | `null`            |
 | `totalMin`          | `float`      | Valeur minimale totale possible.                                                                 | `null`            |
+| `allowScroll`       | `boolean`    | Active ou désactive la fonctionnalité de défilement.                                             | `true`            |
+| `scrollSensitivity` | `integer`    | Définit la sensibilité du défilement.                                                            | `50`            |
+| `requireKeyForScroll` | `string`   | Touche à enfoncer (par exemple 'Control' ou 'Shift') pour activer le défilement sur les inputs. Valeurs possibles : 'Control', 'Shift', 'Alt', 'Meta'. Incessible à la casse.  | `null`            |
 | `onValueChange`     | `function`   | Fonction déclenchée lorsque la valeur change.                                                    | `null`            |
 
 ## Exemples
@@ -100,6 +103,7 @@ $('#codeInputInteger').codeInputBuilder({
     allowSign: true,
     defaultSign: '+',
     gap: '1px',
+    requireKeyForScroll: 'Control',
     onValueChange: function($input, newValue) {
         console.log(`Valeur modifiée : ${newValue}`);
     }

@@ -28,6 +28,7 @@
                 allowSign: true, // Nouveau paramètre pour autoriser le signe <br>
                 defaultSign: '+', // Signe par défaut (peut être "+" ou "-") <br>
                 gap: '1px', // Espace entre les inputs  <br>
+                requireKeyForScroll: 'Control',<br>
                 }</code>
                         <div id="codeInputInteger"></div>
                     </div>
@@ -176,6 +177,7 @@
                 allowSign: true, // Nouveau paramètre pour autoriser le signe
                 defaultSign: '+', // Signe par défaut (peut être "+" ou "-")
                 gap: '1px', // Espace entre les inputs
+                requireKeyForScroll: 'Control',
                 onValueChange: function($input, newValue) {
                     // Affichage de la valeur de l'input modifié
                     $('#changeValueDisplayInteger').text(`Input ${$input.attr('id')} a changé de valeur : ${newValue}`);

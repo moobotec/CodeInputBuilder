@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 1.0.0
+Version: 0.0.3
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -51,6 +51,16 @@ Options disponibles:
     - `onValueChange`: (function) Fonction callback exécutée lorsque la valeur change. Reçoit deux paramètres : `$input` (l'élément input) et `newValue` (la nouvelle valeur).
         * Par défaut : null.
 
+    - `allowScroll`: (boolean) Active ou désactive la fonctionnalité de défilement pour ajuster les valeurs des inputs.
+        * Par défaut : true.
+
+    - `scrollSensitivity`: (integer) Définit la sensibilité du défilement, en pixels. Plus la valeur est faible, plus le défilement sera réactif.
+        * Par défaut : 50.
+
+    - `requireKeyForScroll`: (string) Touche à enfoncer (par exemple 'Control' ou 'Shift') pour activer le défilement sur les inputs.
+        * Valeurs possibles : 'Control', 'Shift', 'Alt', 'Meta'.
+        * Par défaut : null (aucune touche requise).
+
 Usage:
     // Initialisation de base
     $('#element').codeInputBuilder({
@@ -60,7 +70,10 @@ Usage:
         maxValues: [9, 9, 9, 5],
         defaultSign: '-',
         allowSign: true,
-        totalMax: 100
+        totalMax: 100,
+        allowScroll: true,
+        scrollSensitivity: 30,
+        requireKeyForScroll: 'Control'
     });
 
 Méthodes:
@@ -86,13 +99,16 @@ Méthodes:
             separator : '.', // seulement pour integer et float
             totalMax: null, // Valeur maximale totale , seulement pour integer et float
             totalMin: null, // Valeur minimale totale , seulement pour integer et float
+            allowScroll: true, // Active le défilement par défaut
+            scrollSensitivity: 50, // Indique le niveau de sensibilité du défilement pour ajuster la valeur.
+            requireKeyForScroll: null, // Par défaut, aucune touche n'est requise possibilité [control,shift,alt,meta]
             gap: '10px', // Espace entre les inputs
             onValueChange: null, // Fonction de surcharge pour les changements de valeur
         }, options);
 
-        $.fn.codeInputBuilder.version = "0.0.2";
+        $.fn.codeInputBuilder.version = "0.0.3";
         $.fn.codeInputBuilder.title = "Code Input Builder";
-        $.fn.codeInputBuilder.description = "Un plugin jQuery pour créer des champs d'input configurables pour des valeurs numériques ou flottantes.";
+        $.fn.codeInputBuilder.description = "Un plugin jQuery pour créer des champs d'input configurables pour des valeurs numériques ou flottantes et pour les textes.";
 
         let gIdHover = -1;
         // decimal ( 0,1,2,3,4,5,6,7,8,9) - Chiffres (numériques)
@@ -102,8 +118,8 @@ Méthodes:
         let digitHexaMin = 0x30; // 0
         let digitHexaMax = 0x66; // f
         // Lettres alphabétiques ( a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z ) - Lettres (alphabétiques)
-        let digiLetterMin = 0x61;
-        let digitLetterMax = 0x7A;
+        let digiLetterMin = 0x61; // a minuscule
+        let digitLetterMax = 0x7A; // z minuscule
 
         let currentDigitSign = (settings.allowSign) ?  settings.defaultSign : null;
         let currentDigit = new Array(settings.numInputs);
@@ -268,7 +284,6 @@ Méthodes:
         function setValueInput(inputElement,value,prefix,type) 
         {
             let id = $(inputElement).attr('id').replace(prefix+'_'+type+'_input_', '');
-            
             currentDigit[id-1] = value;
             inputElement.value = value;
             updateFinalValue($(inputElement), value, prefix , type);
@@ -307,34 +322,40 @@ Méthodes:
             }
         }
 
-        function applyCode(inputElement,codeTouche,event,prefix,type,pos,max,maxValue) 
+        function convertCodeToChar(codeTouche) {
+            return String.fromCharCode(codeTouche);
+        }
+
+        function applyCode(inputElement,codeTouche,event,prefix,type,id,numInputs) 
         {
+            const isPasteCode = (event.ctrlKey && event.key === 'paste');
             let valueMin =  parseInt($(inputElement).attr('data-min'));
-            
+            let valueMax =  parseInt($(inputElement).attr('data-max'));
+
             // Vérifie si Ctrl+C est pressé, si oui, ignore le reste de la fonction
             if ((event.ctrlKey && (event.key === 'c' || codeTouche === 67 )) 
                     ||  (event.ctrlKey && (event.key === 'v' || codeTouche === 86 ) )
                     ||  (!event.ctrlKey && codeTouche === 17) ) {
+
+                event.preventDefault(); // Empêcher l'action par défaut pour les autres touches
                 return; // Quitte la fonction pour éviter de réinitialiser l'input
             }
-            
-            if ((codeTouche >= 48 && codeTouche <= (48 + maxValue)) || // Chiffres (0-9)
-                (codeTouche >= 96 && codeTouche <= (96 + maxValue)) || // Pavé numerique (0-9)
+            if ((codeTouche >= 48 && codeTouche <= (48 + valueMax)) || // Chiffres (0-9)
+                (codeTouche >= 96 && codeTouche <= (96 + valueMax) && !isPasteCode) || // Pavé numerique (0-9)
                 codeTouche === 8 || // Touche "Retour arrière" (Backspace)
                 codeTouche === 9 || // Touche "Tabulation"
                 codeTouche === 46) { // Touche "Supprimer" (Delete)
-            
                 if (codeTouche === 8)
                 {
                     setValueInput(inputElement,valueMin,prefix,type);
-                    if ((pos-2) == 0) pos = max+2;
-                    $("#"+prefix+"_"+type+"_input_"+(pos-2)).focus();
+                    if ((id-2) == 0) id = numInputs+2;
+                    $("#"+prefix+"_"+type+"_input_"+(id-2)).focus();
                 }
                 else if (codeTouche === 46)
                 {
                     setValueInput(inputElement,valueMin,prefix,type);
-                    if ((pos+1) == max+2) pos = 1;
-                    $("#"+prefix+"_"+type+"_input_"+pos).focus();
+                    if ((id+1) == numInputs+2) id = 1;
+                    $("#"+prefix+"_"+type+"_input_"+id).focus();
                 }
                 else if (codeTouche != 9)
                 {
@@ -346,8 +367,12 @@ Méthodes:
                     }
                     else
                     {
-                        setValueInput(inputElement,event.key,prefix,type);
-                        $("#"+prefix+"_"+type+"_input_"+pos).focus();
+                        let key = event.key;
+                        if (isPasteCode)
+                            key = convertCodeToChar(codeTouche);
+                        
+                        setValueInput(inputElement,key,prefix,type);
+                        $("#"+prefix+"_"+type+"_input_"+id).focus();
                     }
                 }
             }
@@ -391,6 +416,7 @@ Méthodes:
 
         function applySign(inputElement,codeTouche,event,prefix,type) 
         {
+            
             if (event.key === '+' || event.key === '-') {
                 setValueInputSign(inputElement,event.key,prefix,type);
             } 
@@ -401,39 +427,56 @@ Méthodes:
             }
         }
 
-        function touchCode(inputElement,event,prefix,type,pos,max,maxValue) 
+        function touchCode(inputElement,event,prefix,type,id,numInputs) 
         {
+            const originalEvent = event.originalEvent || event;
+
             // Récupérer le code de la touche appuyée
-            var codeTouche = event.keyCode || event.which;
+            var codeTouche = originalEvent.keyCode || originalEvent.which;
             if (codeTouche != 16) // Touche "Maj enfoncée"
             {
-                applyCode(inputElement,codeTouche,event,prefix,type,pos,max,maxValue);
+                applyCode(inputElement,codeTouche,originalEvent,prefix,type,id,numInputs);
             }
         }
 
         /* Gestionnaire d'appui sur les touche du clavier pour les touche + et - du clavier */
         function touchSign(inputElement, event, prefix, type) 
         {
-            var codeTouche = event.keyCode || event.which;
+            const originalEvent = event.originalEvent || event;
+
+            var codeTouche = originalEvent.keyCode || originalEvent.which;
             if (codeTouche != 16) // Touche "Maj enfoncée"
             {
-                applySign(inputElement,codeTouche,event,prefix,type);
+                applySign(inputElement,codeTouche,originalEvent,prefix,type);
             }
         }
 
         /* Gestionnaire de modification de la mollette de la souris */
         function adjustOnScroll(event, inputElement,prefix,type) 
         {
-            event.preventDefault();
-             // Récupération du delta en utilisant `originalEvent.deltaY` avec fallback sur `wheelDelta`
-            const delta = event.originalEvent.deltaY !== undefined 
-                ? event.originalEvent.deltaY 
-                : (event.originalEvent.wheelDelta ? -event.originalEvent.wheelDelta : 0);
+            if (!settings.allowScroll) return;
 
-            // Définir un seuil pour rendre le défilement moins sensible
-            const threshold = 50; // La valeur du seuil peut être ajustée en fonction de la sensibilité désirée
+            const originalEvent = event.originalEvent || event;
 
-            if (Math.abs(delta) < threshold) {
+            originalEvent.preventDefault();
+
+            // Vérifie si une touche est nécessaire pour le scroll
+            if (settings.requireKeyForScroll) {
+                const keyRequired = settings.requireKeyForScroll.toLowerCase();
+                // Vérifie si la touche requise est enfoncée
+                    if ((keyRequired === 'control' && !event.ctrlKey) ||
+                    (keyRequired === 'shift' && !event.shiftKey) ||
+                    (keyRequired === 'alt' && !event.altKey) ||
+                    (keyRequired === 'meta' && !event.metaKey)) {
+                    return; // Sort de la fonction si la touche n'est pas enfoncée
+                }
+            }
+
+            const delta = originalEvent.deltaY !== undefined 
+                ? originalEvent.deltaY 
+                : (originalEvent.wheelDelta ? -originalEvent.wheelDelta : 0);
+
+            if (Math.abs(delta) < settings.scrollSensitivity) {
                 return; // Ignore les petits défilements
             }
 
@@ -731,17 +774,19 @@ Méthodes:
             }
         }
 
-        function handlePasteEvent(element, event, type, basename) {
-            event.preventDefault();
-            let pasteText = event.originalEvent.clipboardData.getData('text');
+        function handlePasteEvent(element, event, type, prefix , basename) {
+
+            const originalEvent = event.originalEvent || event;
+
+            originalEvent.preventDefault();
+            let pasteText = originalEvent.clipboardData.getData('text');
             if (pasteText.length > 1) pasteText = pasteText.substring(0, 1); // Limiter à un caractère
             let codeTouche = pasteText.charCodeAt(0);
-            event.key = pasteText;
+            originalEvent.ctrlKey = true;
+            originalEvent.key = 'paste';
             
             let id = $(element).attr('id').replace(basename + '_', '');
-            let valueMax = parseInt($(element).attr('data-max'));
-
-            applyCode(element, codeTouche, event, type, parseInt(id) + 1, settings.numInputs, valueMax);
+            applyCode(element, codeTouche, originalEvent, prefix,type , id, settings.numInputs);
         }
 
         // Création des inputs dans chaque élément sélectionné
@@ -818,7 +863,7 @@ Méthodes:
                     );
                     
                     $input.on('paste', function(event) {
-                        handlePasteEvent(this, event, uniqueTypeShort, `${prefix}_${uniqueTypeShort}_input`);
+                        handlePasteEvent(this, event, uniqueTypeShort, prefix, `${prefix}_${uniqueTypeShort}_input`);
                     });
                     
                     $input.on('copy', function(event) {
@@ -918,7 +963,7 @@ Méthodes:
                     });
 
                     $input.on('keyup', function(event) {
-                        touchCode(event.currentTarget, event, prefix ,uniqueTypeShort, (i + 1), settings.numInputs, max);
+                        touchCode(event.currentTarget, event, prefix ,uniqueTypeShort, (i + 1), settings.numInputs);
                     });
 
                     $input.on('wheel', function(event) {
@@ -935,7 +980,7 @@ Méthodes:
                     );
                     
                     $input.on('paste', function(event) {
-                        handlePasteEvent(this, event, uniqueTypeShort, `${prefix}_${uniqueTypeShort}_input`);
+                        handlePasteEvent(this, event, uniqueTypeShort, prefix , `${prefix}_${uniqueTypeShort}_input`);
                     });
                     
                     $input.on('copy', function(event) {
@@ -1138,6 +1183,8 @@ Méthodes:
                     if( settings.totalMin !== undefined && settings.totalMin != null && value <= settings.totalMin) value = settings.totalMin;
                     if( settings.totalMax !== undefined && settings.totalMax != null && value >= settings.totalMax) value = settings.totalMax;
                     
+                    currentDigit.fill(0);
+
                     if (settings.type === 'float') // Sépare la partie entière et décimale
                     {                    
                         fillFloatDigits(value);

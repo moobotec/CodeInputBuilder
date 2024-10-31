@@ -8,18 +8,33 @@
     <!-- Chargement de Bootstrap CSS via CDN -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="src/codeinputbuilder.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
     <div class="container mt-5">
         <h1 class="text-primary">Hello, world!</h1>
-        <p class="lead">Ceci est un exemple de test utilisant Bootstrap et jQuery avec deux types de CodeInputBuilder : un integer et un flottant.</p>
-
+        <p class="lead">Voici un exemple de test illustrant l’utilisation du plugin `CodeInputBuilder` avec Bootstrap et jQuery. Cet exemple propose des champs configurés pour accepter des entiers, des nombres flottants et du texte, offrant un aperçu des possibilités de personnalisation du plugin.</p>
         <hr>
-       <div class="mt-4">
+
+        <!-- Menu de navigation -->
+        <nav>
+            <ul>
+                <li><a href="#test-integer"><i class="fas fa-hashtag text-info"></i> 1. Saisissez une valeur entière avec le type Integer</a></li>
+                <li><a href="#test-float"><i class="fas fa-percentage text-secondary"></i> 2. Entrez une valeur décimale avec le type Float</a></li>
+                <li><a href="#test-float-latitude"><i class="fas fas fa-globe-europe text-success"></i> 3. Entrez une latitude avec le type Float</a></li>
+                <li><a href="#test-float-longitude"><i class="fas fas fa-globe-europe text-warning"></i> 4. Entrez une longitude avec le type Float</a></li>
+                <li><a href="#test-text"><i class="fas fa-font text-primary"></i> 5. Sélectionnez un texte avec le champ de type Text</a></li>
+                <li><a href="#test-not"><i class="fas fa-ban text-danger"></i> 6. Exemple d’un champ de type Not, pour une saisie non disponible</a></li>
+            </ul>
+        </nav>
+        <hr>
+
+        <!-- Section Integer -->
+        <div class="mt-4">
              <div class="row text-center">
                 <div class="d-flex justify-content-around w-100">
                     <div class = "w-100">
-                        <h3>Test Code Input - Type Integer</h3>
+                        <h3 id="test-integer"><i class="fas fa-hashtag text-info"></i> 1. Saisissez une valeur entière avec le type Integer</h3>
                         <code> { type: 'integer', <br>
                 numInputs: 5, <br>
                 values: [0, 0, 0, 0, 0], <br>
@@ -42,79 +57,132 @@
                 <label for="valueInputInteger">Entrez une valeur :</label>
                 <input type="text" id="valueInputInteger" class="form-control" placeholder="12345">
             </div>
-            <button id="setCompleteValueButtonInteger" class="btn btn-primary mt-3">Définir la valeur complète (Integer)</button>
-            <button id="getCompleteValueButtonInteger" class="btn btn-primary mt-3">Afficher la valeur complète (Integer)</button>
+            <div class="d-flex justify-content-center">
+                <button id="setCompleteValueButtonInteger" class="btn btn-sm btn-info mt-3 mx-1">Définir la valeur complète (Integer)</button>
+                <button id="getCompleteValueButtonInteger" class="btn btn-sm btn-info mt-3 mx-1">Afficher la valeur complète (Integer)</button>
+            </div>
         </div>
         <hr>
+
+        <!-- Section Float -->
         <div class="mt-4">
             <div class="row text-center">
                 <div class="d-flex justify-content-around w-100">
                     <div class = "w-100">
-                        <h3>Test Code Input - Type Flottant</h3>
+                        <h3 id="test-float"><i class="fas fa-percentage text-secondary"></i> 2. Entrez une valeur décimale avec le type Float</h3>
                          <code> { type: 'float', <br>
-                numInputs: 7, <br>
-                values: [0, 0, 0, 0, 0, 0, 0], <br>
-                minValues: [0, 0, 0, 0, 0,0, 0], <br>
-                maxValues: [9, 9, 9, 9, 9, 9 ,9], <br>
-                decimalPosition : 3, <br>
-                totalMax: 180.0,<br>
+                numInputs: 5, <br>
+                values: [0, 0, 0, 0, 0], <br>
+                minValues: [0, 0, 0, 0,0], <br>
+                maxValues: [9, 9, 9, 9, 9], <br>
+                decimalPosition : 2, <br>
                 separator : ','<br>,
-                gap: '10px', // Espace entre les inputs <br>
+                gap: '1px', // Espace entre les inputs <br>
                 }</code>
                         <div id="codeInputFloat"></div>
                     </div>
                 </div>
             </div>
-            <h4 class="mt-3">Valeur de l'input modifié (Flottant) :</h4>
+            <h4 class="mt-3">Valeur de l'input modifié (Float) :</h4>
             <p id="changeValueDisplayFloat">Aucun changement</p>
-            <h4>Valeur complète (Flottant) :</h4>
+            <h4>Valeur complète (Float) :</h4>
             <p id="completeValueDisplayFloat">Aucune valeur</p>
             <div class="form-group">
                 <label for="valueInputFloat">Entrez une valeur :</label>
-                <input type="text" id="valueInputFloat" class="form-control" placeholder="+123.56">
+                <input type="text" id="valueInputFloat" class="form-control" placeholder="55.444">
             </div>
-            <button id="setCompleteValueButtonFloat" class="btn btn-primary mt-3">Définir la valeur complète (Flottant)</button>
-            <button id="getCompleteValueButtonFloat" class="btn btn-primary mt-3">Afficher la valeur complète (Flottant)</button>
+            <div class="d-flex justify-content-center">
+                <button id="setCompleteValueButtonFloat" class="btn btn-sm btn-secondary mt-3 mx-1">Définir la valeur complète (Float)</button>
+                <button id="getCompleteValueButtonFloat" class="btn btn-sm btn-secondary mt-3 mx-1">Afficher la valeur complète (Float)</button>
+            </div>
+
         </div>
         <hr>
+
+        <!-- Section Latitude -->
         <div class="mt-4">
             <div class="row text-center">
                 <div class="d-flex justify-content-around w-100">
                     <div class = "w-100">
-                        <h3>Test Code Input - Type Flottant</h3>
+                        <h3 id="test-float-latitude"><i class="fas fas fa-globe-europe text-success"></i> 3. Entrez une latitude avec le type Float</h3>
                          <code> { type: 'float', <br>
-                numInputs: 7, <br>
+                numInputs: 6, <br>
                 values: [0, 0, 0, 0, 0, 0], <br>
-                minValues: [0, 0, 0, 0, 0,0], <br>
+                minValues: [0, 0, 0, 0, 0, 0], <br>
                 maxValues: [9, 9, 9, 9, 9, 9], <br>
                 decimalPosition : 2, <br>
-                totalMax: 90.0,<br>
-                separator : ','<br>,
+                allowSign: true, <br>
+                defaultSign: '+', <br>
+                totalMin: -90.0,<br>
+                totalMax: +90.0,<br>
+                separator : '.'<br>,
                 gap: '10px', // Espace entre les inputs <br>
                 }</code>
-                        <div id="codeInputFloat1"></div>
+                        <div id="codeInputLatitude"></div>
                     </div>
                 </div>
             </div>
-            <h4 class="mt-3">Valeur de l'input modifié (Flottant) :</h4>
-            <p id="changeValueDisplayFloat1">Aucun changement</p>
-            <h4>Valeur complète (Flottant) :</h4>
-            <p id="completeValueDisplayFloat1">Aucune valeur</p>
+            <h4 class="mt-3">Valeur de l'input modifié (Latitude) :</h4>
+            <p id="changeValueDisplayFloatLatitude">Aucun changement</p>
+            <h4>Valeur complète (Latitude) :</h4>
+            <p id="completeValueDisplayFloatLatitude">Aucune valeur</p>
             <div class="form-group">
-                <label for="valueInputFloat1">Entrez une valeur :</label>
-                <input type="text" id="valueInputFloat1" class="form-control" placeholder="+123.56">
+                <label for="valueInputFloatLatitude">Entrez une valeur :</label>
+                <input type="text" id="valueInputFloatLatitude" class="form-control" placeholder="+45.5696">
             </div>
-            <button id="setCompleteValueButtonFloat1" class="btn btn-primary mt-3">Définir la valeur complète (Flottant)</button>
-            <button id="getCompleteValueButtonFloat1" class="btn btn-primary mt-3">Afficher la valeur complète (Flottant)</button>
+            <div class="d-flex justify-content-center">
+                <button id="setCompleteValueButtonFloatLatitude" class="btn btn-sm btn-success mt-3 mx-1">Définir la valeur complète (Latitude)</button>
+                <button id="getCompleteValueButtonFloatLatitude" class="btn btn-sm btn-success mt-3 mx-1">Afficher la valeur complète (Latitude)</button>
+            </div>
         </div>
         <hr>
+
+        <!-- Section Longitude -->
         <div class="mt-4">
             <div class="row text-center">
                 <div class="d-flex justify-content-around w-100">
                     <div class = "w-100">
-                        <h3>Test Code Input - Type Text</h3>
+                        <h3 id="test-float-longitude"><i class="fas fas fa-globe-europe text-warning"></i> 4. Entrez une longitude avec le type Float</h3>
+                         <code> { type: 'float', <br>
+                numInputs: 7, <br>
+                values: [0, 0, 0, 0, 0, 0, 0], <br>
+                minValues: [0, 0, 0, 0, 0, 0, 0], <br>
+                maxValues: [9, 9, 9, 9, 9, 9, 9], <br>
+                decimalPosition : 3, <br>
+                allowSign: true, <br>
+                defaultSign: '+', <br>
+                totalMin: -180.0,<br>
+                totalMax: +180.0,<br>
+                separator : '.'<br>,
+                gap: '10px', // Espace entre les inputs <br>
+                }</code>
+                        <div id="codeInputLongitude"></div>
+                    </div>
+                </div>
+            </div>
+            <h4 class="mt-3">Valeur de l'input modifié (Longitude) :</h4>
+            <p id="changeValueDisplayFloatLongitude">Aucun changement</p>
+            <h4>Valeur complète (Longitude) :</h4>
+            <p id="completeValueDisplayFloatLongitude">Aucune valeur</p>
+            <div class="form-group">
+                <label for="valueInputFloatLongitude">Entrez une valeur :</label>
+                <input type="text" id="valueInputFloatLongitude" class="form-control" placeholder="+001.5656">
+            </div>
+            <div class="d-flex justify-content-center">
+                <button id="setCompleteValueButtonFloatLongitude" class="btn btn-sm btn-warning mt-3 mx-1">Définir la valeur complète (Longitude)</button>
+                <button id="getCompleteValueButtonFloatLongitude" class="btn btn-sm btn-warning mt-3 mx-1">Afficher la valeur complète (Longitude)</button>
+            </div>
+        </div>
+        <hr>
+
+        <!-- Section Text -->
+        <div class="mt-4">
+            <div class="row text-center">
+                <div class="d-flex justify-content-around w-100">
+                    <div class = "w-100">
+                        <h3 id="test-text"><i class="fas fa-font text-primary"></i> 5. Sélectionnez un texte dans le champ de type Text</h3>
                          <code> { type: 'text', <br>
-                values: [Lorem, Consectetur, Eiusmod, Nulla, Vestibulum, Sollicitudin], <br>
+                values: ["Lorem", "Consectetur", "Eiusmod", "Nulla", "Vestibulum", "Sollicitudin"], <br>
                 defaultValue : 0, <br>
                 gap: '10px', // Espace entre les inputs <br>
                 }</code>
@@ -131,15 +199,19 @@
                 <label for="valueInputText">Entrez une valeur :</label>
                 <input type="text" id="valueInputText" class="form-control" placeholder="Lorem">
             </div>
-            <button id="setCompleteValueButtonText" class="btn btn-primary mt-3">Définir la valeur complète (Text)</button>
-            <button id="getCompleteValueButtonText" class="btn btn-primary mt-3">Afficher la valeur complète (Text)</button>
+            <div class="d-flex justify-content-center">
+                <button id="setCompleteValueButtonText" class="btn btn-sm btn-primary mt-3 mx-1">Définir la valeur complète (Text)</button>
+                <button id="getCompleteValueButtonText" class="btn btn-sm btn-primary mt-3 mx-1">Afficher la valeur complète (Text)</button>
+            </div>
         </div>
         <hr>
+
+        <!-- Section Not Available -->
         <div class="mt-4">
             <div class="row text-center">
                 <div class="d-flex justify-content-around w-100">
                     <div class = "w-100">
-                        <h3>Test Code Input - Type Not</h3>
+                        <h3 id="test-not"><i class="fas fa-ban text-danger"></i> 6. Exemple d’un champ de type Not, pour une saisie non disponible</h3>
                          <code> { type: 'xxxx' }</code>
                         <div id="codeInputNot"></div>
                     </div>
@@ -152,7 +224,8 @@
         <!-- Copyright -->
         <div class="text-center p-3 bg-light">
             © 2024 Copyright
-            <a href="https://www.timecaps.io/">www.timecaps.io</a>
+            <a href="https://www.timecaps.io/">www.timecaps.io</a><br>
+            <p id="versionInfo" class="text-muted"></p> <!-- Conteneur pour les versions dynamiques -->
         </div>
     </footer>
 
@@ -166,7 +239,58 @@
 
     <!-- Script pour initialiser le CodeInputBuilder et gérer les événements -->
     <script>
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const versionInfo = document.getElementById("versionInfo");
+            let versions = [];
+
+            // Vérifie et affiche la version de CodeInputBuilder
+            if ($.fn.codeInputBuilder && $.fn.codeInputBuilder.version) {
+                versions.push(`[ CodeInputBuilder v${$.fn.codeInputBuilder.version} ]`);
+            }
+
+            // Vérifie et affiche la version de jQuery avec l'icône
+            if (typeof jQuery !== "undefined" && jQuery.fn.jquery) {
+                versions.push(`[ <i class="fab fa-js-square"></i> jQuery v${jQuery.fn.jquery}] `);
+            }
+
+            // Vérifie et affiche la version de Bootstrap avec l'icône
+            if (typeof bootstrap !== "undefined" && bootstrap.Tooltip && bootstrap.Tooltip.VERSION) {
+                versions.push(`[ <i class="fab fa-bootstrap"></i> Bootstrap v${bootstrap.Tooltip.VERSION} ]`);
+            }
+
+             // Ajout manuel de la version de Font Awesome
+            const fontAwesomeVersion = "5.15.4"; // Remplacez par la version actuelle si nécessaire
+            versions.push(`[ <i class="fab fa-font-awesome"></i> Font Awesome v${fontAwesomeVersion} ]`);
+
+            // Affiche les versions dans le conteneur HTML
+            if (versions.length > 0) {
+                versionInfo.innerHTML = `${versions.join(" ")}`;
+            }
+        });
+
         $(document).ready(function () {
+
+
+            function convertCoordinateFloatToString(value, dirA, dirB, numInput, decimalPosition) 
+            {
+                if (typeof value !== 'number' || isNaN(value)) {
+                    return `[ NaN° NaN ]`;
+                }
+
+                const dir = (!Object.is(value, -0) && value >= 0.0) ? dirA : dirB;
+                const [integerPart, decimalPart = ''] = Math.abs(value)
+                    .toFixed(numInput - decimalPosition)
+                    .split('.'); // Séparation en partie entière et décimale
+
+                // Ajouter des zéros devant la partie entière si elle est plus courte que `numInput`
+                const formattedIntegerPart = integerPart.padStart(decimalPosition, '0');
+                const formattedDecimalPart = decimalPart.padEnd(numInput - decimalPosition, '0'); // Assure que le nombre de décimales soit correct
+                const formatted = `${formattedIntegerPart}.${formattedDecimalPart}`; // Reconstitution du nombre avec la partie décimale
+
+                return `${formatted}° ${dir}`;
+            }
+
             // Initialiser avec 5 inputs, avec des valeurs min et max différentes pour chaque input
             let codeInputInteger = $('#codeInputInteger').codeInputBuilder({
                 type: 'integer',
@@ -184,14 +308,14 @@
                     
                     // Met à jour l'affichage de la valeur complète
                     const completeCode = codeInputInteger.getCompleteValue();
-                    $('#completeValueDisplayInteger').text(`Valeur complète actuelle : ${completeCode}`);
+                    $('#completeValueDisplayInteger').text(`Valeur actuelle : ${completeCode}`);
                 }
             });
             
             // Gestionnaire de clic pour afficher la valeur complète
             $('#getCompleteValueButtonInteger').on('click', function() {
                 const completeCode = codeInputInteger.getCompleteValue();
-                $('#completeValueDisplayInteger').text(`Valeur complète : ${completeCode}`);
+                $('#completeValueDisplayInteger').text(`Valeur courante : ${completeCode}`);
             });
             
             // Gestionnaire de clic pour afficher la valeur complète
@@ -199,35 +323,31 @@
                 const completeValue = $('#valueInputInteger').val();
                 codeInputInteger.setCompleteValue(completeValue);
             });
-            
-            // Initialiser avec 5 inputs, avec des valeurs min et max différentes pour chaque input
+
+
             let codeInputFloat = $('#codeInputFloat').codeInputBuilder({
                 type: 'float',
-                numInputs: 7,
-                values: [0, 0, 0, 0, 0, 0, 0],
-                minValues: [0, 0, 0, 0, 0,0, 0],
-                maxValues: [9, 9, 9, 9, 9, 9 ,9],
-                decimalPosition : 3,
-                gap: '10px', // Espace entre les inputs
-                totalMin: -180.0,
-                totalMax: +180.0,
+                numInputs: 5,
+                values: [0, 0, 0, 0, 0],
+                minValues: [0, 0, 0, 0, 0],
+                maxValues: [9, 9, 9, 9, 9],
+                decimalPosition : 2,
+                gap: '1px', // Espace entre les inputs
                 separator: ',',
-                allowSign: true, // Nouveau paramètre pour autoriser le signe
-                defaultSign: '+', // Signe par défaut (peut être "+" ou "-")
                 onValueChange: function($input, newValue) {
                     // Affichage de la valeur de l'input modifié
                     $('#changeValueDisplayFloat').text(`Input ${$input.attr('id')} a changé de valeur : ${newValue}`);
                     
                     // Met à jour l'affichage de la valeur complète
                     const completeCode = codeInputFloat.getCompleteValue();
-                    $('#completeValueDisplayFloat').text(`Valeur complète actuelle : ${completeCode}`);
+                    $('#completeValueDisplayFloat').text(`Valeur actuelle : ${completeCode}`);
                 }
             });
             
             // Gestionnaire de clic pour afficher la valeur complète
             $('#getCompleteValueButtonFloat').on('click', function() {
                 const completeCode = codeInputFloat.getCompleteValue();
-                $('#completeValueDisplayFloat').text(`Valeur complète : ${completeCode}`);
+                $('#completeValueDisplayFloat').text(`Valeur courante : ${completeCode}`);
             });
             
             // Gestionnaire de clic pour afficher la valeur complète
@@ -235,42 +355,85 @@
                 const completeValue = $('#valueInputFloat').val();
                 codeInputFloat.setCompleteValue(completeValue);
             });
+
             
-            
-             // Initialiser avec 5 inputs, avec des valeurs min et max différentes pour chaque input
-            let codeInputFloat1 = $('#codeInputFloat1').codeInputBuilder({
+            let codeInputLatitude = $('#codeInputLatitude').codeInputBuilder({
                 type: 'float',
                 numInputs: 6,
                 values: [0, 0, 0, 0, 0, 0],
-                minValues: [0, 0, 0, 0, 0,0],
+                minValues: [0, 0, 0, 0, 0, 0],
                 maxValues: [9, 9, 9, 9, 9, 9],
                 decimalPosition : 2,
                 gap: '10px', // Espace entre les inputs
                 totalMin: -90.0,
                 totalMax: +90.0,
-                separator: ',',
-                allowSign: true, // Nouveau paramètre pour autoriser le signe
-                defaultSign: '+', // Signe par défaut (peut être "+" ou "-")
+                separator: '.',
+                allowSign: true,
+                defaultSign: '+',
                 onValueChange: function($input, newValue) {
+
+                    let latitude = convertCoordinateFloatToString(newValue,'N','S',6,2);
                     // Affichage de la valeur de l'input modifié
-                    $('#changeValueDisplayFloat1').text(`Input ${$input.attr('id')} a changé de valeur : ${newValue}`);
+                    $('#changeValueDisplayFloatLatitude').text(`Input ${$input.attr('id')} a changé de valeur : ${latitude}`);
                     
                     // Met à jour l'affichage de la valeur complète
-                    const completeCode = codeInputFloat1.getCompleteValue();
-                    $('#completeValueDisplayFloat1').text(`Valeur complète actuelle : ${completeCode}`);
+                    const currentValue = codeInputLatitude.getCompleteValue();
+                    latitude = convertCoordinateFloatToString(currentValue,'N','S',6,2);
+                    $('#completeValueDisplayFloatLatitude').text(`Valeur actuelle : ${latitude}`);
                 }
             });
             
             // Gestionnaire de clic pour afficher la valeur complète
-            $('#getCompleteValueButtonFloat1').on('click', function() {
-                const completeCode = codeInputFloat1.getCompleteValue();
-                $('#completeValueDisplayFloat').text(`Valeur complète : ${completeCode}`);
+            $('#getCompleteValueButtonFloatLatitude').on('click', function() {
+                const currentValue = codeInputLatitude.getCompleteValue();
+                const latitude = convertCoordinateFloatToString(currentValue,'N','S',6,2);
+                $('#completeValueDisplayFloatLatitude').text(`Valeur courante : ${latitude}`);
             });
             
             // Gestionnaire de clic pour afficher la valeur complète
-            $('#setCompleteValueButtonFloat1').on('click', function() {
-                const completeValue = $('#valueInputFloat1').val();
-                codeInputFloat1.setCompleteValue(completeValue);
+            $('#setCompleteValueButtonFloatLatitude').on('click', function() {
+                const completeValue = $('#valueInputFloatLatitude').val();
+                codeInputLatitude.setCompleteValue(completeValue);
+            });
+            
+            
+            let codeInputLongitude = $('#codeInputLongitude').codeInputBuilder({
+                type: 'float',
+                numInputs: 7,
+                values: [0, 0, 0, 0, 0, 0, 0],
+                minValues: [0, 0, 0, 0, 0, 0, 0],
+                maxValues: [9, 9, 9, 9, 9, 9, 9],
+                decimalPosition : 3,
+                gap: '10px', // Espace entre les inputs
+                totalMin: -180.0,
+                totalMax: +180.0,
+                separator: '.',
+                allowSign: true, 
+                defaultSign: '+',
+                onValueChange: function($input, newValue) {
+
+                    let longitude = convertCoordinateFloatToString(newValue,'E','W',7,3);
+                    // Affichage de la valeur de l'input modifié
+                    $('#changeValueDisplayFloatLongitude').text(`Input ${$input.attr('id')} a changé de valeur : ${longitude}`);
+                    
+                    // Met à jour l'affichage de la valeur complète
+                    const currentValue = codeInputLongitude.getCompleteValue();
+                    longitude = convertCoordinateFloatToString(currentValue,'E','W',7,3);
+                    $('#completeValueDisplayFloatLongitude').text(`Valeur actuelle : ${longitude}`);
+                }
+            });
+            
+            // Gestionnaire de clic pour afficher la valeur complète
+            $('#getCompleteValueButtonFloatLongitude').on('click', function() {
+                const currentValue = codeInputLongitude.getCompleteValue();
+                const longitude = convertCoordinateFloatToString(currentValue,'E','W',7,3);
+                $('#completeValueDisplayFloatLongitude').text(`Valeur courante : ${longitude}`);
+            });
+            
+            // Gestionnaire de clic pour afficher la valeur complète
+            $('#setCompleteValueButtonFloatLongitude').on('click', function() {
+                const completeValue = $('#valueInputFloatLongitude').val();
+                codeInputLongitude.setCompleteValue(completeValue);
             });
 
             // Initialiser avec 5 inputs, avec des valeurs min et max différentes pour chaque input
@@ -284,14 +447,14 @@
                     
                     // Met à jour l'affichage de la valeur complète
                     const completeText = codeInputText.getCompleteValue();
-                    $('#completeValueDisplayText').text(`Valeur complète actuelle : ${completeText}`);
+                    $('#completeValueDisplayText').text(`Valeur actuelle : ${completeText}`);
                 }
             });
             
             // Gestionnaire de clic pour afficher la valeur complète
             $('#getCompleteValueButtonText').on('click', function() {
                 const completeText = codeInputText.getCompleteValue();
-                $('#completeValueDisplayText').text(`Valeur complète : ${completeText}`);
+                $('#completeValueDisplayText').text(`Valeur courante : ${completeText}`);
             });
             
             // Gestionnaire de clic pour afficher la valeur complète

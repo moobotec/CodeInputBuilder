@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.3
+Version: 0.0.4
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -82,9 +82,14 @@ Méthodes:
 
 */
 
+if (typeof jQuery === 'undefined') {
+    throw new Error("La bibliothèque jQuery est requise pour que CodeInputBuilder fonctionne. Veuillez inclure jQuery avant de charger cette bibliothèque.");
+}
+
 (function ($) {
-        
+    
    $.fn.codeInputBuilder = function (options) {
+
         // Options par défaut
         const settings = $.extend({
             type: 'integer', // integer ou float ou text
@@ -105,10 +110,6 @@ Méthodes:
             gap: '10px', // Espace entre les inputs
             onValueChange: null, // Fonction de surcharge pour les changements de valeur
         }, options);
-
-        $.fn.codeInputBuilder.version = "0.0.3";
-        $.fn.codeInputBuilder.title = "Code Input Builder";
-        $.fn.codeInputBuilder.description = "Un plugin jQuery pour créer des champs d'input configurables pour des valeurs numériques ou flottantes et pour les textes.";
 
         let gIdHover = -1;
         // decimal ( 0,1,2,3,4,5,6,7,8,9) - Chiffres (numériques)
@@ -208,14 +209,7 @@ Méthodes:
                 
                 if (finalValue != currentValue)
                 {
-                    if (settings.type === 'float') // Sépare la partie entière et décimale
-                    {                    
-                    fillFloatDigits(currentValue);
-                    }
-                    else if (settings.type === 'integer')
-                    {
-                    fillIntegerDigits(currentValue);
-                    }
+                    fillDigits(currentValue,settings.type);
                 }
             }
             
@@ -534,20 +528,37 @@ Méthodes:
         {
             if (prefix == "digit")
             {
-                let valueTop = parseInt($(inputElement).val()) - 1;
-                let valueBottom =  parseInt($(inputElement).val()) + 1;
                 let id = $(inputElement).attr('id').replace(prefix+'_'+type+'_input_', '');
-                let valueMin = parseInt($(inputElement).attr('data-min'));
-                let valueMax= parseInt($(inputElement).attr('data-max'));
+
+                let valueTop =  parseInt($(inputElement).val()) - 1;
+                if( settings.totalMax !== undefined && settings.totalMax != null && currentValue >= settings.totalMax )
+                {
+                    valueTop =  parseInt(limitDigitMax[id-1]) - 1 ;
+                }
+    
+                let valueBottom =  parseInt($(inputElement).val()) + 1;
+                if( settings.totalMin !== undefined && settings.totalMin != null && currentValue <= settings.totalMin )
+                {
+                    valueBottom =  parseInt(limitDigitMin[id-1]) + 1 ;
+                }
                 
-                if( settings.totalMax !== undefined && settings.totalMax != null )
+                let valueMin =  parseInt($(inputElement).attr('data-min'));
+                let valueMax =  parseInt($(inputElement).attr('data-max'));
+                
+                if( settings.totalMin !== undefined && settings.totalMin != null && currentValue <= settings.totalMin )
+                {
+                    valueMin = Math.max(valueMin, limitDigitMin[id-1]);
+                }
+                if( settings.totalMax !== undefined && settings.totalMax != null && currentValue >= settings.totalMax )
                 {
                     valueMax = Math.min(valueMax, limitDigitMax[id-1]);
                 }
-                
+
                 gIdHover = id;
+
                 let showTop = (valueTop >= valueMin);
                 let showBottom = (valueBottom < (valueMax + 1));
+
                 updatePeripheralDigit(type,id, showTop, showBottom, valueTop ,valueBottom);
             }
             else if (prefix == "sign")
@@ -595,92 +606,57 @@ Méthodes:
             gIdHover = 0;
         }
 
-        function fillFloatDigits(number) 
-        {
+        function fillDigits(number, type) {
             if (isNaN(number)) {
                 return;
             }
-            
+            // Ajuste `number` selon les limites `totalMin` et `totalMax`
             let baseValue = number;
-            
-            if( settings.totalMin !== undefined && settings.totalMin != null && baseValue <= settings.totalMin) baseValue = settings.totalMin;
-            if( settings.totalMax !== undefined && settings.totalMax != null && baseValue >= settings.totalMax) baseValue = settings.totalMax;
 
+            if (typeof settings.totalMin === 'number' && settings.totalMin !== null && baseValue < settings.totalMin) {
+                baseValue = settings.totalMin;
+            }
+            if (typeof settings.totalMax === 'number' && settings.totalMax !== null && baseValue > settings.totalMax) {
+                baseValue = settings.totalMax;
+            }
+
+            // Gère le signe si `allowSign` est activé
             if (settings.allowSign) {
                 $(`[id^="sign_${uniqueTypeShort}_input"]`).val((baseValue < 0) ? '-' : '+');
             }
-
-            let numericValue = Math.abs(baseValue);
-
-            let [integerPart, decimalPart] = numericValue.toString().split('.');
-                   
-            const maxIntegerLength = settings.decimalPosition;
-            if (integerPart.length > maxIntegerLength) {
-                integerPart = integerPart.slice(1);
+        
+            let numericValue = Math.abs(baseValue).toString();
+            let integerPart, decimalPart;
+        
+            if (type === 'float') {
+                // Sépare la partie entière et la partie décimale pour les floats
+                [integerPart, decimalPart] = numericValue.split('.');
+                integerPart = integerPart.padStart(settings.decimalPosition, '0'); 
+                const maxDecimalLength = settings.numInputs - settings.decimalPosition;
+                decimalPart = (decimalPart || '').slice(0, maxDecimalLength).padEnd(maxDecimalLength, '0');
+            } else if (type === 'integer') {
+                // Pour les integers, utilise toute la valeur en entier
+                integerPart = numericValue;
+                decimalPart = ''; // Pas de partie décimale pour un integer
+            } else {
+                throw new Error("Type non supporté dans la fonction fillDigits.");
             }
-            integerPart = integerPart.padStart(settings.decimalPosition, '0'); 
-            
-            const maxDecimalLength = settings.numInputs - settings.decimalPosition;
-            decimalPart = (decimalPart || '').slice(0, maxDecimalLength).padEnd(maxDecimalLength, '0');
-            
+        
             const digitInputs = $(`[id^="digit_${uniqueTypeShort}_input_"]`).get();
             let index = digitInputs.length - 1;
-            
-            for (let pos = 0; pos < digitInputs.length; pos++) {
-                $(digitInputs[pos]).val(0);
-            }
-            
-            for (let digit of (integerPart + (decimalPart || '')).split('').reverse()) {
-                
+        
+            // Réinitialise les valeurs des inputs à zéro
+            digitInputs.forEach(input => $(input).val(0));
+        
+            // Parcourt les chiffres et les assigne aux inputs en respectant les min/max
+            for (let digit of (integerPart + decimalPart).split('').reverse()) {
                 const min = settings.minValues[index] !== undefined ? Math.max(digitMin, Math.min(settings.minValues[index], digitMax)) : digitMin;
                 const max = settings.maxValues[index] !== undefined ? Math.max(digitMin, Math.min(settings.maxValues[index], digitMax)) : digitMax;
-
                 let value = Math.max(min, Math.min(digit, max));
-                
+        
                 $(digitInputs[index]).val(value);
-                
                 currentDigit[index] = value;
-                
-                index--;
-            }
-        }
-
-        function fillIntegerDigits(number) 
-        {
-            if (isNaN(number)) {
-                return;
-            }
-            
-            let baseValue = number;
-            
-            if( settings.totalMin !== undefined && settings.totalMin != null && baseValue <= settings.totalMin) baseValue = settings.totalMin;
-            if( settings.totalMax !== undefined && settings.totalMax != null && baseValue >= settings.totalMax) baseValue = settings.totalMax;
-
-            if (settings.allowSign) {
-                $(`[id^="sign_${uniqueTypeShort}_input"]`).val((baseValue < 0) ? '-' : '+');
-            }
-
-            let numericValue = Math.abs(baseValue);
-
-            // Répartit les valeurs dans les inputs
-            const digitInputs = $(`[id^="digit_${uniqueTypeShort}_input_"]`).get();
-            let index = digitInputs.length - 1;
-
-            for (let pos = 0; pos < digitInputs.length; pos++) {
-                $(digitInputs[pos]).val(0);
-            }
-            
-            for (let digit of numericValue.toString().split('').reverse() ) {
-                
-                const min = settings.minValues[index] !== undefined ? Math.max(digitMin, Math.min(settings.minValues[index], digitMax)) : digitMin;
-                const max = settings.maxValues[index] !== undefined ? Math.max(digitMin, Math.min(settings.maxValues[index], digitMax)) : digitMax;
-
-                let value = Math.max(min, Math.min(digit, max));
-                
-                $(digitInputs[index]).val(value);
-                
-                currentDigit[index] = value;
-                
+        
                 index--;
             }
         }
@@ -919,8 +895,6 @@ Méthodes:
                     // Borne la valeur entre min et max
                     value = Math.max(min, Math.min(value, max));
 
-                    currentDigit[i-1] = value;
-
                     // Création du wrapper
                     const $wrapperDiv = $('<div>', {
                         class: 'text-center cla-input-wrapper',
@@ -1013,6 +987,8 @@ Méthodes:
                     $wrapperDiv.append($bottomTextDiv);
                     $inputContainer.append($wrapperDiv);
                     
+                    // initialisation des valeur courante
+                    currentDigit[i-1] = value;
                 }
 
                 $container.append($inputContainer);
@@ -1032,7 +1008,21 @@ Méthodes:
             else if (settings.type === "text" )
             {
                 const prefix = 'list';
-                    
+             
+                // Vérification de `settings.values`
+                if (!Array.isArray(settings.values) || settings.values.length === 0) {
+                    throw new Error("settings.values doit être un tableau contenant au moins une valeur.");
+                }
+
+                // Vérification de `settings.defaultValue`
+                if (typeof settings.defaultValue !== 'number' || !Number.isInteger(settings.defaultValue)) {
+                    throw new Error("settings.defaultValue doit être un entier.");
+                }
+
+                if (settings.defaultValue < 0 || settings.defaultValue >= settings.values.length) {
+                    throw new Error(`settings.defaultValue doit être compris entre 0 et ${settings.values.length - 1}.`);
+                }
+
                 // Création du wrapper
                 const $wrapperDiv = $('<div>', {
                     class: 'text-center cla-input-wrapper',
@@ -1118,6 +1108,8 @@ Méthodes:
                 $inputContainer.append($wrapperDiv);
 
                 $container.append($inputContainer);
+
+                currentValue = settings.values[settings.defaultValue];
             } 
             else
             {
@@ -1133,7 +1125,7 @@ Méthodes:
                     class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
                     id: `${prefix}_${uniqueTypeShort}_input`,
                     name: `${prefix}${prefix}`,
-                    value: 'Not Implemented',
+                    value: 'Not Available',
                     disabled: 'disabled'
                 });
 
@@ -1158,73 +1150,69 @@ Méthodes:
                     const digit = currentDigit[index];
                     return parseInt(digit, 10); // Ignorer le point décimal
                 } else {
-                    throw new Error("L'index est en dehors de la plage.");
+                    throw new Error("L'index est en dehors de la plage");
                 }
             }
             else{
-                throw new Error("Not implemented");
+                throw new Error("settings.type non disponible avec la fonction getDigitAt");
             }
         };
 
        // Fonction pour définir la valeur complète en répartissant les caractères dans les inputs
-        this.setCompleteValue = function(value,onchange = false) 
-        { 
-            if (settings.type === "integer" || settings.type === "float" ) 
-            { 
-                // Vérifie si la valeur est un nombre flottant
-                const isFloat = /^[-+]?\d+\.\d+$/.test(value);
-                // Vérifie si la valeur est un entier
-                const isInteger = /^[-+]?\d+$/.test(value);
-                // Vérifie si la valeur est du texte non numérique
-                const isText = isNaN(value);
-            
-                if ( (isFloat || isInteger) && !isText )
-                {
-                    if( settings.totalMin !== undefined && settings.totalMin != null && value <= settings.totalMin) value = settings.totalMin;
-                    if( settings.totalMax !== undefined && settings.totalMax != null && value >= settings.totalMax) value = settings.totalMax;
-                    
-                    currentDigit.fill(0);
+       this.setCompleteValue = function(value, onchange = false) 
+       { 
+            const isNumber = (val) => /^[-+]?\d+(\.\d+)?$/.test(val); // Vérifie si la valeur est un float ou un integer
+        
+            // Vérifie si le type est bien défini dans settings
+            if (settings.type === "integer" || settings.type === "float") {
+                
+                // Vérifie que la valeur est un nombre valide
+                if (isNumber(value)) {
 
-                    if (settings.type === 'float') // Sépare la partie entière et décimale
-                    {                    
-                        fillFloatDigits(value);
-                    }
-                    else if (settings.type === 'integer')
-                    {
-                        fillIntegerDigits(value);
-                    }
-                    currentValue = digitsArrayToNumber(currentDigit,(settings.type === 'float'),settings.decimalPosition);
+                    currentDigit.fill(0);
+                    fillDigits(value,settings.type);
+   
+                    currentValue = digitsArrayToNumber(currentDigit, settings.type === 'float', settings.decimalPosition);
                     
-                    // Appel de onValueChange avec $input et newValue
-                    if (onchange == true && typeof settings.onValueChange === 'function') {
+                    if (settings.allowSign) {
+                        let sign = computeSign('sign',uniqueTypeShort);
+                        currentValue *= ((sign == '+')? 1 : -1 );
+                    }
+                    // Déclenche le callback onValueChange si demandé
+                    if (onchange && typeof settings.onValueChange === 'function') {
                         settings.onValueChange(null, currentValue);
                     }
-                }
-            } else if (settings.type === "text" )
-            {
-                let index = findPosition(settings.values,value);
-                if (index != -1)
-                {
-                    $("#list_" + uniqueTypeShort + "_input").val(value);
-                    currentValue = value;
-                    // Appel de onValueChange avec $input et newValue
-                    if (onchange == true && typeof settings.onValueChange === 'function') {
-                        settings.onValueChange(null, currentValue);
-                    }
-                }
-                else
-                {
-                    throw new Error("Le texte n'est pas reconnu.");
+                } else {
+                    throw new Error("La valeur doit être un nombre flottant ou un entier.");
                 }
             } 
-            else
-            {
-                throw new Error("Not implemented");
+            else if (settings.type === "text") {
+                // Vérifie si la valeur existe dans settings.values
+                let index = findPosition(settings.values, value);
+                if (index !== -1) {
+                    $("#list_" + uniqueTypeShort + "_input").val(value);
+                    
+                    currentValue = value;
+        
+                    // Déclenche le callback onValueChange si demandé
+                    if (onchange && typeof settings.onValueChange === 'function') {
+                        settings.onValueChange(null, currentValue);
+                    }
+                } else {
+                    throw new Error("Le texte n'est pas reconnu dans les valeurs disponibles.");
+                }
+            } 
+            else {
+                throw new Error("Le type spécifié dans settings n'est pas compatible avec setCompleteValue.");
             }
         };
 
         return this;
     };
+
+    $.fn.codeInputBuilder.version = "0.0.4";
+    $.fn.codeInputBuilder.title = "CodeInputBuilder";
+    $.fn.codeInputBuilder.description = "Un plugin jQuery pour créer des champs d'input configurables pour des valeurs numériques ou flottantes et pour les textes.";
 
 }(jQuery));
 

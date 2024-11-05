@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.4
+Version: 0.0.5
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -88,30 +88,81 @@ if (typeof jQuery === 'undefined') {
 
 (function ($) {
     
+        // Fonction de validation des options
+    function initCodeInputBuilderOptions(options) {
+        const defaultOptions = {
+            type: 'integer',
+            numInputs: 1,
+            minValues: [],
+            maxValues: [],
+            values: [],
+            defaultValue: 0,
+            allowSign: false,
+            defaultSign: '+',
+            decimalPosition: 1,
+            separator: '.',
+            totalMax: null,
+            totalMin: null,
+            onValueChange: null,
+            allowScroll: true,
+            scrollSensitivity: 50,
+            requireKeyForScroll: null,
+            gap: '10px'
+        };
+
+        const settings = $.extend({}, defaultOptions, options);
+
+        function validateOptions() {
+            if (!['integer', 'float', 'text'].includes(settings.type)) {
+                throw new Error("Option 'type' invalide. Valeurs autorisées : 'integer', 'float', 'text'.");
+            }
+            if (typeof settings.numInputs !== 'number' || settings.numInputs < 1) {
+                throw new Error("Option 'numInputs' doit être un entier positif.");
+            }
+            if (settings.type !== 'text' && Array.isArray(settings.minValues) && settings.minValues.length !== settings.numInputs) {
+                throw new Error("'minValues' doit contenir autant d'éléments que 'numInputs'.");
+            }
+            if (settings.type !== 'text' && Array.isArray(settings.maxValues) && settings.maxValues.length !== settings.numInputs) {
+                throw new Error("'maxValues' doit contenir autant d'éléments que 'numInputs'.");
+            }
+            if (settings.type === 'float' && (typeof settings.decimalPosition !== 'number' || settings.decimalPosition < 1)) {
+                throw new Error("Option 'decimalPosition' doit être un entier positif pour les types flottants.");
+            }
+            if (typeof settings.defaultValue !== 'number' && typeof settings.defaultValue !== 'string') {
+                throw new Error("Option 'defaultValue' doit être un nombre ou une chaîne.");
+            }
+            if (settings.totalMin !== null && typeof settings.totalMin !== 'number') {
+                throw new Error("Option 'totalMin' doit être un nombre ou null.");
+            }
+            if (settings.totalMax !== null && typeof settings.totalMax !== 'number') {
+                throw new Error("Option 'totalMax' doit être un nombre ou null.");
+            }
+            if (settings.onValueChange !== null && typeof settings.onValueChange !== 'function') {
+                throw new Error("Option 'onValueChange' doit être une fonction ou null.");
+            }
+            if (typeof settings.allowScroll !== 'boolean') {
+                throw new Error("Option 'allowScroll' doit être un booléen.");
+            }
+            if (typeof settings.scrollSensitivity !== 'number' || settings.scrollSensitivity <= 0) {
+                throw new Error("Option 'scrollSensitivity' doit être un entier positif.");
+            }
+            if (settings.requireKeyForScroll && !['Control', 'Shift', 'Alt', 'Meta'].includes(settings.requireKeyForScroll)) {
+                throw new Error("Option 'requireKeyForScroll' doit être 'Control', 'Shift', 'Alt', 'Meta' ou null.");
+            }
+        }
+
+        validateOptions();
+
+        return settings;
+    }
+
+
    $.fn.codeInputBuilder = function (options) {
 
         // Options par défaut
-        const settings = $.extend({
-            type: 'integer', // integer ou float ou text
-            numInputs: 1, // seulement pour integer et float
-            minValues: [], // seulement pour integer et float
-            maxValues: [], // seulement pour integer et float
-            values: [], // seulement pour integer, float et text
-            defaultValue: 0, // seulement pour integer et float ou index de values pour le type text
-            allowSign: false, // Nouveau paramètre pour autoriser le signe , seulement pour integer et float
-            defaultSign: '+', // Signe par défaut (peut être "+" ou "-") seulement pour integer et float
-            decimalPosition : 1, // seulement pour integer et float
-            separator : '.', // seulement pour integer et float
-            totalMax: null, // Valeur maximale totale , seulement pour integer et float
-            totalMin: null, // Valeur minimale totale , seulement pour integer et float
-            allowScroll: true, // Active le défilement par défaut
-            scrollSensitivity: 50, // Indique le niveau de sensibilité du défilement pour ajuster la valeur.
-            requireKeyForScroll: null, // Par défaut, aucune touche n'est requise possibilité [control,shift,alt,meta]
-            gap: '10px', // Espace entre les inputs
-            onValueChange: null, // Fonction de surcharge pour les changements de valeur
-        }, options);
+        const settings = initCodeInputBuilderOptions(options);
 
-        let gIdHover = -1;
+        let gIdHover = null;
         // decimal ( 0,1,2,3,4,5,6,7,8,9) - Chiffres (numériques)
         let digitMin = 0;
         let digitMax = 9;
@@ -122,13 +173,49 @@ if (typeof jQuery === 'undefined') {
         let digiLetterMin = 0x61; // a minuscule
         let digitLetterMax = 0x7A; // z minuscule
 
-        let currentDigitSign = (settings.allowSign) ?  settings.defaultSign : null;
-        let currentDigit = new Array(settings.numInputs);
-        let currentValue = ''; // Variable pour stocker la valeur complète des inputs
+        let currentValues = {
+            value : '',
+            digits: new Array(settings.numInputs).fill(0), // Tableau pour n digits
+            sign: settings.allowSign ? settings.defaultSign : null, // Valeur pour sign
+            indexList: -1 
+        };
+
         let limitDigitMin = ( settings.totalMin !== undefined && settings.totalMin != null ) ? numberToDigitsArray(settings.totalMin) : null;
         let limitDigitMax = ( settings.totalMax !== undefined && settings.totalMax != null ) ? numberToDigitsArray(settings.totalMax) : null;
         let uniqueTypeShort = settings.type + '_' + uuidShort();
         
+        // Fonction pour mettre à jour les valeurs en fonction de l'index
+        function updateCurrentValues(index, value) {
+            if (index === "sign") {
+                currentValues.sign = value;
+            } else if (index === "list") {
+                currentValues.indexList = value;
+            } else if (index === "current") {
+                currentValues.value = value;
+            } else if (index === "fillDigits") {
+                currentValues.digits.fill(value);
+            } else if (!isNaN(index)) { // Si l'index est un nombre, on l'utilise pour mettre à jour le digit
+                currentValues.digits[index] = value;
+            } else {
+                throw new Error("Index invalide :", index);
+            }
+        }
+
+        function getCurrentValueByIndex(index) {
+            if (index === "sign") {
+                return currentValues.sign;
+            } else if (index === "list") {
+                return currentValues.indexList;
+            } else if (index === "current") {
+                return currentValues.value;
+            } else if (index === "digits") {
+                return currentValues.digits;
+            } else if (!isNaN(index)) { // Si l'index est un nombre, on l'utilise pour mettre à jour le digit
+                return currentValues.digits[index];
+            } 
+            return null;
+        }
+
         function findPosition(array, element) {
             return array.indexOf(element);
         }
@@ -139,83 +226,133 @@ if (typeof jQuery === 'undefined') {
                 return r.toString(16);
             });
         }
-        
-        function computeDigitToFloat(prefix,type) 
-        {
-            let numberString = '';
-            let cntDigit = 0;
-            $('input[id^='+prefix+'_'+type+'_input]').each(function() {
-                if (cntDigit === settings.decimalPosition) numberString += '.';
-                numberString += $(this).val(); 
-                cntDigit++;
-            });
-            return `${numberString}`;
-        }
-        
-        function computeDigitToInteger(prefix,type)
-        {
-            let cntDigit = 0;
-            let numberString = '';
-            $('input[id^='+prefix+'_'+type+'_input]').each(function() {
-                numberString += $(this).val(); 
-                cntDigit++;
-            });
-            return `${numberString}`;
-        }
-        
-        function computeSign(prefix,type)
-        {
-            let sign = '+';
-            if ($('#'+prefix+'_' + type + '_input').length)
-            {
-                sign = $('#'+prefix+'_'+type+'_input').val();
-            }
-            return `${sign}`;
+
+        function convertCodeToChar(codeTouche) {
+            return String.fromCharCode(codeTouche);
         }
 
-        function updateFinalValue($input, newValue, prefix, type, onchange = true) {
+        function getValueLimits(inputElement) {
+            const valueMin = parseInt($(inputElement).attr('data-min'), 10);
+            const valueMax = parseInt($(inputElement).attr('data-max'), 10);
+            return { valueMin, valueMax };
+        }
 
-            let finalValue;
-            
-            if (settings.type === 'integer') 
-            {
-                let numberString = computeDigitToInteger('digit',type);
-                finalValue = parseInt(numberString,10);
-                if (settings.allowSign) {
-                    let sign = computeSign('sign',type);
-                    finalValue *= ((sign == '+')? 1 : -1 );
+        function fillDigits(number, type) {
+            if (isNaN(number)) {
+                return;
+            }
+            // Ajuste `number` selon les limites `totalMin` et `totalMax`
+            let baseValue = number;
+
+            if (typeof settings.totalMin === 'number' && settings.totalMin !== null && baseValue < settings.totalMin) {
+                baseValue = settings.totalMin;
+            }
+            if (typeof settings.totalMax === 'number' && settings.totalMax !== null && baseValue > settings.totalMax) {
+                baseValue = settings.totalMax;
+            }
+
+            // Gère le signe si `allowSign` est activé
+            if (settings.allowSign) {
+                $(`[id^="sign_${type}_input"]`).val((baseValue < 0) ? '-' : '+');
+            }
+        
+            let numericValue = Math.abs(baseValue).toString();
+            let integerPart, decimalPart;
+        
+            if (settings.type === 'float') {
+                // Sépare la partie entière et la partie décimale pour les floats
+                [integerPart, decimalPart] = numericValue.split('.');
+                integerPart = integerPart.padStart(settings.decimalPosition, '0'); 
+                const maxDecimalLength = settings.numInputs - settings.decimalPosition;
+                decimalPart = (decimalPart || '').slice(0, maxDecimalLength).padEnd(maxDecimalLength, '0');
+            } else if (settings.type === 'integer') {
+                // Pour les integers, utilise toute la valeur en entier
+                integerPart = numericValue;
+                decimalPart = ''; // Pas de partie décimale pour un integer
+            } else {
+                throw new Error("Type non supporté dans la fonction fillDigits.");
+            }
+        
+            const digitInputs = $(`[id^="digits_${type}_input_"]`).get();
+            let index = digitInputs.length - 1;
+        
+            // Réinitialise les valeurs des inputs à zéro
+            digitInputs.forEach(input => $(input).val(0));
+        
+            // Parcourt les chiffres et les assigne aux inputs en respectant les min/max
+            for (let digit of (integerPart + decimalPart).split('').reverse()) {
+                const { value } = getAdjustedValueSettings(index, digit, settings, digitMin, digitMax);
+                $(digitInputs[index]).val(value);
+                updateCurrentValues(index,value);
+                index--;
+            }
+        }
+
+        function computeValueFromInputs(type) 
+        {
+            let numberString = computeDigitToValue(type);
+            numberString = addSignToValue(numberString,type);
+            // Conversion en nombre selon le type spécifié dans les paramètres
+            return settings.type === 'float' ? parseFloat(numberString) : parseInt(numberString, 10);
+        }
+
+        function computeDigitToValue(type) 
+        {
+            let numberString = '';
+            // Récupération des digits pour les types 'float' et 'integer'
+            $('input[id^=digits_'+type+'_input]').each(function(index) {
+                // Ajouter un point décimal si le type est 'float' et on atteint la position décimale
+                if (settings.type === 'float' && index === settings.decimalPosition) {
+                    numberString += '.';
+                }
+                numberString += $(this).val();
+            });
+            return numberString;
+        }
+
+        function addSignToValue(value, type) {
+            if (!settings.allowSign) return value; // Retourne la valeur sans modification si `allowSign` est désactivé
+        
+            // Récupère le signe (+ ou -) pour le type spécifié
+            const signInput =  $('input[id^=sign_'+type+'_input]');
+            const sign = signInput.length ? signInput.val() : '+';
+        
+            // Applique le signe en fonction du type de la valeur (chaîne ou nombre)
+            if (typeof value === 'string') {
+                return sign === '-' ? '-' + value : value;
+            } else if (typeof value === 'number') {
+                return sign === '-' ? -value : value;
+            }
+            return value; // Retourne la valeur originale si elle n'est ni chaîne ni nombre
+        }
+        
+        function updateFinalValue($input, newValue, type, onchange = true) {
+            // Calcul de la valeur finale selon le type de données
+            let finalValue = settings.type === 'text' ? newValue : computeValueFromInputs(type);
+        
+            // Met à jour la valeur 'current' dans currentValues
+            updateCurrentValues('current', finalValue);
+        
+            // Gestion des valeurs minimales et maximales pour les types numériques
+            if (settings.type === 'integer' || settings.type === 'float') {
+                const { totalMin, totalMax } = settings;
+        
+                // Applique les limites définies pour finalValue
+                if (totalMin !== undefined && totalMin !== null && finalValue <= totalMin) {
+                    updateCurrentValues('current', totalMin);
+                } else if (totalMax !== undefined && totalMax !== null && finalValue >= totalMax) {
+                    updateCurrentValues('current', totalMax);
+                }
+        
+                // Met à jour les digits si la valeur finale a changé
+                if (finalValue !== getCurrentValueByIndex('current')) {
+                    fillDigits(getCurrentValueByIndex('current'), type);
                 }
             }
-            else if (settings.type === 'float') 
-            {
-                let numberString = computeDigitToFloat('digit',type);
-                finalValue = parseFloat(numberString,10);
-                if (settings.allowSign) {
-                    let sign = computeSign('sign',type);
-                    finalValue *= ((sign == '+')? 1 : -1 );
-                }
-            }
-            else if (settings.type === 'text') 
-            {
-                finalValue = newValue;
-            }
-           
-            currentValue = finalValue;
-           
-            if (settings.type === 'integer' || settings.type === 'float' )
-            {
-                if( settings.totalMin !== undefined && settings.totalMin != null && currentValue <= settings.totalMin) currentValue = settings.totalMin;
-                if( settings.totalMax !== undefined && settings.totalMax != null && currentValue >= settings.totalMax) currentValue = settings.totalMax;
-                
-                if (finalValue != currentValue)
-                {
-                    fillDigits(currentValue,settings.type);
-                }
-            }
-            
-            // Appel de onValueChange avec $input et newValue
-            if (onchange == true && typeof settings.onValueChange === 'function') {
-                settings.onValueChange($input, currentValue);
+        
+            // Appel de la fonction de rappel `onValueChange` si `onchange` est vrai
+            if (onchange && typeof settings.onValueChange === 'function') {
+                settings.onValueChange($input, getCurrentValueByIndex('current'));
             }
         }
         
@@ -272,176 +409,162 @@ if (typeof jQuery === 'undefined') {
           return parseFloat(numberStr);
         }
 
-        /* Mise à jour de la valeur de l'input passe en paramètre , puis mise à jour de la valeur finale,
-        puis mise à jour de l'affichage des chiffre périphèrique en haut 
-        et en bas si la souris est dessus en survol sinon pas besoin  */
-        function setValueInput(inputElement,value,prefix,type) 
-        {
-            let id = $(inputElement).attr('id').replace(prefix+'_'+type+'_input_', '');
-            currentDigit[id-1] = value;
-            inputElement.value = value;
-            updateFinalValue($(inputElement), value, prefix , type);
-            
-            let newValue = digitsArrayToNumber(currentDigit,(settings.type === 'float'),settings.decimalPosition);
-           
-            let valueTop = parseInt(value) - 1;
-            if( settings.totalMax !== undefined && settings.totalMax != null && newValue >= settings.totalMax )
-            {
-                valueTop =  parseInt(limitDigitMax[id-1]) - 1 ;
+        function calculatePeripheralDisplay(prefix, id, value, inputElement, hover) {
+            // Vérification initiale pour le hover
+            if (hover !== gIdHover) {
+                return { index: -1, showTop: false, showBottom: false, adjustedValueTop: 0, adjustedValueBottom: 0 };
             }
-
-            let valueBottom =  parseInt(value) + 1;
-            if( settings.totalMin !== undefined && settings.totalMin != null && newValue <= settings.totalMin )
-            {
-                valueBottom =  parseInt(limitDigitMin[id-1]) + 1 ;
-            }
-            
-            let valueMin =  parseInt($(inputElement).attr('data-min'));
-            let valueMax =  parseInt($(inputElement).attr('data-max'));
-            
-            if( settings.totalMin !== undefined && settings.totalMin != null && newValue <= settings.totalMin )
-            {
-                valueMin = Math.max(valueMin, limitDigitMin[id-1]);
-            }
-            if( settings.totalMax !== undefined && settings.totalMax != null && newValue >= settings.totalMax )
-            {
-                valueMax = Math.min(valueMax, limitDigitMax[id-1]);
-            }
-            
-            if (id == gIdHover)
-            {
-                let showTop = (valueTop >= valueMin);
-                let showBottom = (valueBottom < (valueMax + 1));
-                updatePeripheralDigit(type,id, showTop, showBottom, valueTop ,valueBottom);
-            }
-        }
-
-        function convertCodeToChar(codeTouche) {
-            return String.fromCharCode(codeTouche);
-        }
-
-        function applyCode(inputElement,codeTouche,event,prefix,type,id,numInputs) 
-        {
-            const isPasteCode = (event.ctrlKey && event.key === 'paste');
-            let valueMin =  parseInt($(inputElement).attr('data-min'));
-            let valueMax =  parseInt($(inputElement).attr('data-max'));
-
-            // Vérifie si Ctrl+C est pressé, si oui, ignore le reste de la fonction
-            if ((event.ctrlKey && (event.key === 'c' || codeTouche === 67 )) 
-                    ||  (event.ctrlKey && (event.key === 'v' || codeTouche === 86 ) )
-                    ||  (!event.ctrlKey && codeTouche === 17) ) {
-
-                event.preventDefault(); // Empêcher l'action par défaut pour les autres touches
-                return; // Quitte la fonction pour éviter de réinitialiser l'input
-            }
-            if ((codeTouche >= 48 && codeTouche <= (48 + valueMax)) || // Chiffres (0-9)
-                (codeTouche >= 96 && codeTouche <= (96 + valueMax) && !isPasteCode) || // Pavé numerique (0-9)
-                codeTouche === 8 || // Touche "Retour arrière" (Backspace)
-                codeTouche === 9 || // Touche "Tabulation"
-                codeTouche === 46) { // Touche "Supprimer" (Delete)
-                if (codeTouche === 8)
-                {
-                    setValueInput(inputElement,valueMin,prefix,type);
-                    if ((id-2) == 0) id = numInputs+2;
-                    $("#"+prefix+"_"+type+"_input_"+(id-2)).focus();
+        
+            // Dictionnaire d'actions pour chaque type de `prefix`
+            const actions = {
+                "digits": () => {
+                    const newValue = digitsArrayToNumber(getCurrentValueByIndex(prefix), settings.type === 'float', settings.decimalPosition);
+                    const valueLimits = calculateValueLimits(inputElement, id, newValue, limitDigitMin, limitDigitMax);
+                    return {
+                        index: id,
+                        showTop: valueLimits.showTop,
+                        showBottom: valueLimits.showBottom,
+                        adjustedValueTop: valueLimits.valueTop,
+                        adjustedValueBottom: valueLimits.valueBottom
+                    };
+                },
+                "sign": () => {
+                    return {
+                        index: prefix,
+                        showTop: value === "-",
+                        showBottom: value === "+",
+                        adjustedValueTop: "+",
+                        adjustedValueBottom: "-"
+                    };
+                },
+                "list": () => {
+                    const { valueTop, valueBottom } = calculateAdjacentValues(value);
+                    const { valueMin, valueMax } = getValueLimits(inputElement);
+                    const valueLimits = calculateVisibilityAndAdjustLimits(valueTop, valueBottom, valueMin, valueMax);
+                    return {
+                        index: prefix,
+                        showTop: valueLimits.showTop,
+                        showBottom: valueLimits.showBottom,
+                        adjustedValueTop: settings.values[valueLimits.adjustedValueTop],
+                        adjustedValueBottom: settings.values[valueLimits.adjustedValueBottom]
+                    };
                 }
-                else if (codeTouche === 46)
-                {
-                    setValueInput(inputElement,valueMin,prefix,type);
-                    if ((id+1) == numInputs+2) id = 1;
-                    $("#"+prefix+"_"+type+"_input_"+id).focus();
+            };
+        
+            // Exécution de l'action correspondante au `prefix`, sinon retour par défaut
+            return actions[prefix] ? actions[prefix]() : { index: -1, showTop: false, showBottom: false, adjustedValueTop: 0, adjustedValueBottom: 0 };
+        }
+        
+        function setValueInput(inputElement, value, prefix, type) {
+            // Déterminer l'ID pour les types `digit` et `list`
+            const id = prefix === "digits" ? $(inputElement).attr('id').replace(`${prefix}_${type}_input_`, '') : prefix;
+            const hover = type + (prefix === "digits" ? id : prefix);
+        
+            // Dictionnaire des actions pour définir `newValue` et mettre à jour `currentValues`
+            const actions = {
+                "digits": () => {
+                    updateCurrentValues((id - 1), value);
+                    return value;
+                },
+                "sign": () => {
+                    updateCurrentValues("sign", value);
+                    return value;
+                },
+                "list": () => {
+                    const listValue = settings.values[value];
+                    updateCurrentValues("list", listValue);
+                    return listValue;
                 }
-                else if (codeTouche != 9)
-                {
-                    var lastChar = inputElement.value.slice(-1);
-                    var regex = /^[0-9]$/;
-                    if (!regex.test(lastChar)) {
-                        // Supprimer la dernière touche entrée si elle n'est pas valide
-                        setValueInput(inputElement,inputElement.value.slice(0, -1),prefix,type);
+            };
+        
+            // Exécute l'action correspondant au `prefix` pour définir `newValue`
+            const newValue = actions[prefix] ? actions[prefix]() : "";
+        
+            // Met à jour la valeur de l'input et appelle les fonctions d'actualisation
+            inputElement.value = newValue;
+            updateFinalValue($(inputElement), newValue, type);
+        
+            // Calcul des informations pour l'affichage périphérique
+            const displayData = calculatePeripheralDisplay(prefix, id, value, inputElement, hover);
+        
+            // Mise à jour de l'affichage périphérique avec les données calculées
+            updatePeripheralDigit(type, displayData.index, displayData.showTop, displayData.showBottom, displayData.adjustedValueTop, displayData.adjustedValueBottom);
+        }
+   
+
+        function applyInput(inputElement, codeTouche, event, prefix, type, id = null, numInputs = null) {
+            const isPasteCode = event.ctrlKey && event.key === 'paste';
+        
+            // Récupérer les limites pour `digit`
+            const { valueMin, valueMax } = getValueLimits(inputElement);
+        
+            // Gestion des touches de contrôle (Copier, Coller)
+            if ((event.ctrlKey && (event.key === 'c' || codeTouche === 67)) ||
+                (event.ctrlKey && (event.key === 'v' || codeTouche === 86)) ||
+                (!event.ctrlKey && codeTouche === 17)) {
+                event.preventDefault();
+                return;
+            }
+        
+            // Détermine l'action en fonction du `prefix`
+            if (prefix === "digits") {
+                // Vérifier si la touche est valide pour un chiffre
+                if ((codeTouche >= 48 && codeTouche <= (48 + valueMax)) || // Chiffres (0-9)
+                    (codeTouche >= 96 && codeTouche <= (96 + valueMax) && !isPasteCode) || // Pavé numérique (0-9)
+                    codeTouche === 8 || // Retour arrière
+                    codeTouche === 9 || // Tabulation
+                    codeTouche === 46) { // Supprimer
+                    if (codeTouche === 8) {
+                        // Gestion du retour arrière
+                        setValueInput(inputElement, valueMin, prefix, type);
+                        if ((id - 2) === 0) id = numInputs + 2;
+                        $("#" + prefix + "_" + type + "_input_" + (id - 2)).focus();
+                    } else if (codeTouche === 46) {
+                        // Gestion de la touche Supprimer
+                        setValueInput(inputElement, valueMin, prefix, type);
+                        if ((id + 1) === numInputs + 2) id = 1;
+                        $("#" + prefix + "_" + type + "_input_" + id).focus();
+                    } else if (codeTouche !== 9) {
+                        // Gestion des chiffres
+                        const lastChar = inputElement.value.slice(-1);
+                        const regex = /^[0-9]$/;
+                        if (!regex.test(lastChar)) {
+                            // Supprimer la dernière entrée si elle n'est pas valide
+                            setValueInput(inputElement, inputElement.value.slice(0, -1), prefix, type);
+                        } else {
+                            let key = event.key;
+                            if (isPasteCode) key = convertCodeToChar(codeTouche);
+                            
+                            setValueInput(inputElement, key, prefix, type);
+                            $("#" + prefix + "_" + type + "_input_" + id).focus();
+                        }
                     }
-                    else
-                    {
-                        let key = event.key;
-                        if (isPasteCode)
-                            key = convertCodeToChar(codeTouche);
-                        
-                        setValueInput(inputElement,key,prefix,type);
-                        $("#"+prefix+"_"+type+"_input_"+id).focus();
-                    }
+                } else {
+                    // Valeur non valide pour un digit
+                    setValueInput(inputElement, valueMin, prefix, type);
+                    event.preventDefault();
+                }
+            } else if (prefix === "sign") {
+                // Gestion des signes
+                if (event.key === '+' || event.key === '-') {
+                    setValueInput(inputElement, event.key, prefix, type);
+                } else if (codeTouche !== 9) {
+                    // Valeur non valide pour un signe
+                    setValueInput(inputElement, "+", prefix, type);
+                    event.preventDefault();
                 }
             }
-            else {
-                setValueInput(inputElement,valueMin,prefix,type);
-                event.preventDefault(); // Empêcher l'action par défaut pour les autres touches
-            }
         }
-
-        function setValueInputSign(inputElement,value,prefix,type) 
-        {
-            currentDigitSign = value;
-            inputElement.value = value;
-            updateFinalValue($(inputElement), value, prefix, type);
-
-            let showTop = (value == "-");
-            let showBottom = (value == "+");
-            
-            updatePeripheralDigit(type,prefix,showTop,showBottom,"+","-");
-        }
-
-        function setValueInputList(inputElement,value,prefix,type) 
-        {
-            inputElement.value = settings.values[value];
-            updateFinalValue($(inputElement), settings.values[value], prefix, type);
-
-            let valueTop = parseInt(value) - 1;
-            let valueBottom =  parseInt(value) + 1;
-
-            let valueMin =  parseInt($(inputElement).attr('data-min'));
-            let valueMax =  parseInt($(inputElement).attr('data-max'));
-            
-            let showTop = (valueTop >= valueMin);
-            let showBottom = (valueBottom < (valueMax + 1));
-            
-            if (valueTop < valueMin ) valueTop = valueMin;
-            if (valueTop > valueMax ) valueBottom = valueMax;
-
-            updatePeripheralDigit(type,prefix,showTop,showBottom,settings.values[valueTop],settings.values[valueBottom]);
-        }
-
-        function applySign(inputElement,codeTouche,event,prefix,type) 
-        {
-            
-            if (event.key === '+' || event.key === '-') {
-                setValueInputSign(inputElement,event.key,prefix,type);
-            } 
-            else if (codeTouche != 9)
-            {
-                setValueInputSign(inputElement,"+",prefix,type);
-                event.preventDefault(); // Empêcher l'action par défaut pour les autres touches
-            }
-        }
-
-        function touchCode(inputElement,event,prefix,type,id,numInputs) 
-        {
+        
+        function handleTouchInput(inputElement, event, prefix, type, id = null, numInputs = null) {
             const originalEvent = event.originalEvent || event;
-
+        
             // Récupérer le code de la touche appuyée
-            var codeTouche = originalEvent.keyCode || originalEvent.which;
-            if (codeTouche != 16) // Touche "Maj enfoncée"
-            {
-                applyCode(inputElement,codeTouche,originalEvent,prefix,type,id,numInputs);
-            }
-        }
-
-        /* Gestionnaire d'appui sur les touche du clavier pour les touche + et - du clavier */
-        function touchSign(inputElement, event, prefix, type) 
-        {
-            const originalEvent = event.originalEvent || event;
-
-            var codeTouche = originalEvent.keyCode || originalEvent.which;
-            if (codeTouche != 16) // Touche "Maj enfoncée"
-            {
-                applySign(inputElement,codeTouche,originalEvent,prefix,type);
+            const codeTouche = originalEvent.keyCode || originalEvent.which;
+        
+            // Vérifie si la touche "Maj" (Shift) n'est pas enfoncée
+            if (codeTouche !== 16) {
+                applyInput(inputElement, codeTouche, originalEvent, prefix, type, id, numInputs);
             }
         }
 
@@ -474,127 +597,175 @@ if (typeof jQuery === 'undefined') {
                 return; // Ignore les petits défilements
             }
 
-            if (prefix == 'digit')
+            if (prefix == "digits")
             {
                 let currentValue = parseInt(inputElement.value, 10);
-
-                // Incrémenter ou décrémenter la valeur en fonction de la direction du scroll
-                currentValue += delta < 0 ? -1 : 1;
-
-                let valueMin = parseInt($(inputElement).attr('data-min'));
-                let valueMax = parseInt($(inputElement).attr('data-max'));
-
-                // Contrôler les limites de la valeur
-                if (currentValue < valueMin) currentValue = valueMin;
-                if (currentValue > valueMax) currentValue = valueMax;
-
-                setValueInput(inputElement,currentValue,prefix,type);
-            } 
-            else if (prefix == 'sign')
-            {
-                let currentValue = 0;
-
-                if (inputElement.value == "-") currentValue = 0;
-                if (inputElement.value == "+") currentValue = 1;
-
-                // Incrémenter ou décrémenter la valeur en fonction de la direction du scroll
-                currentValue += delta < 0 ? -1 : 1;
-
-                // Contrôler les limites de la valeur
-                if (currentValue < 0) setValueInputSign(inputElement,"+",prefix,type);
-                if (currentValue > 1) setValueInputSign(inputElement,"-",prefix,type);
-            }
-            else if (prefix == 'list')
-            {
-                let currentValue = findPosition(settings.values,inputElement.value);
                 if (currentValue != -1)
                 {
                     // Incrémenter ou décrémenter la valeur en fonction de la direction du scroll
                     currentValue += delta < 0 ? -1 : 1;
-                    
-                    let valueMin = parseInt($(inputElement).attr('data-min'));
-                    let valueMax = parseInt($(inputElement).attr('data-max'));
-    
-                    // Contrôler les limites de la valeur
-                    if (currentValue < valueMin) currentValue = valueMin;
-                    if (currentValue > valueMax) currentValue = valueMax;
+                    const { valueMin, valueMax } = getValueLimits(inputElement);
+                    const {adjustedValue} = adjustLimits(currentValue,null,null,valueMin,valueMax);
+                    currentValue = adjustedValue;
+                    setValueInput(inputElement,currentValue,prefix,type);
                 }
-                setValueInputList(inputElement,currentValue,prefix,type);
-            }
-            
-        }
-
-        function hoverMouseEnter(inputElement,prefix,type) 
-        {
-            if (prefix == "digit")
-            {
-                let id = $(inputElement).attr('id').replace(prefix+'_'+type+'_input_', '');
-
-                let valueTop =  parseInt($(inputElement).val()) - 1;
-                if( settings.totalMax !== undefined && settings.totalMax != null && currentValue >= settings.totalMax )
-                {
-                    valueTop =  parseInt(limitDigitMax[id-1]) - 1 ;
-                }
-    
-                let valueBottom =  parseInt($(inputElement).val()) + 1;
-                if( settings.totalMin !== undefined && settings.totalMin != null && currentValue <= settings.totalMin )
-                {
-                    valueBottom =  parseInt(limitDigitMin[id-1]) + 1 ;
-                }
-                
-                let valueMin =  parseInt($(inputElement).attr('data-min'));
-                let valueMax =  parseInt($(inputElement).attr('data-max'));
-                
-                if( settings.totalMin !== undefined && settings.totalMin != null && currentValue <= settings.totalMin )
-                {
-                    valueMin = Math.max(valueMin, limitDigitMin[id-1]);
-                }
-                if( settings.totalMax !== undefined && settings.totalMax != null && currentValue >= settings.totalMax )
-                {
-                    valueMax = Math.min(valueMax, limitDigitMax[id-1]);
-                }
-
-                gIdHover = id;
-
-                let showTop = (valueTop >= valueMin);
-                let showBottom = (valueBottom < (valueMax + 1));
-
-                updatePeripheralDigit(type,id, showTop, showBottom, valueTop ,valueBottom);
-            }
+            } 
             else if (prefix == "sign")
             {
-                let showTop = ($(inputElement).val() == "-");
-                let showBottom = ($(inputElement).val() == "+");
-                gIdHover = prefix;
-                updatePeripheralDigit(type,prefix,showTop,showBottom,"+","-");
+                let currentValue = -1;
+
+                if (inputElement.value == "-") currentValue = 0;
+                if (inputElement.value == "+") currentValue = 1;
+
+                if (currentValue != -1)
+                {
+                    // Incrémenter ou décrémenter la valeur en fonction de la direction du scroll
+                    currentValue += delta < 0 ? -1 : 1;
+                    // Contrôler les limites de la valeur
+                    if (currentValue < 0) setValueInput(inputElement,"+",prefix,type);
+                    if (currentValue > 1) setValueInput(inputElement,"-",prefix,type);
+                }
             }
             else if (prefix == "list")
             {
                 let currentValue = findPosition(settings.values,inputElement.value);
                 if (currentValue != -1)
                 {
-                    gIdHover = prefix;
+                    // Incrémenter ou décrémenter la valeur en fonction de la direction du scroll
+                    currentValue += delta < 0 ? -1 : 1;
+                    const { valueMin, valueMax } = getValueLimits(inputElement);
+                    const {adjustedValue} = adjustLimits(currentValue,null,null,valueMin,valueMax);
+                    currentValue = adjustedValue;
 
-                    let valueTop = parseInt(currentValue) - 1;
-                    let valueBottom =  parseInt(currentValue) + 1;
+                    setValueInput(inputElement,currentValue,prefix,type);
+                }
+            }
+        }
+
+        function calculateAdjacentValues(value) 
+        {
+            const currentValue = parseInt(value, 10);
+            const valueTop = currentValue - 1;
+            const valueBottom = currentValue + 1;
+            return { valueTop, valueBottom };
+        }
+
+        function calculateValueLimits(inputElement, id, currentValue, limitDigitMin, limitDigitMax) 
+        {
+            let {valueTop,valueBottom} = calculateAdjacentValues($(inputElement).val());
+       
+            // Ajuster les valeurs top et bottom en fonction des limites globales
+            if (settings.totalMax !== undefined && settings.totalMax !== null && currentValue >= settings.totalMax) {
+                valueTop = parseInt(limitDigitMax[id - 1]) - 1;
+            }
+            if (settings.totalMin !== undefined && settings.totalMin !== null && currentValue <= settings.totalMin) {
+                valueBottom = parseInt(limitDigitMin[id - 1]) + 1;
+            }
+
+            let { valueMin, valueMax } = getValueLimits(inputElement);
+
+            // Récupérer les limites spécifiques de l'élément
+            valueMin = Math.max(valueMin, settings.totalMin ?? -Infinity);
+            valueMax = Math.min(valueMax, settings.totalMax ?? Infinity);
         
-                    let valueMin =  parseInt($(inputElement).attr('data-min'));
-                    let valueMax =  parseInt($(inputElement).attr('data-max'));
-                    
-                    let showTop = (valueTop >= valueMin);
-                    let showBottom = (valueBottom < (valueMax + 1));
-                    
-                    if (valueTop < valueMin ) valueTop = valueMin;
-                    if (valueTop > valueMax ) valueBottom = valueMax;
+            // Ajuster les valeurs min et max en fonction des limites de digits
+            if (settings.totalMin !== undefined && settings.totalMin !== null && currentValue <= settings.totalMin) {
+                valueMin = Math.max(valueMin, limitDigitMin[id - 1]);
+            }
+            if (settings.totalMax !== undefined && settings.totalMax !== null && currentValue >= settings.totalMax) {
+                valueMax = Math.min(valueMax, limitDigitMax[id - 1]);
+            }
         
-                    updatePeripheralDigit(type,prefix,showTop,showBottom,settings.values[valueTop],settings.values[valueBottom]);
+            // Calculer les indicateurs de visibilité pour top et bottom
+            const showTop = (valueTop >= valueMin);
+            const showBottom = (valueBottom <= valueMax);
+        
+            return { valueTop, valueBottom, valueMin, valueMax, showTop, showBottom };
+        }
+
+        function adjustLimits(value, valueTop = null, valueBottom = null, valueMin, valueMax) {
+            // Si seule la valeur unique est fournie, ajuster selon les limites min/max
+            if (valueTop === null && valueBottom === null) {
+                const adjustedValue = Math.max(valueMin, Math.min(value, valueMax));
+                return { adjustedValue };
+            }
+            
+            // Ajuster les valeurs si elles sont en dehors des limites
+            const adjustedValueTop = valueTop !== null ? Math.max(valueTop, valueMin) : null;
+            const adjustedValueBottom = valueBottom !== null ? Math.min(valueBottom, valueMax) : null;
+        
+            // Retourner en fonction des valeurs fournies
+            if (valueTop !== null && valueBottom === null) {
+                return { adjustedValueTop };
+            } else if (valueBottom !== null && valueTop === null) {
+                return { adjustedValueBottom };
+            }
+            
+            // Si les deux valeurs sont fournies, renvoyer l'objet complet
+            return {
+                adjustedValueTop,
+                adjustedValueBottom
+            };
+        }
+
+        function calculateVisibilityAndAdjustLimits(valueTop, valueBottom, valueMin, valueMax) {
+            // Calculer la visibilité en fonction des valeurs et des limites
+            const showTop = valueTop >= valueMin;
+            const showBottom = valueBottom <= valueMax;
+        
+            // Ajuster les valeurs si elles sont en dehors des limites
+            const {adjustedValueTop,adjustedValueBottom} = adjustLimits(null,valueTop,valueBottom,valueMin,valueMax);
+        
+            return {
+                showTop,
+                showBottom,
+                adjustedValueTop,
+                adjustedValueBottom
+            };
+        }
+        
+        function hoverMouseEnter(inputElement,prefix,type) 
+        {
+            let id = parseInt($(inputElement).attr('id').replace(prefix+'_'+type+'_input_', ''));
+           
+            if (prefix == "digits")
+            {
+                gIdHover = type + id;
+                let valueLimites = calculateValueLimits(inputElement,id, getCurrentValueByIndex('current'),limitDigitMin,limitDigitMax);
+                updatePeripheralDigit(type,id, valueLimites.showTop, valueLimites.showBottom, valueLimites.valueTop, valueLimites.valueBottom);
+            }
+            else if (prefix == "sign")
+            {
+                gIdHover = type + prefix;
+                let showTop = ($(inputElement).val() == "-");
+                let showBottom = ($(inputElement).val() == "+");
+
+                updatePeripheralDigit(type,prefix,showTop,showBottom,"+","-");
+            }
+            else if (prefix == "list")
+            {
+                gIdHover = type + prefix;
+                let currentValue = findPosition(settings.values,inputElement.value);
+
+                console.log(currentValue);
+
+                if (currentValue != -1)
+                {
+                    const valueTop = parseInt(currentValue) - 1;
+                    const valueBottom =  parseInt(currentValue) + 1;
+        
+                    const { valueMin, valueMax } = getValueLimits(inputElement);
+                    
+                    let valueLimites = calculateVisibilityAndAdjustLimits(valueTop,valueBottom,valueMin,valueMax);
+
+                    updatePeripheralDigit(type,prefix,valueLimites.showTop,valueLimites.showBottom,settings.values[valueLimites.adjustedValueTop],settings.values[valueLimites.adjustedValueBottom]);
                 }
             }
         }
 
         function hoverMouseLeave(inputElement,prefix,type) 
         {
-            if (prefix == "digit")
+            if (prefix == "digits")
             {
                 let id = $(inputElement).attr('id').replace(prefix+'_'+type+'_input_', '');
                 updatePeripheralDigit(type,id, false, false, 0 ,0);
@@ -603,155 +774,102 @@ if (typeof jQuery === 'undefined') {
             {
                 updatePeripheralDigit(type,prefix,false, false, 0 ,0);
             }
-            gIdHover = 0;
+            gIdHover = null;
         }
 
-        function fillDigits(number, type) {
-            if (isNaN(number)) {
-                return;
-            }
-            // Ajuste `number` selon les limites `totalMin` et `totalMax`
-            let baseValue = number;
-
-            if (typeof settings.totalMin === 'number' && settings.totalMin !== null && baseValue < settings.totalMin) {
-                baseValue = settings.totalMin;
-            }
-            if (typeof settings.totalMax === 'number' && settings.totalMax !== null && baseValue > settings.totalMax) {
-                baseValue = settings.totalMax;
-            }
-
-            // Gère le signe si `allowSign` est activé
-            if (settings.allowSign) {
-                $(`[id^="sign_${uniqueTypeShort}_input"]`).val((baseValue < 0) ? '-' : '+');
-            }
+        function toggleHoverEffect(element, prefix, type, isMouseEnter) {
+            const suffix = $(element).attr('id').replace(`${prefix}_${type}_div_`, '');
+            const position = suffix.includes('top') ? 'top' : 'bottom';
+            const id = suffix.replace(`${position}_`, '');
+            const selector = `.cla-input-wrapper .${position}-text-${type}-${id}`;
         
-            let numericValue = Math.abs(baseValue).toString();
-            let integerPart, decimalPart;
-        
-            if (type === 'float') {
-                // Sépare la partie entière et la partie décimale pour les floats
-                [integerPart, decimalPart] = numericValue.split('.');
-                integerPart = integerPart.padStart(settings.decimalPosition, '0'); 
-                const maxDecimalLength = settings.numInputs - settings.decimalPosition;
-                decimalPart = (decimalPart || '').slice(0, maxDecimalLength).padEnd(maxDecimalLength, '0');
-            } else if (type === 'integer') {
-                // Pour les integers, utilise toute la valeur en entier
-                integerPart = numericValue;
-                decimalPart = ''; // Pas de partie décimale pour un integer
-            } else {
-                throw new Error("Type non supporté dans la fonction fillDigits.");
-            }
-        
-            const digitInputs = $(`[id^="digit_${uniqueTypeShort}_input_"]`).get();
-            let index = digitInputs.length - 1;
-        
-            // Réinitialise les valeurs des inputs à zéro
-            digitInputs.forEach(input => $(input).val(0));
-        
-            // Parcourt les chiffres et les assigne aux inputs en respectant les min/max
-            for (let digit of (integerPart + decimalPart).split('').reverse()) {
-                const min = settings.minValues[index] !== undefined ? Math.max(digitMin, Math.min(settings.minValues[index], digitMax)) : digitMin;
-                const max = settings.maxValues[index] !== undefined ? Math.max(digitMin, Math.min(settings.maxValues[index], digitMax)) : digitMax;
-                let value = Math.max(min, Math.min(digit, max));
-        
-                $(digitInputs[index]).val(value);
-                currentDigit[index] = value;
-        
-                index--;
-            }
-        }
-
-        function toggleHoverEffect(element, prefix , type, isMouseEnter) {
-            let suffix = $(element).attr('id').replace(prefix+'_' + type + '_div_', '');
-            let id, selector;
-   
-            if (prefix == "digit")
-            {
-                if (suffix.includes('top')) {
-                    id = suffix.replace('top_', '');
-                    selector = `.cla-input-wrapper .top-text-${type}-${id}`;
-                } else {
-                    id = suffix.replace('bottom_', '');
-                    selector = `.cla-input-wrapper .bottom-text-${type}-${id}`;
-                }
-            }
-            else if ( prefix == "sign" || prefix == "list" )
-            {
-                selector = `.cla-input-wrapper .${suffix}-text-${type}-${prefix}`;
-            }
-
-            $(selector).css("visibility", isMouseEnter ? "visible" : "hidden");
-            $(selector).css("opacity", isMouseEnter ? "1" : "0");
+            $(selector).css({
+                visibility: isMouseEnter ? "visible" : "hidden",
+                opacity: isMouseEnter ? "1" : "0"
+            });
         }
 
         function handleTextDivClick(element, prefix, type) {
             
             let suffix = $(element).attr('id').replace(prefix+'_' + type + '_div_', '');
-            let id, value,valueMin , valueMax, showTop, showBottom, valueTop, valueBottom;
+            let id, value,valueTop, valueBottom, valueLimites;
         
-            if (prefix == "digit")
+            if (prefix == "digits")
             {
                 if (suffix.includes('top')) {
                     id = suffix.replace('top_', '');
+                    const { valueMin } = getValueLimits( "#"+prefix+"_" + type + "_input_" + id );
                     value = parseInt($(element).html());
                     $("#"+prefix+"_" + type + "_input_" + id).val(value);
-                    updateFinalValue($("#"+prefix+"_" + type + "_input_" + id), value, prefix, type);
-
-                    gIdHover = id;
-                    valueMin = parseInt($("#"+prefix+"_" + type + "_input_" + id).attr('data-min'));
+                    updateFinalValue($("#"+prefix+"_" + type + "_input_" + id), value, type);
+                    gIdHover = type + id;
                     valueTop = value - 1;
-                    showTop = (valueTop >= valueMin);
-                    updatePeripheralDigit(type, id, showTop, false, valueTop, 0);
-                    gIdHover = 0;
+                    valueLimites = calculateValueLimits($("#"+prefix+"_" + type + "_input_" + id),id,valueTop,limitDigitMin, limitDigitMax);
+                    updatePeripheralDigit(type, id, valueLimites.showTop, false, valueLimites.valueTop, 0);
+                    gIdHover = null;
                 } else {
                     id = suffix.replace('bottom_', '');
                     value = parseInt($(element).html());
                     $("#"+prefix+"_" + type + "_input_" + id).val(value);
-                    updateFinalValue($("#"+prefix+"_" + type + "_input_" + id), value, prefix, type);
-
-                    gIdHover = id;
-                    valueMax = parseInt($("#"+prefix+"_"+ type + "_input_" + id).attr('data-max'));
+                    updateFinalValue($("#"+prefix+"_" + type + "_input_" + id), value, type);
+                    gIdHover = type + id;
                     valueBottom = value + 1;
-                    showBottom = (valueBottom < (valueMax + 1));
-                    updatePeripheralDigit(type, id, false, showBottom, 0, valueBottom);
-                    gIdHover = 0;
+                    valueLimites = calculateValueLimits($("#"+prefix+"_" + type + "_input_" + id),id,valueBottom,limitDigitMin, limitDigitMax);
+                    updatePeripheralDigit(type, id, false, valueLimites.showBottom, 0, valueLimites.valueBottom);
+                    gIdHover = null;
                 }
             }
             else if ( prefix == "sign" )
             {
-                $("#"+prefix+"_" + type + "_input").val($(element).html());
-                updateFinalValue($("#"+prefix+"_" + type + "_input"),$(element).html(),prefix, type);
-                gIdHover = prefix;
+                $("#"+prefix+"_" + type + "_input_"+prefix).val($(element).html());
+                updateFinalValue($("#"+prefix+"_" + type + "_input_"+prefix),$(element).html(), type);
+                gIdHover = type + prefix;
                 updatePeripheralDigit(type,prefix, false, false, 0 ,0);
-                gIdHover = 0;
+                gIdHover = null;
             }
             else if ( prefix == "list" )
             {
-                $("#"+prefix+"_" + type + "_input").val($(element).html());
-                updateFinalValue($("#"+prefix+"_" + type + "_input"),$(element).html(),prefix, type);
-                gIdHover = prefix;
-
+                const { valueMin,valueMax } = getValueLimits( "#"+prefix+"_" + type + "_input_"+prefix );
+                $("#"+prefix+"_" + type + "_input_"+prefix).val($(element).html());
+                updateFinalValue($("#"+prefix+"_" + type + "_input_"+prefix),$(element).html(), type);
+                gIdHover = type + prefix;
                 let currentValue = findPosition(settings.values,$(element).html());
-
                 if (suffix.includes('top')) {
-                    valueMin = parseInt($("#"+prefix+"_" + type + "_input").attr('data-min'));
+
                     valueTop = currentValue - 1;
-                    showTop = (valueTop >= valueMin);
-                    if (valueTop <  valueMin)  valueTop = valueMin;
-                    updatePeripheralDigit(type, prefix, showTop, false, settings.values[valueTop], "...");
+                    valueLimites = calculateVisibilityAndAdjustLimits(valueTop,0,valueMin,0);
+                    updatePeripheralDigit(type, prefix, valueLimites.showTop, false, settings.values[valueLimites.adjustedValueTop], "...");
                 } else {
-                    valueMax = parseInt($("#"+prefix+"_"+ type + "_input").attr('data-max'));
+
                     valueBottom = currentValue + 1;
-                    showBottom = (valueBottom < (valueMax + 1));
-                    if (valueTop > valueBottom)  valueBottom = valueMax
-                    updatePeripheralDigit(type, prefix, false, showBottom, "...", settings.values[valueBottom]);
+                    valueLimites = calculateVisibilityAndAdjustLimits(0,valueBottom,0,valueMax);
+                    updatePeripheralDigit(type, prefix, false, valueLimites.showBottom, "...", settings.values[valueLimites.adjustedValueBottom]);
                 }
-                gIdHover = 0;
+                gIdHover = null;
             }
         }
 
-        function handlePasteEvent(element, event, type, prefix , basename) {
+        function getAdjustedValueSettings(index, inputValue = null, settings, digitMin, digitMax) {
+            const min = settings.minValues[index] !== undefined 
+                ? Math.max(digitMin, Math.min(settings.minValues[index], digitMax)) 
+                : digitMin;
+        
+            const max = settings.maxValues[index] !== undefined 
+                ? Math.max(digitMin, Math.min(settings.maxValues[index], digitMax)) 
+                : digitMax;
+        
+            let value = (inputValue != null) ? inputValue : ( settings.values[index] !== undefined 
+                ? settings.values[index] 
+                : settings.defaultValue);
+    
+            // Ajuster `value` pour qu'il soit compris entre `min` et `max`
+            value = Math.max(min, Math.min(value, max));
 
+            return { min, max, value };
+        }
+
+        function handlePasteEvent(element, event, type, prefix , basename) 
+        {
             const originalEvent = event.originalEvent || event;
 
             originalEvent.preventDefault();
@@ -765,6 +883,49 @@ if (typeof jQuery === 'undefined') {
             applyCode(element, codeTouche, originalEvent, prefix,type , id, settings.numInputs);
         }
 
+        function createTextElement(prefix, uniqueTypeShort, id, position, text) {
+            return $('<div>', {
+                class:  (id != null) ? `cla-hover-text ${position}-text-${uniqueTypeShort}-${id}` : `cla-hover-text ${position}-text-${uniqueTypeShort}` ,
+                id: (id != null) ? `${prefix}_${uniqueTypeShort}_div_${position}_${id}` : `${prefix}_${uniqueTypeShort}_div_${position}`,
+                text: text
+            }).hover(
+                function() { toggleHoverEffect(this, prefix, uniqueTypeShort, true); },
+                function() { toggleHoverEffect(this, prefix, uniqueTypeShort, false); }
+            ).on('click', function () { handleTextDivClick(this, prefix, uniqueTypeShort); });
+        }
+
+        function createInputElement(prefix, uniqueTypeShort, id, min, max, value , maxLength = '1' , isDisabled = false) {
+            const $input = $('<input>', {
+                type: 'text',
+                class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
+                maxLength: maxLength,
+                id: ( (id != null) ? `${prefix}_${uniqueTypeShort}_input_${id}` : `${prefix}_${uniqueTypeShort}_input` ) ,
+                name: (id != null) ? `${prefix}${id}` : `${prefix}` ,
+                autocomplete: 'off',
+                value: value,
+                'data-min': min,
+                'data-max': max,
+                disabled: isDisabled ? 'disabled' : null
+            });
+
+            // Ajouter les événements
+            $input.on('keyup', (event) => handleTouchInput(event.currentTarget, event, prefix, uniqueTypeShort, i))
+                .on('wheel', (event) => adjustOnScroll(event, event.currentTarget, prefix, uniqueTypeShort))
+                .hover(
+                    function () { hoverMouseEnter(this, prefix, uniqueTypeShort); },
+                    function () { hoverMouseLeave(this, prefix, uniqueTypeShort); }
+                )
+                .on('paste', (event) => handlePasteEvent(this, event, uniqueTypeShort, prefix, `${prefix}_${uniqueTypeShort}_input`))
+                .on('copy', (event) => {
+                    event.preventDefault();
+                    navigator.clipboard.writeText($(this).val());
+                });
+
+            return $input;
+        }
+
+        // Fonction pour ajouter un élément d'entrée complet (texte supérieur, champ d'entrée, texte inférieur)
+      
         // Création des inputs dans chaque élément sélectionné
         this.each(function () {
             const $container = $(this);
@@ -775,12 +936,22 @@ if (typeof jQuery === 'undefined') {
                 css: { display: 'flex', 'justify-content': 'center', 'align-items' : 'center' , gap: settings.gap } // Appliquer le gap défini dans les settings
             });
 
+            function addInputElement(prefix, id, min, max, value, maxLength = '1', isDisabled = false) {
+                const $wrapperDiv = $('<div>', { class: 'text-center cla-input-wrapper', css: { position: 'relative' } });
+                $wrapperDiv.append(createTextElement(prefix, uniqueTypeShort, id, "top", min ?? "..."));
+                $wrapperDiv.append(createInputElement(prefix, uniqueTypeShort, id, min, max, value, maxLength, isDisabled));
+                $wrapperDiv.append(createTextElement(prefix, uniqueTypeShort, id, "bottom", min ?? "..."));
+                $inputContainer.append($wrapperDiv);
+            }
+    
             if (settings.type === "integer" || settings.type === "float" ) 
             { 
 
                 if (settings.allowSign) {
                     
-                    const prefix = "sign";
+                    addInputElement("sign", "sign", null, null, getCurrentValueByIndex("sign"));
+
+                    /*const prefix = "sign";
                     
                     // Création du wrapper
                     const $wrapperDiv = $('<div>', {
@@ -788,96 +959,26 @@ if (typeof jQuery === 'undefined') {
                         css: { position: 'relative' }
                     });
 
-                    // Élément texte supérieur
-                    const $topTextDiv = $('<div>', {
-                        class: `cla-hover-text top-text-${uniqueTypeShort}-${prefix}`,
-                        id: `${prefix}_${uniqueTypeShort}_div_top`,
-                        text: "0"
-                    });
-                    
-                    $topTextDiv.hover(
-                        function() { // mouseenter
-                            toggleHoverEffect(this, prefix, uniqueTypeShort, true);
-                        },
-                        function() { // mouseleave
-                            toggleHoverEffect(this, prefix, uniqueTypeShort, false);
-                        }
-                    );
-                    
-                    $topTextDiv.on('click', function(event) {
-                        handleTextDivClick(this, prefix, uniqueTypeShort);
-                    });
-                    
-                    $wrapperDiv.append($topTextDiv);
+                    $wrapperDiv.append(createTextElement(prefix, uniqueTypeShort, prefix, "top", "0"));
+                    $wrapperDiv.append(createInputElement(prefix, uniqueTypeShort, null, null, null, getCurrentValueByIndex(prefix)));
+                    $wrapperDiv.append(createTextElement(prefix, uniqueTypeShort, prefix, "bottom", "0"));
 
-                    // Création de l'input avec onkeyup, onwheel, et onhover, et onpaste
-                    const $input = $('<input>', {
-                        type: 'text',
-                        class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
-                        maxLength: '1',
-                        id: `${prefix}_${uniqueTypeShort}_input`,
-                        name: `${prefix}${prefix}`,
-                        autocomplete: 'off',
-                        value: currentDigitSign
-                    });
-
-                    $input.on('keyup', function(event) {
-                        touchSign(event.currentTarget, event, prefix ,uniqueTypeShort);
-                    });
-
-                    $input.on('wheel', function(event) {
-                        adjustOnScroll(event, event.currentTarget, prefix, uniqueTypeShort);
-                    });
-                    
-                    $input.hover(
-                        function() { // mouseenter
-                            hoverMouseEnter(this, prefix, uniqueTypeShort);
-                        },
-                        function() { // mouseleave
-                            hoverMouseLeave(this, prefix, uniqueTypeShort);
-                        }
-                    );
-                    
-                    $input.on('paste', function(event) {
-                        handlePasteEvent(this, event, uniqueTypeShort, prefix, `${prefix}_${uniqueTypeShort}_input`);
-                    });
-                    
-                    $input.on('copy', function(event) {
-                        event.preventDefault(); // Empêche le comportement par défaut
-                        navigator.clipboard.writeText($(this).val());
-                    });
-
-                    $wrapperDiv.append($input);
-
-                    // Élément texte inférieur
-                    const $bottomTextDiv = $('<div>', {
-                        class: `cla-hover-text bottom-text-${uniqueTypeShort}-${prefix}`,
-                        id: `${prefix}_${uniqueTypeShort}_div_bottom`,
-                        text: "0"
-                    });
-                    
-                    $bottomTextDiv.hover(
-                        function() { // mouseenter
-                            toggleHoverEffect(this, prefix, uniqueTypeShort, true);
-                        },
-                        function() { // mouseleave
-                            toggleHoverEffect(this, prefix, uniqueTypeShort, false);
-                        }
-                    );
-                    
-                    $bottomTextDiv.on('click', function(event) {
-                        handleTextDivClick(this, prefix, uniqueTypeShort);
-                    });
-                    
-                    $wrapperDiv.append($bottomTextDiv);
-                    $inputContainer.append($wrapperDiv);
-                
+                    $inputContainer.append($wrapperDiv);*/
                 }
 
                 for (let i = 1; i <= settings.numInputs; i++) {
                     
+
+                    if (settings.type === 'float' && (i - 1) === settings.decimalPosition) {
+                        $inputContainer.append($('<div>', { class: 'col-1', html: `<div><h2 class="my-5">${settings.separator}</h2></div>` }));
+                    }
+        
+                    const { min, max, value } = getAdjustedValueSettings(i - 1, null, settings, digitMin, digitMax);
+                    addInputElement("digits", i, min, max, value);
+                    updateCurrentValues(i - 1, value);
+
                     // Insère le div du point décimal si l'index correspond à `decimalPosition`
-                    if (settings.type === 'float' && (i-1) === settings.decimalPosition) {
+                   /* if (settings.type === 'float' && (i-1) === settings.decimalPosition) {
                         const $decimalPoint = $('<div>', {
                             class: 'col-1',
                             html: '<div><h2 class="my-5">'+settings.separator+'</h2></div>'
@@ -885,15 +986,8 @@ if (typeof jQuery === 'undefined') {
                         $inputContainer.append($decimalPoint);
                     }                
                     
-                    const prefix = 'digit';
-                    
-                    // Utiliser les valeurs min et max spécifiques si fournies
-                    const min = settings.minValues[i - 1] !== undefined ? Math.max(digitMin, Math.min(settings.minValues[i - 1], digitMax)) : digitMin;
-                    const max = settings.maxValues[i - 1] !== undefined ? Math.max(digitMin, Math.min(settings.maxValues[i - 1], digitMax)) : digitMax;
-                    let value = settings.values[i - 1] !== undefined ? settings.values[i - 1] : settings.defaultValue;
-
-                    // Borne la valeur entre min et max
-                    value = Math.max(min, Math.min(value, max));
+                    const prefix = "digits";
+                    const { min, max, value } = getAdjustedValueSettings(i - 1, null, settings, digitMin, digitMax);
 
                     // Création du wrapper
                     const $wrapperDiv = $('<div>', {
@@ -901,244 +995,52 @@ if (typeof jQuery === 'undefined') {
                         css: { position: 'relative' }
                     });
 
-                    // Élément texte supérieur
-                    const $topTextDiv = $('<div>', {
-                        class: `cla-hover-text top-text-${uniqueTypeShort}-${i}`,
-                        id: `${prefix}_${uniqueTypeShort}_div_top_${i}`,
-                        text: min
-                    });
-                    
-                    $topTextDiv.hover(
-                        function() { // mouseenter
-                            toggleHoverEffect(this, prefix, uniqueTypeShort, true);
-                        },
-                        function() { // mouseleave
-                            toggleHoverEffect(this, prefix, uniqueTypeShort, false);
-                        }
-                    );
-                    
-                    $topTextDiv.on('click', function(event) {
-                        handleTextDivClick(this, prefix, uniqueTypeShort);
-                    });
-                    
-                    $wrapperDiv.append($topTextDiv);
+                    $wrapperDiv.append(createTextElement(prefix, uniqueTypeShort, i, "top", min));
+                    $wrapperDiv.append(createInputElement(prefix, uniqueTypeShort, i, min, max, value));
+                    $wrapperDiv.append(createTextElement(prefix, uniqueTypeShort, i, "bottom", min));
 
-                    // Création de l'input avec onkeyup, onwheel, et onhover, et onpaste
-                    const $input = $('<input>', {
-                        type: 'text',
-                        class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
-                        maxLength: '1',
-                        id: `${prefix}_${uniqueTypeShort}_input_${i}`,
-                        name: `${prefix}${i}`,
-                        autocomplete: 'off',
-                        value: value,
-                        'data-min': min,
-                        'data-max': max,
-                    });
-
-                    $input.on('keyup', function(event) {
-                        touchCode(event.currentTarget, event, prefix ,uniqueTypeShort, (i + 1), settings.numInputs);
-                    });
-
-                    $input.on('wheel', function(event) {
-                        adjustOnScroll(event, event.currentTarget, prefix, uniqueTypeShort);
-                    });
-                    
-                    $input.hover(
-                        function() { // mouseenter
-                            hoverMouseEnter(this, prefix, uniqueTypeShort);
-                        },
-                        function() { // mouseleave
-                            hoverMouseLeave(this, prefix, uniqueTypeShort);
-                        }
-                    );
-                    
-                    $input.on('paste', function(event) {
-                        handlePasteEvent(this, event, uniqueTypeShort, prefix , `${prefix}_${uniqueTypeShort}_input`);
-                    });
-                    
-                    $input.on('copy', function(event) {
-                        event.preventDefault(); // Empêche le comportement par défaut
-                        navigator.clipboard.writeText($(this).val());
-                    });
-
-                    $wrapperDiv.append($input);
-
-                    // Élément texte inférieur
-                    const $bottomTextDiv = $('<div>', {
-                        class: `cla-hover-text bottom-text-${uniqueTypeShort}-${i}`,
-                        id: `${prefix}_${uniqueTypeShort}_div_bottom_${i}`,
-                        text: min
-                    });
-                    
-                    $bottomTextDiv.hover(
-                        function() { // mouseenter
-                            toggleHoverEffect(this, prefix, uniqueTypeShort, true);
-                        },
-                        function() { // mouseleave
-                            toggleHoverEffect(this, prefix, uniqueTypeShort, false);
-                        }
-                    );
-                    
-                    $bottomTextDiv.on('click', function(event) {
-                        handleTextDivClick(this, prefix,uniqueTypeShort);
-                    });
-                    
-                    $wrapperDiv.append($bottomTextDiv);
                     $inputContainer.append($wrapperDiv);
                     
                     // initialisation des valeur courante
-                    currentDigit[i-1] = value;
+                    updateCurrentValues((i-1),value);*/
                 }
 
                 $container.append($inputContainer);
                 
                 for (let i = 1; i <= settings.numInputs; i++) {
-                    const prefix = 'digit';
-                    // Utiliser les valeurs min et max spécifiques si fournies
-                    const min = settings.minValues[i - 1] !== undefined ? Math.max(digitMin, Math.min(settings.minValues[i - 1], digitMax)) : digitMin;
-                    const max = settings.maxValues[i - 1] !== undefined ? Math.max(digitMin, Math.min(settings.maxValues[i - 1], digitMax)) : digitMax;
-                    let value = settings.values[i - 1] !== undefined ? settings.values[i - 1] : settings.defaultValue;
+                    const prefix = "digits";
+                    const { value } = getAdjustedValueSettings(i - 1, null, settings, digitMin, digitMax);
 
-                    // Borne la valeur entre min et max
-                    value = Math.max(min, Math.min(value, max));
-                    updateFinalValue($("#"+prefix+"_" + uniqueTypeShort + "_input_" + i), value, prefix, uniqueTypeShort , false);
+                    updateFinalValue($("#"+prefix+"_" + uniqueTypeShort + "_input_" + i), value, uniqueTypeShort , false);
                 }
             }
             else if (settings.type === "text" )
             {
-                const prefix = 'list';
+                /*const prefix = 'list';
              
-                // Vérification de `settings.values`
-                if (!Array.isArray(settings.values) || settings.values.length === 0) {
-                    throw new Error("settings.values doit être un tableau contenant au moins une valeur.");
-                }
-
-                // Vérification de `settings.defaultValue`
-                if (typeof settings.defaultValue !== 'number' || !Number.isInteger(settings.defaultValue)) {
-                    throw new Error("settings.defaultValue doit être un entier.");
-                }
-
-                if (settings.defaultValue < 0 || settings.defaultValue >= settings.values.length) {
-                    throw new Error(`settings.defaultValue doit être compris entre 0 et ${settings.values.length - 1}.`);
-                }
-
                 // Création du wrapper
                 const $wrapperDiv = $('<div>', {
                     class: 'text-center cla-input-wrapper',
                     css: { position: 'relative' }
                 });
 
-                // Élément texte supérieur
-                const $topTextDiv = $('<div>', {
-                    class: `cla-hover-text top-text-${uniqueTypeShort}-${prefix}`,
-                    id: `${prefix}_${uniqueTypeShort}_div_top`,
-                    text: "..."
-                });
-                
-                $topTextDiv.hover(
-                    function() { // mouseenter
-                        toggleHoverEffect(this, prefix, uniqueTypeShort, true);
-                    },
-                    function() { // mouseleave
-                        toggleHoverEffect(this, prefix, uniqueTypeShort, false);
-                    }
-                );
-                
-                $topTextDiv.on('click', function(event) {
-                    handleTextDivClick(this, prefix, uniqueTypeShort);
-                });
-                
-                $wrapperDiv.append($topTextDiv);
+                $wrapperDiv.append(createTextElement(prefix, uniqueTypeShort, prefix, "top", "..."));
+                $wrapperDiv.append(createInputElement(prefix, uniqueTypeShort, null, 0, settings.values.length - 1,  settings.values[settings.defaultValue] , 30 , true));
+                $wrapperDiv.append(createTextElement(prefix, uniqueTypeShort, prefix, "bottom", "..."));
 
-                // Création de l'input avec onkeyup, onwheel, et onhover, et onpaste
-                const $input = $('<input>', {
-                    type: 'text',
-                    class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
-                    id: `${prefix}_${uniqueTypeShort}_input`,
-                    name: `${prefix}`,
-                    autocomplete: 'off',
-                    value: settings.values[settings.defaultValue],
-                    disabled: 'disabled',
-                    'data-min': 0,
-                    'data-max': settings.values.length - 1,
-                });
+                $inputContainer.append($wrapperDiv);*/
 
-                $input.on('wheel', function(event) {
-                    adjustOnScroll(event, event.currentTarget, prefix, uniqueTypeShort);
-                });
-                
-                $input.hover(
-                    function() { // mouseenter
-                        hoverMouseEnter(this, prefix, uniqueTypeShort);
-                    },
-                    function() { // mouseleave
-                        hoverMouseLeave(this, prefix, uniqueTypeShort);
-                    }
-                );
-                   
-                $input.on('copy', function(event) {
-                    event.preventDefault(); // Empêche le comportement par défaut
-                    navigator.clipboard.writeText($(this).val());
-                });
-
-                $wrapperDiv.append($input);
-
-                // Élément texte inférieur
-                const $bottomTextDiv = $('<div>', {
-                    class: `cla-hover-text bottom-text-${uniqueTypeShort}-${prefix}`,
-                    id: `${prefix}_${uniqueTypeShort}_div_bottom`,
-                    text: "..."
-                });
-                
-                $bottomTextDiv.hover(
-                    function() { // mouseenter
-                        toggleHoverEffect(this, prefix, uniqueTypeShort, true);
-                    },
-                    function() { // mouseleave
-                        toggleHoverEffect(this, prefix, uniqueTypeShort, false);
-                    }
-                );
-                
-                $bottomTextDiv.on('click', function(event) {
-                    handleTextDivClick(this, prefix,uniqueTypeShort);
-                });
-                
-                $wrapperDiv.append($bottomTextDiv);
-                $inputContainer.append($wrapperDiv);
+                addInputElement("list", "list", 0, settings.values.length - 1, settings.values[settings.defaultValue], '30', true);
 
                 $container.append($inputContainer);
 
-                currentValue = settings.values[settings.defaultValue];
+                updateCurrentValues('current',settings.values[settings.defaultValue]);
             } 
-            else
-            {
-                const prefix = 'not';
-                   // Création du wrapper
-                const $wrapperDiv = $('<div>', {
-                    class: 'text-center cla-input-wrapper',
-                    css: { position: 'relative' }
-                });
-
-                const $input = $('<input>', {
-                    type: 'text',
-                    class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
-                    id: `${prefix}_${uniqueTypeShort}_input`,
-                    name: `${prefix}${prefix}`,
-                    value: 'Not Available',
-                    disabled: 'disabled'
-                });
-
-                $wrapperDiv.append($input);
-                $inputContainer.append($wrapperDiv);
-
-                $container.append($inputContainer);
-            }
         });
-        
+       
         // Méthode pour récupérer la valeur complète
         this.getCompleteValue = function() {
-            return currentValue;
+            return getCurrentValueByIndex('current');
         };
         
         // Méthode pour récupérer un chiffre spécifique à un index donné
@@ -1147,7 +1049,7 @@ if (typeof jQuery === 'undefined') {
             { 
                 // Vérifie si l'index est dans la plage de currentValue
                 if (index >= 0 && index < currentDigit.length) {
-                    const digit = currentDigit[index];
+                    const digit = getCurrentValueByIndex(index);
                     return parseInt(digit, 10); // Ignorer le point décimal
                 } else {
                     throw new Error("L'index est en dehors de la plage");
@@ -1169,18 +1071,18 @@ if (typeof jQuery === 'undefined') {
                 // Vérifie que la valeur est un nombre valide
                 if (isNumber(value)) {
 
-                    currentDigit.fill(0);
-                    fillDigits(value,settings.type);
+                    updateCurrentValues("fillDigits",0);
+
+                    fillDigits(value,uniqueTypeShort);
    
-                    currentValue = digitsArrayToNumber(currentDigit, settings.type === 'float', settings.decimalPosition);
-                    
-                    if (settings.allowSign) {
-                        let sign = computeSign('sign',uniqueTypeShort);
-                        currentValue *= ((sign == '+')? 1 : -1 );
-                    }
+                    let newValue = digitsArrayToNumber(getCurrentValueByIndex('digits'), settings.type === 'float', settings.decimalPosition);
+                    newValue = addSignToValue(newValue,uniqueTypeShort);
+
+                    updateCurrentValues('current',newValue);
+
                     // Déclenche le callback onValueChange si demandé
                     if (onchange && typeof settings.onValueChange === 'function') {
-                        settings.onValueChange(null, currentValue);
+                        settings.onValueChange(null, getCurrentValueByIndex('current'));
                     }
                 } else {
                     throw new Error("La valeur doit être un nombre flottant ou un entier.");
@@ -1192,11 +1094,11 @@ if (typeof jQuery === 'undefined') {
                 if (index !== -1) {
                     $("#list_" + uniqueTypeShort + "_input").val(value);
                     
-                    currentValue = value;
-        
+                    updateCurrentValues('current',value);
+                          
                     // Déclenche le callback onValueChange si demandé
                     if (onchange && typeof settings.onValueChange === 'function') {
-                        settings.onValueChange(null, currentValue);
+                        settings.onValueChange(null, getCurrentValueByIndex('current'));
                     }
                 } else {
                     throw new Error("Le texte n'est pas reconnu dans les valeurs disponibles.");
@@ -1210,7 +1112,7 @@ if (typeof jQuery === 'undefined') {
         return this;
     };
 
-    $.fn.codeInputBuilder.version = "0.0.4";
+    $.fn.codeInputBuilder.version = "0.0.5";
     $.fn.codeInputBuilder.title = "CodeInputBuilder";
     $.fn.codeInputBuilder.description = "Un plugin jQuery pour créer des champs d'input configurables pour des valeurs numériques ou flottantes et pour les textes.";
 

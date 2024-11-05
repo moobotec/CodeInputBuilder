@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.5
+Version: 0.0.4
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -946,63 +946,17 @@ if (typeof jQuery === 'undefined') {
     
             if (settings.type === "integer" || settings.type === "float" ) 
             { 
-
                 if (settings.allowSign) {
-                    
                     addInputElement("sign", "sign", null, null, getCurrentValueByIndex("sign"));
-
-                    /*const prefix = "sign";
-                    
-                    // Création du wrapper
-                    const $wrapperDiv = $('<div>', {
-                        class: 'text-center cla-input-wrapper',
-                        css: { position: 'relative' }
-                    });
-
-                    $wrapperDiv.append(createTextElement(prefix, uniqueTypeShort, prefix, "top", "0"));
-                    $wrapperDiv.append(createInputElement(prefix, uniqueTypeShort, null, null, null, getCurrentValueByIndex(prefix)));
-                    $wrapperDiv.append(createTextElement(prefix, uniqueTypeShort, prefix, "bottom", "0"));
-
-                    $inputContainer.append($wrapperDiv);*/
                 }
 
                 for (let i = 1; i <= settings.numInputs; i++) {
-                    
-
                     if (settings.type === 'float' && (i - 1) === settings.decimalPosition) {
                         $inputContainer.append($('<div>', { class: 'col-1', html: `<div><h2 class="my-5">${settings.separator}</h2></div>` }));
                     }
-        
                     const { min, max, value } = getAdjustedValueSettings(i - 1, null, settings, digitMin, digitMax);
                     addInputElement("digits", i, min, max, value);
                     updateCurrentValues(i - 1, value);
-
-                    // Insère le div du point décimal si l'index correspond à `decimalPosition`
-                   /* if (settings.type === 'float' && (i-1) === settings.decimalPosition) {
-                        const $decimalPoint = $('<div>', {
-                            class: 'col-1',
-                            html: '<div><h2 class="my-5">'+settings.separator+'</h2></div>'
-                        });
-                        $inputContainer.append($decimalPoint);
-                    }                
-                    
-                    const prefix = "digits";
-                    const { min, max, value } = getAdjustedValueSettings(i - 1, null, settings, digitMin, digitMax);
-
-                    // Création du wrapper
-                    const $wrapperDiv = $('<div>', {
-                        class: 'text-center cla-input-wrapper',
-                        css: { position: 'relative' }
-                    });
-
-                    $wrapperDiv.append(createTextElement(prefix, uniqueTypeShort, i, "top", min));
-                    $wrapperDiv.append(createInputElement(prefix, uniqueTypeShort, i, min, max, value));
-                    $wrapperDiv.append(createTextElement(prefix, uniqueTypeShort, i, "bottom", min));
-
-                    $inputContainer.append($wrapperDiv);
-                    
-                    // initialisation des valeur courante
-                    updateCurrentValues((i-1),value);*/
                 }
 
                 $container.append($inputContainer);
@@ -1010,30 +964,13 @@ if (typeof jQuery === 'undefined') {
                 for (let i = 1; i <= settings.numInputs; i++) {
                     const prefix = "digits";
                     const { value } = getAdjustedValueSettings(i - 1, null, settings, digitMin, digitMax);
-
                     updateFinalValue($("#"+prefix+"_" + uniqueTypeShort + "_input_" + i), value, uniqueTypeShort , false);
                 }
             }
             else if (settings.type === "text" )
             {
-                /*const prefix = 'list';
-             
-                // Création du wrapper
-                const $wrapperDiv = $('<div>', {
-                    class: 'text-center cla-input-wrapper',
-                    css: { position: 'relative' }
-                });
-
-                $wrapperDiv.append(createTextElement(prefix, uniqueTypeShort, prefix, "top", "..."));
-                $wrapperDiv.append(createInputElement(prefix, uniqueTypeShort, null, 0, settings.values.length - 1,  settings.values[settings.defaultValue] , 30 , true));
-                $wrapperDiv.append(createTextElement(prefix, uniqueTypeShort, prefix, "bottom", "..."));
-
-                $inputContainer.append($wrapperDiv);*/
-
                 addInputElement("list", "list", 0, settings.values.length - 1, settings.values[settings.defaultValue], '30', true);
-
                 $container.append($inputContainer);
-
                 updateCurrentValues('current',settings.values[settings.defaultValue]);
             } 
         });

@@ -31,7 +31,8 @@
 - **Contrôle de validité des entrées** : Limite les caractères saisis aux chiffres et empêche les entrées non autorisées en fonction des valeurs min/max.
 - **Interactions copier-coller** : Gestion du copier-coller pour limiter la saisie à un seul caractère par champ et empêcher les entrées multiples.
 - **Styles visuels personnalisés pour les champs** : Apparence inspirée d’un style de titre `<h2>`, avec des classes CSS (`cla-h2-like`) pour les valeurs de survol (`.top-text`, `.bottom-text`) et les transitions pour un affichage fluide.
-- **Affichage et mise à jour des valeurs complètes** : Possibilité de récupérer et de définir la valeur complète via des méthodes (`setCompleteValue` et `getCompleteValue`).
+- **Affichage et mise à jour des valeurs** : Possibilité de récupérer et de définir la valeur complète via des méthodes (`setCompleteValue` et `getCompleteValue`).
+- **Déplacement automatique du focus** : Possibilité de déplacer automatiquement le focus entre les champs après chaque saisie, avec la possibilité de choisir le sens du déplacement pour une navigation plus intuitive.
 
 Ces fonctionnalités permettent une expérience utilisateur enrichie et une flexibilité avancée pour les saisies numériques dans les applications web.
   
@@ -84,7 +85,9 @@ Ces fonctionnalités permettent une expérience utilisateur enrichie et une flex
 | `totalMin`          | `float`      | Valeur minimale totale possible.                                                                 | `null`            |
 | `allowScroll`       | `boolean`    | Active ou désactive la fonctionnalité de défilement.                                             | `true`            |
 | `scrollSensitivity` | `integer`    | Définit la sensibilité du défilement.                                                            | `50`            |
-| `requireKeyForScroll` | `string`   | Touche à enfoncer (par exemple 'Control' ou 'Shift') pour activer le défilement sur les inputs. Valeurs possibles : 'Control', 'Shift', 'Alt', 'Meta'. Incessible à la casse.  | `null`            |
+| `requireKeyForScroll` | `string`   | Touche à enfoncer (par exemple 'Control' ou 'Shift') pour activer le défilement sur les inputs. Valeurs possibles : 'Control', 'Shift', 'Alt', 'Meta'. Sensible à la casse.  | `null`            |
+| `autoFocusNextInput`| `boolean`    |  Active le décalage automatique du focus vers l'input suivant lors de la saisie.                 | `false`            |
+| `autoFocusNextInputDirection`| `string`    |  Détermine la direction du décalage automatique du focus. Valeurs possibles : 'Forward', 'Right', 'Backward', 'Left'. Sensible à la casse.                                | `null`            |
 | `onValueChange`     | `function`   | Fonction déclenchée lorsque la valeur change.                                                    | `null`            |
 
 ## Exemples

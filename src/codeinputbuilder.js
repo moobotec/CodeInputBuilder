@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.4
+Version: 0.0.6
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -60,6 +60,13 @@ Options disponibles:
     - `requireKeyForScroll`: (string) Touche à enfoncer (par exemple 'Control' ou 'Shift') pour activer le défilement sur les inputs.
         * Valeurs possibles : 'Control', 'Shift', 'Alt', 'Meta'.
         * Par défaut : null (aucune touche requise).
+        
+    - `autoFocusNextInput`: (boolean) Active le décalage automatique du focus vers l'input suivant lors de la saisie.
+        * Par défaut : false.
+
+    - `autoFocusNextInputDirection`: (string) Détermine la direction du décalage automatique du focus.
+        * Valeurs possibles : 'forward', 'right', 'backward', 'left'.
+        * Par défaut : null.
 
 Usage:
     // Initialisation de base
@@ -107,6 +114,8 @@ if (typeof jQuery === 'undefined') {
             allowScroll: true,
             scrollSensitivity: 50,
             requireKeyForScroll: null,
+            autoFocusNextInput: false,
+            autoFocusNextInputDirection: null,
             gap: '10px'
         };
 
@@ -142,6 +151,12 @@ if (typeof jQuery === 'undefined') {
             }
             if (typeof settings.allowScroll !== 'boolean') {
                 throw new Error("Option 'allowScroll' doit être un booléen.");
+            }
+            if (typeof settings.autoFocusNextInput !== 'boolean') {
+                throw new Error("Option 'autoFocusNextInput' doit être un booléen.");
+            }
+            if (settings.autoFocusNextInputDirection && !['Forward', 'Backward', 'Right', 'Left'].includes(settings.autoFocusNextInputDirection)) {
+                throw new Error("Option 'autoFocusNextInputDirection' doit être 'Forward', 'Backward', 'Right', 'Left' ou null.");
             }
             if (typeof settings.scrollSensitivity !== 'number' || settings.scrollSensitivity <= 0) {
                 throw new Error("Option 'scrollSensitivity' doit être un entier positif.");
@@ -491,7 +506,27 @@ if (typeof jQuery === 'undefined') {
             updatePeripheralDigit(type, displayData.index, displayData.showTop, displayData.showBottom, displayData.adjustedValueTop, displayData.adjustedValueBottom);
         }
    
-
+        function calculateNextIndex(id, settings) {
+            let index = id;
+        
+            if (settings.autoFocusNextInput === true && settings.autoFocusNextInputDirection !== null) {
+                switch (settings.autoFocusNextInputDirection) {
+                    case "Forward":
+                    case "Right":
+                        index += 1;
+                        break;
+                    case "Backward":
+                    case "Left":
+                        index -= 1;
+                        break;
+                    default:
+                        console.warn(`Direction "${settings.autoFocusNextInputDirection}" non reconnue. L'index reste inchangé.`);
+                }
+            }
+        
+            return index;
+        }
+        
         function applyInput(inputElement, codeTouche, event, prefix, type, id = null, numInputs = null) {
             const isPasteCode = event.ctrlKey && event.key === 'paste';
         
@@ -517,13 +552,14 @@ if (typeof jQuery === 'undefined') {
                     if (codeTouche === 8) {
                         // Gestion du retour arrière
                         setValueInput(inputElement, valueMin, prefix, type);
-                        if ((id - 2) === 0) id = numInputs + 2;
-                        $("#" + prefix + "_" + type + "_input_" + (id - 2)).focus();
+                        if ((id-1) === 0) id = numInputs + 1;
+                        $("#" + prefix + "_" + type + "_input_" + (id-1)).focus();
+
                     } else if (codeTouche === 46) {
                         // Gestion de la touche Supprimer
                         setValueInput(inputElement, valueMin, prefix, type);
-                        if ((id + 1) === numInputs + 2) id = 1;
-                        $("#" + prefix + "_" + type + "_input_" + id).focus();
+                        if ((id + 1) === numInputs + 1) id = 0;
+                        $("#" + prefix + "_" + type + "_input_" + (id+1)).focus();
                     } else if (codeTouche !== 9) {
                         // Gestion des chiffres
                         const lastChar = inputElement.value.slice(-1);
@@ -536,7 +572,8 @@ if (typeof jQuery === 'undefined') {
                             if (isPasteCode) key = convertCodeToChar(codeTouche);
                             
                             setValueInput(inputElement, key, prefix, type);
-                            $("#" + prefix + "_" + type + "_input_" + id).focus();
+
+                            $("#" + prefix + "_" + type + "_input_" + calculateNextIndex(id,settings)).focus();
                         }
                     }
                 } else {
@@ -868,7 +905,7 @@ if (typeof jQuery === 'undefined') {
             return { min, max, value };
         }
 
-        function handlePasteEvent(element, event, type, prefix , basename) 
+        function handlePasteEvent(element, event, uniqueTypeShort, prefix) 
         {
             const originalEvent = event.originalEvent || event;
 
@@ -879,8 +916,8 @@ if (typeof jQuery === 'undefined') {
             originalEvent.ctrlKey = true;
             originalEvent.key = 'paste';
             
-            let id = $(element).attr('id').replace(basename + '_', '');
-            applyCode(element, codeTouche, originalEvent, prefix,type , id, settings.numInputs);
+            let id = $(element).attr('id').replace(`${prefix}_${uniqueTypeShort}_input_` , '');
+            applyCode(element, codeTouche, originalEvent, prefix, uniqueTypeShort, id, settings.numInputs);
         }
 
         function createTextElement(prefix, uniqueTypeShort, id, position, text) {
@@ -909,13 +946,13 @@ if (typeof jQuery === 'undefined') {
             });
 
             // Ajouter les événements
-            $input.on('keyup', (event) => handleTouchInput(event.currentTarget, event, prefix, uniqueTypeShort, i))
+            $input.on('keyup', (event) => handleTouchInput(event.currentTarget, event, prefix, uniqueTypeShort, id , settings.numInputs))
                 .on('wheel', (event) => adjustOnScroll(event, event.currentTarget, prefix, uniqueTypeShort))
                 .hover(
                     function () { hoverMouseEnter(this, prefix, uniqueTypeShort); },
                     function () { hoverMouseLeave(this, prefix, uniqueTypeShort); }
                 )
-                .on('paste', (event) => handlePasteEvent(this, event, uniqueTypeShort, prefix, `${prefix}_${uniqueTypeShort}_input`))
+                .on('paste', (event) => handlePasteEvent(this, event, uniqueTypeShort, prefix))
                 .on('copy', (event) => {
                     event.preventDefault();
                     navigator.clipboard.writeText($(this).val());
@@ -1049,7 +1086,7 @@ if (typeof jQuery === 'undefined') {
         return this;
     };
 
-    $.fn.codeInputBuilder.version = "0.0.5";
+    $.fn.codeInputBuilder.version = "0.0.6";
     $.fn.codeInputBuilder.title = "CodeInputBuilder";
     $.fn.codeInputBuilder.description = "Un plugin jQuery pour créer des champs d'input configurables pour des valeurs numériques ou flottantes et pour les textes.";
 

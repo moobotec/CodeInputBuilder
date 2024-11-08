@@ -122,17 +122,20 @@ if (typeof jQuery === 'undefined') {
         const settings = $.extend({}, defaultOptions, options);
 
         function validateOptions() {
-            if (!['integer', 'float', 'text'].includes(settings.type)) {
-                throw new Error("Option 'type' invalide. Valeurs autorisées : 'integer', 'float', 'text'.");
+            if (!['integer', 'float', 'text','binary', 'hexadecimal', 'letter'].includes(settings.type)) {
+                throw new Error("Option 'type' invalide. Valeurs autorisées : 'integer', 'float', 'text','binary', 'hexadecimal', 'letter'.");
             }
             if (typeof settings.numInputs !== 'number' || settings.numInputs < 1) {
                 throw new Error("Option 'numInputs' doit être un entier positif.");
             }
-            if (settings.type !== 'text' && Array.isArray(settings.minValues) && settings.minValues.length !== settings.numInputs) {
+            if (settings.type !== 'text' && Array.isArray(settings.minValues) && settings.minValues.length > 0 && settings.minValues.length !== settings.numInputs) {
                 throw new Error("'minValues' doit contenir autant d'éléments que 'numInputs'.");
             }
-            if (settings.type !== 'text' && Array.isArray(settings.maxValues) && settings.maxValues.length !== settings.numInputs) {
+            if (settings.type !== 'text' && Array.isArray(settings.maxValues) && settings.maxValues.length > 0 &&  settings.maxValues.length !== settings.numInputs) {
                 throw new Error("'maxValues' doit contenir autant d'éléments que 'numInputs'.");
+            }
+            if (settings.type !== 'text' && Array.isArray(settings.values) &&  settings.values.length > 0 && settings.values.length !== settings.numInputs) {
+                throw new Error("'values' doit contenir autant d'éléments que 'numInputs'.");
             }
             if (settings.type === 'float' && (typeof settings.decimalPosition !== 'number' || settings.decimalPosition < 1)) {
                 throw new Error("Option 'decimalPosition' doit être un entier positif pour les types flottants.");
@@ -171,27 +174,306 @@ if (typeof jQuery === 'undefined') {
         return settings;
     }
 
+    function isNumeric(value) {
+        return typeof value === "number" && !isNaN(value);
+    }
 
-   $.fn.codeInputBuilder = function (options) {
+    function isHexadecimal(value) {
+        return typeof value === "string" && /^0x[0-9a-fA-F]+$/.test(value);
+    }
+
+    function hexCharToHex(hexString) {
+        // Convertit la chaîne hexadécimale en entier
+        const value = parseInt(hexString, 16);
+        // Si la valeur est entre 0 et 9, renvoie le caractère numérique correspondant
+        if (value >= 0 && value <= 9) {
+            return charToHex(String.fromCharCode(0x30 + value)); // '0' à '9'
+        }
+        // Si la valeur est entre 10 et 15, renvoie le caractère alphabétique correspondant
+        else if (value >= 10 && value <= 15) {
+            return charToHex(String.fromCharCode(0x61 + (value - 10))); // 'a' à 'f'
+        }
+        // Si la valeur est hors de la plage, retourne null ou une valeur par défaut
+        return null;
+    }
+
+    function charToHex(char) {
+        // Vérifie si le caractère est entre '0' et '9'
+        if (char >= '0' && char <= '9') {
+            return (char.charCodeAt(0) - 0x30);
+        }
+        // Vérifie si le caractère est entre 'a' et 'f'
+        else if (char >= 'a' && char <= 'f') {
+            return (char.charCodeAt(0) - 0x61 + 10);
+        }
+        // Si le caractère n'est pas dans la plage autorisée, retourne null ou un message d'erreur
+        return null;
+    }
+    
+    function clampInteger(value, min, max) {
+        return Math.max(min, Math.min(value, max));
+    }
+
+    function clampChar(value, min, max) {
+        // Convertit les caractères en codes Unicode
+        const l_min = ((determineType(min) == 'letter') ? min.charCodeAt(0) : min);
+        const l_max = ((determineType(max) == 'letter') ? max.charCodeAt(0) : max);
+        let code = value.charCodeAt(0);
+    
+        // Ajuste `code` pour qu'il soit entre `min` et `max`
+        code = Math.max(l_min, Math.min(code, l_max));
+    
+        // Convertit le code ajusté en caractère
+        return String.fromCharCode(code);
+    }
+
+    function determineType(value) {
+        if (isHexadecimal(value)) {
+            return "hexadecimal";
+        } else if (isNumeric(value))  {
+            return "integer";
+        } else {
+            return "letter";
+        }
+    }
+
+    function isAllowSign(settings) {
+        if (settings.type === 'float' ||  settings.type === 'integer')  
+        {
+            return settings.allowSign;
+        }
+        return false;
+    }
+
+    function defaultSign(settings) {
+        return isAllowSign(settings) ? settings.defaultSign : null;
+    }
+
+    function valueDigitMin(settings) {
+        const minValues = {
+            float: 0x00,
+            integer: 0x00,
+            binary: 0x00,
+            hexadecimal: 0x00,
+            letter: 0x00
+        };
+        return minValues[settings.type] ?? null;
+    }
+    
+    function valueDigitMax(settings) {
+        const maxValues = {
+            float: 0x09,       // Décimal : chiffres 0 à 9
+            integer: 0x09,     // Décimal : chiffres 0 à 9
+            binary: 0x01,      // Binaire : 0 et 1
+            hexadecimal: 0x0f, // Hexadécimal : 0 à 9 et a à f
+            letter: 0xff       // Lettres ANSI
+        };
+        return maxValues[settings.type] ?? null;
+    }
+
+    function maxValue(index,settings) {
+        let value = settings.maxValues[index] ;
+        const type = determineType(value);
+        switch (type) {
+            case 'float':
+            case 'integer':
+            case 'binary':
+                return parseInt(value,10);
+            case 'hexadecimal':
+                return hexToChar(value);
+            case 'letter':
+                if (value.length === 1)
+                {
+                    if( settings.type == 'hexadecimal' ) return charToHex(value);
+                    return value.charCodeAt(0);
+                }
+                return NaN;
+            default:
+                return NaN;
+        }
+    }
+
+    function minValue(index,settings) {
+        let value = settings.minValues[index] ;
+        const type = determineType(value);
+        switch (type) {
+            case 'float':
+            case 'integer':
+            case 'binary':
+                return parseInt(value,10); 
+            case 'hexadecimal':
+                return hexCharToHex(value);
+            case 'letter':
+                if (value.length === 1)
+                {
+                    if( settings.type == 'hexadecimal' )  return charToHex(value);
+                    return value.charCodeAt(0);
+                }
+                return NaN;
+            default:
+                return NaN;
+        }
+    }
+
+    function defaultValue(index,settings) {
+        let value = settings.values[index] ;
+        const type = determineType(value);
+        switch (type) {
+            case 'float':
+            case 'integer':
+            case 'binary':
+                return parseInt(value,10);
+            case 'hexadecimal':
+                return hexCharToHex(value);
+            case 'letter':
+                if (value.length === 1)
+                {
+                    if( settings.type == 'hexadecimal' )  return charToHex(value);
+                    return value.charCodeAt(0);
+                }
+                return NaN;
+            default:
+                return NaN;
+        }
+    }
+
+    function clampValue(value,min,max) {
+        const type = determineType(value);
+        switch (type) {
+            case 'float':
+            case 'integer':
+            case 'binary':
+                return clampInteger(value,min,max); 
+            case 'hexadecimal':
+            case 'letter':
+                return clampChar(value,min,max); 
+            default:
+                return NaN;
+        }
+    }
+
+    function makeValueElement(value, settings) {
+        switch (settings.type) {
+            case 'float':
+            case 'integer':
+            case 'binary':
+                return value;
+            case 'hexadecimal':
+                if (value <= 9) {
+                    return String.fromCharCode(0x30 + value);
+                } else {
+                    return String.fromCharCode(0x61 + value - 10);
+                }
+            case 'letter':
+                return String.fromCharCode(value);
+            default:
+                return "NaN";
+        }
+    }
+
+    function escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+            ' ': 'Espace',  // espace insécable
+            '©': '&copy;',
+            '®': '&reg;',
+            '™': '&trade;',
+            '€': '&euro;',
+            '¢': '&cent;',
+            '£': '&pound;',
+            '¥': '&yen;'
+        };
+        return text.replace(/[&<>"' ©®™€¢£¥]/g, (m) => map[m]);
+    }
+
+    function convertFromEscapedChar(escapedStr) {
+        switch (escapedStr) {
+            case "\\0x00":
+                return String.fromCharCode(0); 
+            case "\\0x0b":
+                return String.fromCharCode(11); 
+            case "\\t":
+                return "\t"; // Tabulation
+            case "\\n":
+                return "\n"; // Nouvelle ligne
+            case "\\r":
+                return "\r"; // Retour chariot
+            case "\\b":
+                return "\b"; // Retour arrière
+            case "\\f":
+                return "\f"; // Saut de page
+            default:
+                return escapedStr; // Retourne la chaîne elle-même si elle n'est pas reconnue
+        }
+    }
+
+    function convertToEscapedChar(char) {
+        const charCode = char.charCodeAt(0);
+    
+        switch (charCode) {
+            case 9:
+                return "\\t"; // Tabulation
+            case 10:
+                return "\\n"; // Nouvelle ligne
+            case 13:
+                return "\\r"; // Retour chariot
+            case 8:
+                return "\\b"; // Retour arrière
+            case 12:
+                return "\\f"; // Saut de page
+            default:
+                return char; // Retourne le caractère lui-même s'il n'est pas un caractère de contrôle
+        }
+    }
+
+    function setElement(type, object, value, settings) {
+        let val = makeValueElement(value,settings);
+        if (settings.type == 'letter') val = convertToEscapedChar(val);
+        if ( type == 'input' ) $(object).val(val);
+        if ( type == 'div' ) {
+            if (settings.type == 'letter' )
+            {
+                if (  val.charCodeAt(0) == 0 ) val = '\\0x00';
+                if (  val.charCodeAt(0) == 11 ) val = '\\0x0b';
+            } 
+            $(object).html(escapeHtml(val));
+        }
+    }
+
+    function getElement(type, object, settings) {
+        let value = (type == 'input') ? $(object).val() : $(object).html() ;
+        value = convertFromEscapedChar(value);
+        switch (settings.type) {
+            case 'float':
+            case 'integer':
+            case 'binary':
+                return parseInt(value,10); //  Convertit en entier   
+            case 'hexadecimal':
+                // Convertit les valeurs hexadécimales (0-9, a-f)
+                return /^[0-9a-fA-F]+$/.test(value) ? parseInt(value, 16) : NaN;
+            case 'letter':
+                // Récupère le code ASCII du premier caractère (si non vide)
+                return value.length === 1 ? value.charCodeAt(0) : NaN;
+            default:
+                return NaN;
+        }
+    }
+
+    $.fn.codeInputBuilder = function (options) {
 
         // Options par défaut
         const settings = initCodeInputBuilderOptions(options);
 
         let gIdHover = null;
-        // decimal ( 0,1,2,3,4,5,6,7,8,9) - Chiffres (numériques)
-        let digitMin = 0;
-        let digitMax = 9;
-        // hexadecimal ( 0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f ) - Lettres (alphabétiques)
-        let digitHexaMin = 0x30; // 0
-        let digitHexaMax = 0x66; // f
-        // Lettres alphabétiques ( a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z ) - Lettres (alphabétiques)
-        let digiLetterMin = 0x61; // a minuscule
-        let digitLetterMax = 0x7A; // z minuscule
-
+       
         let currentValues = {
             value : '',
             digits: new Array(settings.numInputs).fill(0), // Tableau pour n digits
-            sign: settings.allowSign ? settings.defaultSign : null, // Valeur pour sign
+            sign: defaultSign(settings), // Valeur pour sign
             indexList: -1 
         };
 
@@ -267,7 +549,7 @@ if (typeof jQuery === 'undefined') {
             }
 
             // Gère le signe si `allowSign` est activé
-            if (settings.allowSign) {
+            if (isAllowSign(settings)) {
                 $(`[id^="sign_${type}_input"]`).val((baseValue < 0) ? '-' : '+');
             }
         
@@ -292,12 +574,12 @@ if (typeof jQuery === 'undefined') {
             let index = digitInputs.length - 1;
         
             // Réinitialise les valeurs des inputs à zéro
-            digitInputs.forEach(input => $(input).val(0));
-        
+            digitInputs.forEach(input => setElement('input', input,0,settings));
+         
             // Parcourt les chiffres et les assigne aux inputs en respectant les min/max
             for (let digit of (integerPart + decimalPart).split('').reverse()) {
-                const { value } = getAdjustedValueSettings(index, digit, settings, digitMin, digitMax);
-                $(digitInputs[index]).val(value);
+                const { value } = getAdjustedValueSettings(index, digit, settings);
+                setElement('input', digitInputs[index],value,settings);
                 updateCurrentValues(index,value);
                 index--;
             }
@@ -320,13 +602,13 @@ if (typeof jQuery === 'undefined') {
                 if (settings.type === 'float' && index === settings.decimalPosition) {
                     numberString += '.';
                 }
-                numberString += $(this).val();
+                numberString += getElement('input',$(this),settings);
             });
             return numberString;
         }
 
         function addSignToValue(value, type) {
-            if (!settings.allowSign) return value; // Retourne la valeur sans modification si `allowSign` est désactivé
+            if (!isAllowSign(settings)) return value; // Retourne la valeur sans modification si `allowSign` est désactivé
         
             // Récupère le signe (+ ou -) pour le type spécifié
             const signInput =  $('input[id^=sign_'+type+'_input]');
@@ -383,14 +665,30 @@ if (typeof jQuery === 'undefined') {
             if (showTop)
             {
                 $('.cla-input-wrapper .top-text-'+type+'-'+id).css("visibility","visible");
-                $('.cla-input-wrapper .top-text-'+type+'-'+id).html(valueTop);
+
+                if  (settings.type === "text" ) 
+                {
+                    $('.cla-input-wrapper .top-text-'+type+'-'+id).html(valueTop);
+                }
+                else
+                {
+                    setElement('div',$('.cla-input-wrapper .top-text-'+type+'-'+id),valueTop,settings);
+                }
                 $('.cla-input-wrapper .top-text-'+type+'-'+id).css("opacity","1"); 
             }
             
             if (showBottom)
             {
                 $('.cla-input-wrapper .bottom-text-'+type+'-'+id).css("visibility","visible");
-                $('.cla-input-wrapper .bottom-text-'+type+'-'+id).html(valueBottom);
+
+                if (settings.type === "text") 
+                {
+                    $('.cla-input-wrapper .bottom-text-'+type+'-'+id).html(valueBottom);
+                }
+                else
+                {
+                    setElement('div',$('.cla-input-wrapper .bottom-text-'+type+'-'+id),valueBottom,settings);
+                }
                 $('.cla-input-wrapper .bottom-text-'+type+'-'+id).css("opacity","1");
             }
         }
@@ -496,7 +794,15 @@ if (typeof jQuery === 'undefined') {
             const newValue = actions[prefix] ? actions[prefix]() : "";
         
             // Met à jour la valeur de l'input et appelle les fonctions d'actualisation
-            inputElement.value = newValue;
+            if (prefix == 'list')
+            {
+                inputElement.value = newValue;
+            }
+            else
+            {
+                setElement('input', $(inputElement),newValue,settings);
+            }
+            
             updateFinalValue($(inputElement), newValue, type);
         
             // Calcul des informations pour l'affichage périphérique
@@ -562,6 +868,9 @@ if (typeof jQuery === 'undefined') {
                         $("#" + prefix + "_" + type + "_input_" + (id+1)).focus();
                     } else if (codeTouche !== 9) {
                         // Gestion des chiffres
+
+                        // TODO const input = getElement('input',$(inputElement),settings);
+
                         const lastChar = inputElement.value.slice(-1);
                         const regex = /^[0-9]$/;
                         if (!regex.test(lastChar)) {
@@ -636,7 +945,7 @@ if (typeof jQuery === 'undefined') {
 
             if (prefix == "digits")
             {
-                let currentValue = parseInt(inputElement.value, 10);
+                let currentValue = getElement('input',$(inputElement),settings);
                 if (currentValue != -1)
                 {
                     // Incrémenter ou décrémenter la valeur en fonction de la direction du scroll
@@ -689,7 +998,7 @@ if (typeof jQuery === 'undefined') {
 
         function calculateValueLimits(inputElement, id, currentValue, limitDigitMin, limitDigitMax) 
         {
-            let {valueTop,valueBottom} = calculateAdjacentValues($(inputElement).val());
+            let {valueTop,valueBottom} = calculateAdjacentValues(getElement('input',$(inputElement),settings));
        
             // Ajuster les valeurs top et bottom en fonction des limites globales
             if (settings.totalMax !== undefined && settings.totalMax !== null && currentValue >= settings.totalMax) {
@@ -782,9 +1091,10 @@ if (typeof jQuery === 'undefined') {
             else if (prefix == "list")
             {
                 gIdHover = type + prefix;
-                let currentValue = findPosition(settings.values,inputElement.value);
+                
+                console.log(inputElement.value);
 
-                console.log(currentValue);
+                let currentValue = findPosition(settings.values,inputElement.value);
 
                 if (currentValue != -1)
                 {
@@ -835,9 +1145,8 @@ if (typeof jQuery === 'undefined') {
             {
                 if (suffix.includes('top')) {
                     id = suffix.replace('top_', '');
-                    const { valueMin } = getValueLimits( "#"+prefix+"_" + type + "_input_" + id );
-                    value = parseInt($(element).html());
-                    $("#"+prefix+"_" + type + "_input_" + id).val(value);
+                    value = getElement('div',$(element),settings);
+                    setElement('input', $("#"+prefix+"_" + type + "_input_" + id),value,settings);
                     updateFinalValue($("#"+prefix+"_" + type + "_input_" + id), value, type);
                     gIdHover = type + id;
                     valueTop = value - 1;
@@ -846,8 +1155,8 @@ if (typeof jQuery === 'undefined') {
                     gIdHover = null;
                 } else {
                     id = suffix.replace('bottom_', '');
-                    value = parseInt($(element).html());
-                    $("#"+prefix+"_" + type + "_input_" + id).val(value);
+                    value = getElement('div',$(element),settings);
+                    setElement('input', $("#"+prefix+"_" + type + "_input_" + id),value,settings);
                     updateFinalValue($("#"+prefix+"_" + type + "_input_" + id), value, type);
                     gIdHover = type + id;
                     valueBottom = value + 1;
@@ -886,21 +1195,22 @@ if (typeof jQuery === 'undefined') {
             }
         }
 
-        function getAdjustedValueSettings(index, inputValue = null, settings, digitMin, digitMax) {
+        function getAdjustedValueSettings(index, inputValue = null, settings) {
+            
             const min = settings.minValues[index] !== undefined 
-                ? Math.max(digitMin, Math.min(settings.minValues[index], digitMax)) 
-                : digitMin;
+                ? Math.max(valueDigitMin(settings), Math.min(minValue(index,settings), valueDigitMax(settings))) 
+                :  valueDigitMin(settings);
         
             const max = settings.maxValues[index] !== undefined 
-                ? Math.max(digitMin, Math.min(settings.maxValues[index], digitMax)) 
-                : digitMax;
+                ? Math.max(valueDigitMin(settings), Math.min(maxValue(index,settings), valueDigitMax(settings))) 
+                : valueDigitMax(settings);
         
             let value = (inputValue != null) ? inputValue : ( settings.values[index] !== undefined 
-                ? settings.values[index] 
+                ? defaultValue(index,settings) 
                 : settings.defaultValue);
     
             // Ajuster `value` pour qu'il soit compris entre `min` et `max`
-            value = Math.max(min, Math.min(value, max));
+            value = clampValue(value,min, max);
 
             return { min, max, value };
         }
@@ -939,7 +1249,7 @@ if (typeof jQuery === 'undefined') {
                 id: ( (id != null) ? `${prefix}_${uniqueTypeShort}_input_${id}` : `${prefix}_${uniqueTypeShort}_input` ) ,
                 name: (id != null) ? `${prefix}${id}` : `${prefix}` ,
                 autocomplete: 'off',
-                value: value,
+                value: (settings.type === "text" ) ? value : makeValueElement(value,settings),
                 'data-min': min,
                 'data-max': max,
                 disabled: isDisabled ? 'disabled' : null
@@ -981,17 +1291,25 @@ if (typeof jQuery === 'undefined') {
                 $inputContainer.append($wrapperDiv);
             }
     
-            if (settings.type === "integer" || settings.type === "float" ) 
+            if (settings.type === "integer" || settings.type === "float" || settings.type === "binary" || settings.type === "hexadecimal" || settings.type === "letter" ) 
             { 
-                if (settings.allowSign) {
+                if (isAllowSign(settings)) {
                     addInputElement("sign", "sign", null, null, getCurrentValueByIndex("sign"));
+                }
+
+                if (settings.type === "binary" ) {
+                    $inputContainer.append($('<div>', { class: 'col-1', html: `<div><h2 class="my-5">0b</h2></div>` }));
+                }
+
+                if (settings.type === "hexadecimal" ) {
+                    $inputContainer.append($('<div>', { class: 'col-1', html: `<div><h2 class="my-5">0x</h2></div>` }));
                 }
 
                 for (let i = 1; i <= settings.numInputs; i++) {
                     if (settings.type === 'float' && (i - 1) === settings.decimalPosition) {
                         $inputContainer.append($('<div>', { class: 'col-1', html: `<div><h2 class="my-5">${settings.separator}</h2></div>` }));
                     }
-                    const { min, max, value } = getAdjustedValueSettings(i - 1, null, settings, digitMin, digitMax);
+                    const { min, max, value } = getAdjustedValueSettings(i - 1, null, settings);
                     addInputElement("digits", i, min, max, value);
                     updateCurrentValues(i - 1, value);
                 }
@@ -1000,7 +1318,7 @@ if (typeof jQuery === 'undefined') {
                 
                 for (let i = 1; i <= settings.numInputs; i++) {
                     const prefix = "digits";
-                    const { value } = getAdjustedValueSettings(i - 1, null, settings, digitMin, digitMax);
+                    const { value } = getAdjustedValueSettings(i - 1, null, settings);
                     updateFinalValue($("#"+prefix+"_" + uniqueTypeShort + "_input_" + i), value, uniqueTypeShort , false);
                 }
             }
@@ -1040,7 +1358,7 @@ if (typeof jQuery === 'undefined') {
             const isNumber = (val) => /^[-+]?\d+(\.\d+)?$/.test(val); // Vérifie si la valeur est un float ou un integer
         
             // Vérifie si le type est bien défini dans settings
-            if (settings.type === "integer" || settings.type === "float") {
+            if (settings.type === "integer" || settings.type === "float" ) {
                 
                 // Vérifie que la valeur est un nombre valide
                 if (isNumber(value)) {
@@ -1086,7 +1404,7 @@ if (typeof jQuery === 'undefined') {
         return this;
     };
 
-    $.fn.codeInputBuilder.version = "0.0.6";
+    $.fn.codeInputBuilder.version = "0.0.7";
     $.fn.codeInputBuilder.title = "CodeInputBuilder";
     $.fn.codeInputBuilder.description = "Un plugin jQuery pour créer des champs d'input configurables pour des valeurs numériques ou flottantes et pour les textes.";
 

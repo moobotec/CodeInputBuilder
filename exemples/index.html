@@ -23,8 +23,11 @@
                 <li><a href="#test-float"><i class="fas fa-percentage text-secondary"></i> 2. Entrez une valeur décimale avec le type Float</a></li>
                 <li><a href="#test-float-latitude"><i class="fas fas fa-globe-europe text-success"></i> 3. Entrez une latitude avec le type Float</a></li>
                 <li><a href="#test-float-longitude"><i class="fas fas fa-globe-europe text-warning"></i> 4. Entrez une longitude avec le type Float</a></li>
-                <li><a href="#test-text"><i class="fas fa-font text-primary"></i> 5. Sélectionnez un texte avec le champ de type Text</a></li>
-                <li><a href="#test-not"><i class="fas fa-ban text-danger"></i> 6. Exemple d’un champ de type Not, pour une saisie non disponible</a></li>
+                <li><a href="#test-hexadecimal"><i class="fas fa-hashtag text-info"></i> 5. Saisissez une valeur entière avec le type Hexadecimal</a></li>
+                <li><a href="#test-binary"> <i class="fas fa-microchip text-info"></i> 6. Saisissez une valeur entière avec le type Binary</a></li>
+                <li><a href="#test-letter"> <i class="fas fa-keyboard text-primary"></i> 7. Saisissez un caractère avec le type Letter</a></li>
+                <li><a href="#test-text"><i class="fas fa-font text-primary"></i> 8. Sélectionnez un texte avec le champ de type Text</a></li>
+                <li><a href="#test-not"><i class="fas fa-ban text-danger"></i> 9. Exemple d’un champ de type Not, pour une saisie non disponible</a></li>
             </ul>
         </nav>
         <hr>
@@ -79,7 +82,7 @@
                 separator : ','<br>,
                 gap: '1px', // Espace entre les inputs <br>
                 autoFocusNextInput: true, <br>
-                autoFocusNextInputDirection: 'right', <br>
+                autoFocusNextInputDirection: 'Right', <br>
                 }</code>
                         <div id="codeInputFloat"></div>
                     </div>
@@ -176,13 +179,104 @@
             </div>
         </div>
         <hr>
+      
+        <!-- Section Hexadecimal -->
+        <div class="mt-4">
+            <div class="row text-center">
+               <div class="d-flex justify-content-around w-100">
+                   <div class = "w-100">
+                       <h3 id="test-hexadecimal"><i class="fas fa-hashtag text-info"></i> 5. Saisissez une valeur entière avec le type Hexadecimal</h3>
+                       <code> { type: 'hexadecimal', <br>
+               numInputs: 5, <br>
+               values: [0x00, 0x00, 0x00, 0x00, 0x00], <br>
+               minValues: [0x00, 0x00, 0x00, 0x00, 0x00], <br>
+               maxValues: [0x0f, 0x0f, 0x0f, 0x0f, 0x0f], <br>
+               }</code>
+                       <div id="codeInputHexadecimal"></div>
+                   </div>
+               </div>
+           </div>
+           <h4 class="mt-3">Valeur de l'input modifié (Hexadecimal) :</h4>
+           <p id="changeValueDisplayHexadecimal">Aucun changement</p>
+           <h4>Valeur complète (Hexadecimal) :</h4>
+           <p id="completeValueDisplayHexadecimal">Aucune valeur</p>
+           <div class="form-group">
+               <label for="valueInputHexadecimal">Entrez une valeur :</label>
+               <input type="text" id="valueInputHexadecimal" class="form-control" placeholder="48fca">
+           </div>
+           <div class="d-flex justify-content-center">
+               <button id="setCompleteValueButtonHexadecimal" class="btn btn-sm btn-info mt-3 mx-1">Définir la valeur complète (Hexadecimal)</button>
+               <button id="getCompleteValueButtonHexadecimal" class="btn btn-sm btn-info mt-3 mx-1">Afficher la valeur complète (Hexadecimal)</button>
+           </div>
+       </div>
+       <hr>
+
+        <!-- Section Binary -->
+        <div class="mt-4">
+            <div class="row text-center">
+               <div class="d-flex justify-content-around w-100">
+                   <div class = "w-100">
+                       <h3 id="test-binary"><i class="fas fa-microchip text-info"></i> 6. Saisissez une valeur entière avec le type Binary</h3>
+                       <code> { type: 'binary', <br>
+               numInputs: 5, <br>
+               values: [0x00, 0x01, 0x00, 0x01, 0x00], <br>
+               }</code>
+                       <div id="codeInputBinary"></div>
+                   </div>
+               </div>
+           </div>
+           <h4 class="mt-3">Valeur de l'input modifié (Binary) :</h4>
+           <p id="changeValueDisplayBinary">Aucun changement</p>
+           <h4>Valeur complète (Binary) :</h4>
+           <p id="completeValueDisplayBinary">Aucune valeur</p>
+           <div class="form-group">
+               <label for="valueInputBinary">Entrez une valeur :</label>
+               <input type="text" id="valueInputBinary" class="form-control" placeholder="0010110">
+           </div>
+           <div class="d-flex justify-content-center">
+               <button id="setCompleteValueButtonBinary" class="btn btn-sm btn-info mt-3 mx-1">Définir la valeur complète (Binary)</button>
+               <button id="getCompleteValueButtonBinary" class="btn btn-sm btn-info mt-3 mx-1">Afficher la valeur complète (Binary)</button>
+           </div>
+       </div>
+       <hr>
+
+        <!-- Section Letter (char ansi)-->
+        <div class="mt-4">
+            <div class="row text-center">
+               <div class="d-flex justify-content-around w-100">
+                   <div class = "w-100">
+                       <h3 id="test-letter"><i class="fas fa-keyboard text-primary"></i> 7. Saisissez un caractère avec le type Letter</h3>
+                       <code> { type: 'letter', <br>
+                numInputs: 5, <br>
+                values: [0x00, 0x00, 0x00, 0x00, 0x00], <br>
+                minValues: [0x00, 0x00, 0x00, 0x00, 0x00], <br>
+                maxValues: [0xff, 0xff, 0xff, 0xff, 0xff], <br>
+               }</code>
+                       <div id="codeInputLetter"></div>
+                   </div>
+               </div>
+           </div>
+           <h4 class="mt-3">Valeur de l'input modifié (Letter) :</h4>
+           <p id="changeValueDisplayLetter">Aucun changement</p>
+           <h4>Valeur complète (Letter) :</h4>
+           <p id="completeValueDisplayLetter">Aucune valeur</p>
+           <div class="form-group">
+               <label for="valueInputLetter">Entrez une valeur :</label>
+               <input type="text" id="valueInputLetter" class="form-control" placeholder="gthg!5 t">
+           </div>
+           <div class="d-flex justify-content-center">
+               <button id="setCompleteValueButtonLetter" class="btn btn-sm btn-info mt-3 mx-1">Définir la valeur complète (Letter)</button>
+               <button id="getCompleteValueButtonLetter" class="btn btn-sm btn-info mt-3 mx-1">Afficher la valeur complète (Letter)</button>
+           </div>
+       </div>
+       <hr>
 
         <!-- Section Text -->
         <div class="mt-4">
             <div class="row text-center">
                 <div class="d-flex justify-content-around w-100">
                     <div class = "w-100">
-                        <h3 id="test-text"><i class="fas fa-font text-primary"></i> 5. Sélectionnez un texte dans le champ de type Text</h3>
+                        <h3 id="test-text"><i class="fas fa-font text-primary"></i> 8. Sélectionnez un texte dans le champ de type Text</h3>
                          <code> { type: 'text', <br>
                 values: ["Lorem", "Consectetur", "Eiusmod", "Nulla", "Vestibulum", "Sollicitudin"], <br>
                 defaultValue : 0, <br>
@@ -213,7 +307,7 @@
             <div class="row text-center">
                 <div class="d-flex justify-content-around w-100">
                     <div class = "w-100">
-                        <h3 id="test-not"><i class="fas fa-ban text-danger"></i> 6. Exemple d’un champ de type Not, pour une saisie non disponible</h3>
+                        <h3 id="test-not"><i class="fas fa-ban text-danger"></i> 9. Exemple d’un champ de type Not, pour une saisie non disponible</h3>
                          <code> { type: 'xxxx' }</code>
                         <div id="codeInputNot"></div>
                     </div>
@@ -228,6 +322,7 @@
             © 2024 Copyright
             <a href="https://www.timecaps.io/">www.timecaps.io</a><br>
             <p id="versionInfo" class="text-muted"></p> <!-- Conteneur pour les versions dynamiques -->
+            <a href="#" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });" class="btn btn-sm btn-primary">⬆️ Haut de la page</a>
         </div>
     </footer>
 
@@ -336,7 +431,7 @@
                 gap: '1px', // Espace entre les inputs
                 separator: ',',
                 autoFocusNextInput: true,
-                autoFocusNextInputDirection: 'right',
+                autoFocusNextInputDirection: 'Right',
                 onValueChange: function($input, newValue) {
                     // Affichage de la valeur de l'input modifié
                     $('#changeValueDisplayFloat').text(`Input ${$input.attr('id')} a changé de valeur : ${newValue}`);
@@ -439,6 +534,91 @@
                 codeInputLongitude.setCompleteValue(completeValue);
             });
 
+            // Initialiser avec 5 inputs,
+            let codeInputHexadecimal = $('#codeInputHexadecimal').codeInputBuilder({
+                type: 'hexadecimal',
+                numInputs: 5,
+                values: [0x1d, 0x02, 9, '0xc', 'b'],
+                minValues: [0x00, 0x00, 0x00, 0x00, 0x00],
+                maxValues: [0x0f, 0x0f, 0x0f, 0x0f, 0x0f],
+                onValueChange: function($input, newValue) {
+                    // Affichage de la valeur de l'input modifié
+                    $('#changeValueDisplayHexadecimal').text(`Input ${$input.attr('id')} a changé de valeur : 0x${newValue}`);
+                    
+                    // Met à jour l'affichage de la valeur complète
+                    const completeCode = codeInputHexadecimal.getCompleteValue();
+                    $('#completeValueDisplayHexadecimal').text(`Valeur actuelle : 0x${completeCode}`);
+                }
+            });
+            
+            // Gestionnaire de clic pour afficher la valeur complète
+            $('#getCompleteValueButtonHexadecimal').on('click', function() {
+                const completeCode = codeInputHexadecimal.getCompleteValue();
+                $('#completeValueDisplayHexadecimal').text(`Valeur courante : 0x${completeCode}`);
+            });
+            
+            // Gestionnaire de clic pour afficher la valeur complète
+            $('#setCompleteValueButtonHexadecimal').on('click', function() {
+                const completeValue = $('#valueInputHexadecimal').val();
+                codeInputHexadecimal.setCompleteValue(completeValue);
+            });
+
+            // Initialiser avec 5 inputs,
+            let codeInputBinary = $('#codeInputBinary').codeInputBuilder({
+                type: 'binary',
+                numInputs: 5,
+                values: [0x00, 0x01, 0x00, 0x01, 0x00],
+                onValueChange: function($input, newValue) {
+                    // Affichage de la valeur de l'input modifié
+                    $('#changeValueDisplayBinary').text(`Input ${$input.attr('id')} a changé de valeur : 0b${newValue}`);
+                    
+                    // Met à jour l'affichage de la valeur complète
+                    const completeCode = codeInputBinary.getCompleteValue();
+                    $('#completeValueDisplayBinary').text(`Valeur actuelle : 0b${completeCode}`);
+                }
+            });
+            
+            // Gestionnaire de clic pour afficher la valeur complète
+            $('#getCompleteValueButtonBinary').on('click', function() {
+                const completeCode = codeInputBinary.getCompleteValue();
+                $('#completeValueDisplayBinary').text(`Valeur courante : 0b${completeCode}`);
+            });
+            
+            // Gestionnaire de clic pour afficher la valeur complète
+            $('#setCompleteValueButtonBinary').on('click', function() {
+                const completeValue = $('#valueInputBinary').val();
+                codeInputBinary.setCompleteValue(completeValue);
+            });
+
+            // Initialiser avec 5 inputs,
+            let codeInputLetter = $('#codeInputLetter').codeInputBuilder({
+                type: 'letter',
+                numInputs: 5,
+                values: [0x00, 0xcd, 14, '0', 'µ'],
+                minValues: [0x00, 0x00, 0x00, 0x00, 0x00],
+                maxValues: [0xff, 0xff, 0xff, 0xff, 0xff],
+                onValueChange: function($input, newValue) {
+                    // Affichage de la valeur de l'input modifié
+                    $('#changeValueDisplayLetter').text(`Input ${$input.attr('id')} a changé de valeur : ${newValue}`);
+                    
+                    // Met à jour l'affichage de la valeur complète
+                    const completeCode = codeInputLetter.getCompleteValue();
+                    $('#completeValueDisplayLetter').text(`Valeur actuelle : ${completeCode}`);
+                }
+            });
+            
+            // Gestionnaire de clic pour afficher la valeur complète
+            $('#getCompleteValueButtonLetter').on('click', function() {
+                const completeCode = codeInputLetter.getCompleteValue();
+                $('#completeValueDisplayLetter').text(`Valeur courante : ${completeCode}`);
+            });
+            
+            // Gestionnaire de clic pour afficher la valeur complète
+            $('#setCompleteValueButtonLetter').on('click', function() {
+                const completeValue = $('#valueInputLetter').val();
+                codeInputLetter.setCompleteValue(completeValue);
+            });
+
             // Initialiser avec 5 inputs, avec des valeurs min et max différentes pour chaque input
             let codeInputText = $('#codeInputText').codeInputBuilder({ 
                 type: 'text', 
@@ -466,7 +646,7 @@
                 codeInputText.setCompleteValue(completeValue);
             });
             
-             // Initialiser avec 5 inputs, avec des valeurs min et max différentes pour chaque input
+            // Initialiser avec 5 inputs, avec des valeurs min et max différentes pour chaque input
             let codeInputNot = $('#codeInputNot').codeInputBuilder({ 
                 type: 'xxxxx'
             });

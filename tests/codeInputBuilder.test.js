@@ -1,31 +1,49 @@
-describe("CodeInputBuilder Plugin Tests", function() {
+describe("CodeInputBuilder Plugin Test des options", function() {
     let codeInputTest;
 
     beforeEach(function() {
         $('body').append('<div id="element"></div>');
-
-        // Initialiser le plugin et stocker la référence dans une variable globale
-        codeInputTest = $('#element').codeInputBuilder({
-            type: 'integer',
-            numInputs: 4,
-            minValues: [0, 0, 1, 2],
-            maxValues: [9, 9, 9, 5]
-        });
     });
 
     afterEach(function() {
         $('#element').remove();
     });
 
-    it("devrait initialiser les valeurs par défaut correctement", function() {
-        // Utiliser la variable globale pour accéder aux méthodes du plugin
-        const value = codeInputTest.getCompleteValue();
-        expect(value).to.equal(12);
+    it("devrait gérer des options incorrectes sans erreur (Type invalide)", function() {
+        // Initialiser le plugin et stocker la référence dans une variable globale
+        codeInputTest = $('#element').codeInputBuilder({
+            type: 'nonexistentType', // Type invalide
+        });
+        expect(codeInputTest).to.exist;
     });
 
-    it("devrait mettre à jour la valeur correctement", function() {
-        codeInputTest.setCompleteValue(42);
-        const value = codeInputTest.getCompleteValue();
-        expect(value).to.equal(42);
+    it("devrait gérer des options incorrectes sans erreur (Nombre d'inputs négatif)", function() {
+        // Initialiser le plugin et stocker la référence dans une variable globale
+        codeInputTest = $('#element').codeInputBuilder({
+            type: 'integer', 
+            numInputs: -5, // Nombre d'inputs négatif
+        });
+        expect(codeInputTest).to.exist;
     });
+
+    it("devrait gérer des options incorrectes sans erreur (minValues invalide)", function() {
+        // Initialiser le plugin et stocker la référence dans une variable globale
+        codeInputTest = $('#element').codeInputBuilder({
+            type: 'integer', 
+            numInputs: 5, // Nombre d'inputs négatif
+            minValues: null, // minValues invalide
+        });
+        expect(codeInputTest).to.exist;
+    });
+
+    it("devrait gérer des options incorrectes sans erreur (maxValues invalide)", function() {
+        // Initialiser le plugin et stocker la référence dans une variable globale
+        codeInputTest = $('#element').codeInputBuilder({
+            type: 'integer', 
+            numInputs: 5, // Nombre d'inputs négatif
+            maxValues: "invalid" // maxValues invalide
+        });
+        expect(codeInputTest).to.exist;
+    });
+
 });

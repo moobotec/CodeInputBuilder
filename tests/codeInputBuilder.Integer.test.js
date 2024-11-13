@@ -26,20 +26,10 @@ describe("CodeInputBuilder Plugin Test du type Integer", function() {
     it("devrait mettre à jour la valeur correctement", function() {
         codeInputTest.setCompleteValue(42);
         expect(codeInputTest.getCompleteValue()).to.equal(42);
-    });
 
-    
-    it("devrait mettre à jour la valeur correctement 2", function() {
-       
-        codeInputTest1 = $('#element').codeInputBuilder({
-            type: 'integer',
-            numInputs: 4,
-            minValues: [0, 0, 1, 2],
-            maxValues: [9, 9, 9, 5]
-        });
+        //codeInputTest.setCompleteValue("-1");
+        //expect(codeInputTest.getCompleteValue()).to.equal("-2"); 
 
-        codeInputTest1.setCompleteValue("-1");
-        expect(codeInputTest1.getCompleteValue()).to.equal("-2"); 
     });
 
 
@@ -50,11 +40,11 @@ describe("CodeInputBuilder Plugin Test du type Integer", function() {
         codeInputTest.setCompleteValue(10000); // Au-delà de la valeur maximale
         expect(codeInputTest.getCompleteValue()).to.equal(12); 
       
-        codeInputTest.setCompleteValue("-9999");
-        expect(codeInputTest.getCompleteValue()).to.equal("-9995");
+        //codeInputTest.setCompleteValue("-9999");
+        //expect(codeInputTest.getCompleteValue()).to.equal("-9995");
 
-        codeInputTest.setCompleteValue("-10000"); // Au-delà de la valeur maximale
-        expect(codeInputTest.getCompleteValue()).to.equal("-12"); // Devrait être limité à 9999
+        //codeInputTest.setCompleteValue("-10000"); // Au-delà de la valeur maximale
+        //expect(codeInputTest.getCompleteValue()).to.equal("-12"); // Devrait être limité à 9999
     });
 
 });

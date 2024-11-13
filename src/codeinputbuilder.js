@@ -647,8 +647,12 @@ if (typeof jQuery === 'undefined') {
             if (onchange && typeof settings.onValueChange === 'function') {
                 const newValue = getCurrentValueByIndex('current');
                 // Mise à jour de la région de notification pour les lecteurs d'écran
-                $('#live-update').text(`Input ${$input.attr('id')} a changé de valeur ${newValue}`);
-                
+                if (!$input) {
+                    $('#live-update').text(`Input ${$input.attr('id')} a changé de valeur ${newValue}`);
+                }
+                else{
+                    $('#live-update').text(`Le CodeInput a changé de valeur ${newValue}`);
+                }
                 // Appel du callback avec l'input et la nouvelle valeur
                 settings.onValueChange($input, newValue);
             }

@@ -5,6 +5,7 @@
       "test": "mocha tests/*.js"
     },
     "devDependencies": {
+      "jquery": "^3.6.0",
       "mocha": "^9.0.0", 
       "chai": "^4.3.4" 
     }

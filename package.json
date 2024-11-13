@@ -1,12 +1,28 @@
 {
-    "name": "code-input-builder",
-    "version": "0.0.7",
-    "scripts": {
-      "test": "mocha tests/*.js"
-    },
-    "devDependencies": {
-      "jquery": "^3.6.0",
-      "mocha": "^9.0.0", 
-      "chai": "^4.3.4" 
-    }
-  }
+  "name": "code-input-builder",
+  "version": "1.0.0",
+  "description": "Plugin jQuery pour créer des champs d'input configurables",
+  "main": "src/codeinputbuilder.js",
+  "scripts": {
+    "test": "karma start karma.conf.js"
+  },
+  "keywords": ["jquery", "plugin", "input", "test"],
+  "author": "Daumand David",
+  "license": "ISC",
+  "devDependencies": {
+    "chai": "^4.3.4",
+    "jquery": "^3.6.0",
+    "jsdom": "^20.0.0",
+    "karma": "^6.3.0",
+    "karma-chai": "^0.1.0",
+    "karma-chrome-launcher": "^3.1.0",
+    "karma-mocha": "^2.0.1",
+    "karma-webpack": "^5.0.0",
+    "mocha": "^9.0.0",
+    "webpack": "^5.64.0",
+    "babel-loader": "^8.2.2",
+    "@babel/core": "^7.15.0",
+    "@babel/preset-env": "^7.15.0"
+  },
+  "dependencies": {}
+}

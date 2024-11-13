@@ -1,5 +1,5 @@
 # .github/workflows/ci.yml
-name: Run JavaScript Tests Unitaires
+name: Run JavaScript Tests Unitaires with Karma
 
 on:
   push:

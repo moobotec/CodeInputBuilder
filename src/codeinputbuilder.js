@@ -355,7 +355,7 @@ if (typeof jQuery === 'undefined') {
             validate: (value) => typeof value === "number" && !isNaN(value) && isInteger(value),
             display: (value) => value,
             clamp: (value, min, max, settings) => clampCore(value, min, max, settings),
-            isAllowSign: true,
+            isForcedAllowSign: false,
             isAdjustToBounds: true,
             isGetDigit: true,
             isSetDigit: true,
@@ -371,7 +371,7 @@ if (typeof jQuery === 'undefined') {
             validate: (value) => typeof value === "number" && !isNaN(value) && isFloat(value),
             display: (value) => value,
             clamp: (value, min, max, settings) => clampCore(value, min, max, settings),
-            isAllowSign: true,
+            isForcedAllowSign: false,
             isAdjustToBounds: true,
             isGetDigit: true,
             isSetDigit: true,
@@ -387,7 +387,7 @@ if (typeof jQuery === 'undefined') {
             validate: (value) => typeof value === "number" && isValidBinary(value),
             display: (value) => value,
             clamp: (value, min, max, settings) => clampCore(value, min, max, settings),
-            isAllowSign: false,
+            isForcedAllowSign: false,
             isAdjustToBounds: true,
             isGetDigit: true,
             isSetDigit: true,
@@ -403,7 +403,7 @@ if (typeof jQuery === 'undefined') {
             validate: (value, settings) => settings.type !== 'letter' && typeof value === "string" && isValidHexadecimal(value),
             display: (value) => convertHexadecimalToLetter(value),
             clamp: (value, min, max, settings) => clampCore(value, min, max, settings),
-            isAllowSign: false,
+            isForcedAllowSign: false,
             isAdjustToBounds: false,
             isGetDigit: true,
             isSetDigit: true,
@@ -421,7 +421,7 @@ if (typeof jQuery === 'undefined') {
             validate: (value) => false,
             display: (value) => value,
             clamp: (value, min, max, settings) => NaN,
-            isAllowSign: false,
+            isForcedAllowSign: false,
             isAdjustToBounds: false,
             isGetDigit: false,
             isSetDigit: false,
@@ -435,7 +435,7 @@ if (typeof jQuery === 'undefined') {
             validate: (value) => false,
             display: (value) => convertChar(value),
             clamp: (value, min, max, settings) => settings.type === 'letter' ? convertChar(clampCore(convertLetter(value), min, max)) : clampCore(value, min, max),
-            isAllowSign: false,
+            isForcedAllowSign: false,
             isAdjustToBounds: false,
             isGetDigit: true,
             isSetDigit: true,
@@ -452,7 +452,7 @@ if (typeof jQuery === 'undefined') {
             validate: (value) => false,
             display: (value) => value,
             clamp: (value, min, max, settings) => NaN,
-            isAllowSign: false,
+            isForcedAllowSign: false,
             isAdjustToBounds: false,
             isGetDigit: false,
             isSetDigit: false,
@@ -513,7 +513,7 @@ if (typeof jQuery === 'undefined') {
 
     function isAllowSign(settings) {
         const handler = typeHandlers[settings.type];
-        return handler ? handler.isAllowSign : false && settings.allowSign;
+        return (handler ? handler.isForcedAllowSign : false) || settings.allowSign;
     }
 
     function isGetDigit(settings) {
@@ -526,9 +526,9 @@ if (typeof jQuery === 'undefined') {
         return handler ? handler.isSetDigit : false;
     }
 
-    function isForcedDisabled(settings) {
+    function isDisabled(settings) {
         const handler = typeHandlers[settings.type];
-        return handler ? handler.isForcedDisabled : false;
+        return ( handler ? handler.isForcedDisabled : false) || settings.isDisabled;
     }
 
     function defaultSign(settings) {
@@ -647,7 +647,7 @@ if (typeof jQuery === 'undefined') {
             if (onchange && typeof settings.onValueChange === 'function') {
                 const newValue = getCurrentValueByIndex('current');
                 // Mise à jour de la région de notification pour les lecteurs d'écran
-                if (!$input) {
+                if ($input != null) {
                     $('#live-update').text(`Input ${$input.attr('id')} a changé de valeur ${newValue}`);
                 }
                 else{
@@ -1469,8 +1469,11 @@ if (typeof jQuery === 'undefined') {
             }
         
             if (['integer', 'float', 'binary', 'hexadecimal', 'letter'].includes(settings.type)) {
+
+                console.log(isAllowSign(settings));
+
                 if (isAllowSign(settings)) {
-                    addInputElement("sign", "sign", null, null, getCurrentValueByIndex("sign"),'1',isForcedDisabled(settings) || settings.isDisabled);
+                    addInputElement("sign", "sign", null, null, getCurrentValueByIndex("sign"),'1',isDisabled(settings));
                 }
         
                 // Ajoute le préfixe "0b" pour binaire et "0x" pour hexadécimal si nécessaire
@@ -1484,7 +1487,7 @@ if (typeof jQuery === 'undefined') {
                     }
                     // Récupère les paramètres pour chaque input et ajoute l'élément
                     const { min, max, value } = getAdjustedValueSettings(i - 1, null, settings);
-                    addInputElement("digits", i, min, max, value,'1',isForcedDisabled(settings) || settings.isDisabled);
+                    addInputElement("digits", i, min, max, value,'1',isDisabled(settings));
         
                     // Met à jour les valeurs actuelles et finales pour l'input
                     updateCurrentValues(i - 1, value);
@@ -1494,7 +1497,7 @@ if (typeof jQuery === 'undefined') {
                 $container.append($inputContainer);
             } else if (settings.type === 'text') {
                 // Ajoute l'élément de liste pour le type texte
-                addInputElement("list", "list", 0, settings.values.length - 1, settings.values[settings.defaultValue], '30', isForcedDisabled(settings) || settings.isDisabled);
+                addInputElement("list", "list", 0, settings.values.length - 1, settings.values[settings.defaultValue], '30', isDisabled(settings));
                 $container.append($inputContainer);
                 updateCurrentValues('current', settings.values[settings.defaultValue]);
             }
@@ -1547,7 +1550,7 @@ if (typeof jQuery === 'undefined') {
 
         this.toggleInputs = function(disabled) {
             settings.isDisabled = disabled; // Met à jour l'option dans les paramètres
-            this.find('input').prop('disabled', isForcedDisabled(settings) || disabled); // Applique le changement à tous les inputs
+            this.find('input').prop('disabled', isDisabled(settings)); // Applique le changement à tous les inputs
         };
 
         // Méthode pour récupérer la valeur complète

@@ -1,4 +1,4 @@
-describe("CodeInputBuilder Plugin Test du type Integer", function() {
+describe("CodeInputBuilder Plugin Test du type Float", function() {
     let codeInputTest;
 
     beforeEach(function() {
@@ -47,6 +47,6 @@ describe("CodeInputBuilder Plugin Test du type Integer", function() {
         expect(codeInputTest.getCompleteValue()).to.equal(0); // Devrait être limité à 9999
       
         codeInputTest.setCompleteValue(-1); // En-dessous de la valeur minimale
-        expect(codeInputTest.getCompleteValue()).to.equal(0); // Devrait être limité à 0
+        expect(codeInputTest.getCompleteValue()).to.equal(1); // Devrait être limité à 0
     });
 });

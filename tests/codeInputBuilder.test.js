@@ -1,6 +1,8 @@
 // tests/codeInputBuilder.test.js
 const expect = require('chai').expect;
 const $ = require('jquery');
+global.$ = $; // Assure que $ est disponible globalement pour le plugin
+
 require('../src/codeinputbuilder.js');
 
 describe("CodeInputBuilder Plugin Tests", function() {

@@ -1,14 +1,21 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.6
+Version: 0.0.7
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
-Description: Un plugin jQuery pour générer des champs d'input configurables pour saisir des codes numériques ou flottants.
+Description: Code Input Builder est un plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.
+
+Fonctionnalités :
+- Configuration flexible du type de valeur (entier, flottant, texte, binaire, hexadécimal, lettre)
+- Définition des valeurs initiales, des limites minimales et maximales pour chaque input
+- Saisie facilitée avec un focus automatique et un défilement pour ajuster les valeurs
+- Gestion des signes (+/-) et des séparateurs pour les décimales
+- Callback `onValueChange` pour réagir aux changements de valeurs
 
 Options disponibles:
     - `type`: (string) Définit le type de valeur acceptée par les inputs.
-        * Valeurs possibles : 'integer' ou 'float'.
+        * Valeurs possibles : 'integer', 'float', 'text', 'binary', 'hexadecimal', 'letter'.
         * Par défaut : 'integer'.
 
     - `numInputs`: (integer) Nombre total d'inputs affichés.
@@ -60,16 +67,18 @@ Options disponibles:
     - `requireKeyForScroll`: (string) Touche à enfoncer (par exemple 'Control' ou 'Shift') pour activer le défilement sur les inputs.
         * Valeurs possibles : 'Control', 'Shift', 'Alt', 'Meta'.
         * Par défaut : null (aucune touche requise).
-        
+
     - `autoFocusNextInput`: (boolean) Active le décalage automatique du focus vers l'input suivant lors de la saisie.
         * Par défaut : false.
 
     - `autoFocusNextInputDirection`: (string) Détermine la direction du décalage automatique du focus.
         * Valeurs possibles : 'forward', 'right', 'backward', 'left'.
         * Par défaut : null.
+        
+    - `isDisabled`: (boolean) Permet de désactiver les inputs. Si activé, les champs ne seront pas modifiables par l'utilisateur. Dans le cas d'un CodeInput de type "text" cette option n'est pas utilisable.
+        * Par défaut : false.
 
-Usage:
-    // Initialisation de base
+Usage basique :
     $('#element').codeInputBuilder({
         type: 'float',
         numInputs: 4,
@@ -83,10 +92,6 @@ Usage:
         requireKeyForScroll: 'Control'
     });
 
-Méthodes:
-    - `getCompleteValue()`: Récupère la valeur complète entrée par l'utilisateur sous forme de chaîne ou nombre.
-    - `setCompleteValue(value, onchange = false)`: Définit une nouvelle valeur complète et met à jour les inputs.
-
 */
 
 if (typeof jQuery === 'undefined') {
@@ -95,7 +100,8 @@ if (typeof jQuery === 'undefined') {
 
 (function ($) {
     
-        // Fonction de validation des options
+    
+    // Fonction de validation des options
     function initCodeInputBuilderOptions(options) {
         const defaultOptions = {
             type: 'integer',
@@ -116,7 +122,8 @@ if (typeof jQuery === 'undefined') {
             requireKeyForScroll: null,
             autoFocusNextInput: false,
             autoFocusNextInputDirection: null,
-            gap: '10px'
+            gap: '10px',
+            isDisabled: false // Nouvelle option pour désactiver les inputs
         };
 
         const settings = $.extend({}, defaultOptions, options);
@@ -174,201 +181,42 @@ if (typeof jQuery === 'undefined') {
         return settings;
     }
 
-    function isNumeric(value) {
-        return typeof value === "number" && !isNaN(value);
+    function findPosition(array, element) {
+        return array.indexOf(element);
     }
 
-    function isHexadecimal(value) {
-        return typeof value === "string" && /^0x[0-9a-fA-F]+$/.test(value);
+    function uuidShort() {
+        return 'xxxxxxxx'.replace(/[x]/g, function () {
+            const r = Math.random() * 16 | 0;
+            return r.toString(16);
+        });
     }
 
-    function hexCharToHex(hexString) {
-        // Convertit la chaîne hexadécimale en entier
-        const value = parseInt(hexString, 16);
-        // Si la valeur est entre 0 et 9, renvoie le caractère numérique correspondant
-        if (value >= 0 && value <= 9) {
-            return charToHex(String.fromCharCode(0x30 + value)); // '0' à '9'
-        }
-        // Si la valeur est entre 10 et 15, renvoie le caractère alphabétique correspondant
-        else if (value >= 10 && value <= 15) {
-            return charToHex(String.fromCharCode(0x61 + (value - 10))); // 'a' à 'f'
-        }
-        // Si la valeur est hors de la plage, retourne null ou une valeur par défaut
-        return null;
+    function getValueLimits(inputElement) {
+        const valueMin = convertIntegerBase10($(inputElement).attr('data-min'));
+        const valueMax = convertIntegerBase10($(inputElement).attr('data-max'));
+        return { valueMin, valueMax };
     }
 
-    function charToHex(char) {
-        // Vérifie si le caractère est entre '0' et '9'
-        if (char >= '0' && char <= '9') {
-            return (char.charCodeAt(0) - 0x30);
-        }
-        // Vérifie si le caractère est entre 'a' et 'f'
-        else if (char >= 'a' && char <= 'f') {
-            return (char.charCodeAt(0) - 0x61 + 10);
-        }
-        // Si le caractère n'est pas dans la plage autorisée, retourne null ou un message d'erreur
-        return null;
-    }
+    function calculateNextIndex(id, settings) {
+        let index = id;
     
-    function clampInteger(value, min, max) {
-        return Math.max(min, Math.min(value, max));
-    }
-
-    function clampChar(value, min, max) {
-        // Convertit les caractères en codes Unicode
-        const l_min = ((determineType(min) == 'letter') ? min.charCodeAt(0) : min);
-        const l_max = ((determineType(max) == 'letter') ? max.charCodeAt(0) : max);
-        let code = value.charCodeAt(0);
+        if (settings.autoFocusNextInput === true && settings.autoFocusNextInputDirection !== null) {
+            switch (settings.autoFocusNextInputDirection) {
+                case "Forward":
+                case "Right":
+                    index += 1;
+                    break;
+                case "Backward":
+                case "Left":
+                    index -= 1;
+                    break;
+                default:
+                    console.warn(`Direction "${settings.autoFocusNextInputDirection}" non reconnue. L'index reste inchangé.`);
+            }
+        }
     
-        // Ajuste `code` pour qu'il soit entre `min` et `max`
-        code = Math.max(l_min, Math.min(code, l_max));
-    
-        // Convertit le code ajusté en caractère
-        return String.fromCharCode(code);
-    }
-
-    function determineType(value) {
-        if (isHexadecimal(value)) {
-            return "hexadecimal";
-        } else if (isNumeric(value))  {
-            return "integer";
-        } else {
-            return "letter";
-        }
-    }
-
-    function isAllowSign(settings) {
-        if (settings.type === 'float' ||  settings.type === 'integer')  
-        {
-            return settings.allowSign;
-        }
-        return false;
-    }
-
-    function defaultSign(settings) {
-        return isAllowSign(settings) ? settings.defaultSign : null;
-    }
-
-    function valueDigitMin(settings) {
-        const minValues = {
-            float: 0x00,
-            integer: 0x00,
-            binary: 0x00,
-            hexadecimal: 0x00,
-            letter: 0x00
-        };
-        return minValues[settings.type] ?? null;
-    }
-    
-    function valueDigitMax(settings) {
-        const maxValues = {
-            float: 0x09,       // Décimal : chiffres 0 à 9
-            integer: 0x09,     // Décimal : chiffres 0 à 9
-            binary: 0x01,      // Binaire : 0 et 1
-            hexadecimal: 0x0f, // Hexadécimal : 0 à 9 et a à f
-            letter: 0xff       // Lettres ANSI
-        };
-        return maxValues[settings.type] ?? null;
-    }
-
-    function maxValue(index,settings) {
-        let value = settings.maxValues[index] ;
-        const type = determineType(value);
-        switch (type) {
-            case 'float':
-            case 'integer':
-            case 'binary':
-                return parseInt(value,10);
-            case 'hexadecimal':
-                return hexToChar(value);
-            case 'letter':
-                if (value.length === 1)
-                {
-                    if( settings.type == 'hexadecimal' ) return charToHex(value);
-                    return value.charCodeAt(0);
-                }
-                return NaN;
-            default:
-                return NaN;
-        }
-    }
-
-    function minValue(index,settings) {
-        let value = settings.minValues[index] ;
-        const type = determineType(value);
-        switch (type) {
-            case 'float':
-            case 'integer':
-            case 'binary':
-                return parseInt(value,10); 
-            case 'hexadecimal':
-                return hexCharToHex(value);
-            case 'letter':
-                if (value.length === 1)
-                {
-                    if( settings.type == 'hexadecimal' )  return charToHex(value);
-                    return value.charCodeAt(0);
-                }
-                return NaN;
-            default:
-                return NaN;
-        }
-    }
-
-    function defaultValue(index,settings) {
-        let value = settings.values[index] ;
-        const type = determineType(value);
-        switch (type) {
-            case 'float':
-            case 'integer':
-            case 'binary':
-                return parseInt(value,10);
-            case 'hexadecimal':
-                return hexCharToHex(value);
-            case 'letter':
-                if (value.length === 1)
-                {
-                    if( settings.type == 'hexadecimal' )  return charToHex(value);
-                    return value.charCodeAt(0);
-                }
-                return NaN;
-            default:
-                return NaN;
-        }
-    }
-
-    function clampValue(value,min,max) {
-        const type = determineType(value);
-        switch (type) {
-            case 'float':
-            case 'integer':
-            case 'binary':
-                return clampInteger(value,min,max); 
-            case 'hexadecimal':
-            case 'letter':
-                return clampChar(value,min,max); 
-            default:
-                return NaN;
-        }
-    }
-
-    function makeValueElement(value, settings) {
-        switch (settings.type) {
-            case 'float':
-            case 'integer':
-            case 'binary':
-                return value;
-            case 'hexadecimal':
-                if (value <= 9) {
-                    return String.fromCharCode(0x30 + value);
-                } else {
-                    return String.fromCharCode(0x61 + value - 10);
-                }
-            case 'letter':
-                return String.fromCharCode(value);
-            default:
-                return "NaN";
-        }
+        return index;
     }
 
     function escapeHtml(text) {
@@ -393,9 +241,9 @@ if (typeof jQuery === 'undefined') {
     function convertFromEscapedChar(escapedStr) {
         switch (escapedStr) {
             case "\\0x00":
-                return String.fromCharCode(0); 
+                return convertChar(0); 
             case "\\0x0b":
-                return String.fromCharCode(11); 
+                return convertChar(11); 
             case "\\t":
                 return "\t"; // Tabulation
             case "\\n":
@@ -406,13 +254,39 @@ if (typeof jQuery === 'undefined') {
                 return "\b"; // Retour arrière
             case "\\f":
                 return "\f"; // Saut de page
+            case "&amp;":
+                return '&'; 
+            case "&lt;":
+                return '<'; 
+            case "&gt;":
+                return '>'; 
+            case "&quot;":
+                return '"'; 
+            case "&#39;":
+                return "'"; 
+            case "Espace":
+                return ' ';
+            case "&copy;":
+                return '©'; 
+            case "&reg;":
+                return '®'; 
+            case "&trade;":
+                return '™';
+            case "&euro;":
+                return '€'; 
+            case "&cent;":
+                return '¢'; 
+            case "&pound;":
+                return '£'; 
+            case "&yen;":
+                return '¥'; 
             default:
                 return escapedStr; // Retourne la chaîne elle-même si elle n'est pas reconnue
         }
     }
 
     function convertToEscapedChar(char) {
-        const charCode = char.charCodeAt(0);
+        const charCode = convertLetter(char);
     
         switch (charCode) {
             case 9:
@@ -430,37 +304,325 @@ if (typeof jQuery === 'undefined') {
         }
     }
 
-    function setElement(type, object, value, settings) {
-        let val = makeValueElement(value,settings);
-        if (settings.type == 'letter') val = convertToEscapedChar(val);
-        if ( type == 'input' ) $(object).val(val);
-        if ( type == 'div' ) {
-            if (settings.type == 'letter' )
-            {
-                if (  val.charCodeAt(0) == 0 ) val = '\\0x00';
-                if (  val.charCodeAt(0) == 11 ) val = '\\0x0b';
-            } 
-            $(object).html(escapeHtml(val));
+    function convertFloat(value) { return parseFloat(value); }
+    function convertIntegerBase10(value) { return parseInt(value,10); }
+    function convertIntegerBase16(value) { return parseInt(value,16); }
+    function convertBinary(value) { return parseInt(value,2); }
+    function convertLetter(value) { return value.charCodeAt(0); }
+    function convertChar(value) { return String.fromCharCode(value); }
+
+    function convertHexadecimalToLetter(value) {
+        if (value >= 0 && value <= 9) {
+            return convertChar(0x30 + value); // '0' à '9'
         }
+        // Si la valeur est entre 10 et 15, renvoie le caractère alphabétique correspondant
+        else if (value >= 10 && value <= 15) {
+            return convertChar(0x61 + (value - 10)); // 'a' à 'f'
+        }
+        // Si le caractère n'est pas dans la plage autorisée, retourne null ou un message d'erreur
+        return null;
+    }
+
+    function convertLetterToHexadecimal(char) {
+        // Vérifie si le caractère est entre '0' et '9'
+        if (char >= '0' && char <= '9') {
+            return (convertLetter(char) - 0x30);
+        }
+        // Vérifie si le caractère est entre 'a' et 'f'
+        else if (char >= 'a' && char <= 'f') {
+            return (convertLetter(char) - 0x61 + 10);
+        }
+        // Si le caractère n'est pas dans la plage autorisée, retourne null ou un message d'erreur
+        return null;
+    }
+    
+    function isInteger(value) {
+        return Number(value) === value && Number.isInteger(value);
+    }
+
+    function isFloat(value) {
+        return Number(value) === value && !Number.isInteger(value);
+    }
+    
+    // Vérifie si la valeur est un nombre valide en fonction du type
+    const isValidIntegerOrFloat = (val) => /^[-+]?\d+(\.\d+)?$/.test(val);
+    const isValidBinary = (val) => /^0b[01]+$/.test(val) || /^[01]+$/.test(val);
+    const isValidHexadecimal = (val) => /^0x[0-9a-fA-F]+$/.test(val) || /^[0-9a-fA-F]+$/.test(val);
+
+    const typeHandlers = {
+        integer: {
+            convert: (value) => convertIntegerBase10(value),
+            validate: (value) => typeof value === "number" && !isNaN(value) && isInteger(value),
+            display: (value) => value,
+            clamp: (value, min, max, settings) => clampCore(value, min, max, settings),
+            isAllowSign: true,
+            isAdjustToBounds: true,
+            isGetDigit: true,
+            isSetDigit: true,
+            min: 0x00,
+            max: 0x09,
+            isForcedDisabled : false,
+            isValidKey: (codeTouche, valueMax ) => 
+                (codeTouche >= 48 && codeTouche <= 48 + valueMax) || // Chiffres (0-9)
+                (codeTouche >= 96 && codeTouche <= 96 + valueMax) // Pavé numérique (0-9)
+        },
+        float: {
+            convert: (value) => convertFloat(value),
+            validate: (value) => typeof value === "number" && !isNaN(value) && isFloat(value),
+            display: (value) => value,
+            clamp: (value, min, max, settings) => clampCore(value, min, max, settings),
+            isAllowSign: true,
+            isAdjustToBounds: true,
+            isGetDigit: true,
+            isSetDigit: true,
+            min: 0x00,
+            max: 0x09,
+            isForcedDisabled : false,
+            isValidKey: (codeTouche, valueMax) => 
+                (codeTouche >= 48 && codeTouche <= 48 + valueMax) || // Chiffres (0-9)
+                (codeTouche >= 96 && codeTouche <= 96 + valueMax ) // Pavé numérique (0-9)
+        },
+        binary: {
+            convert: (value) => convertBinary(value),
+            validate: (value) => typeof value === "number" && isValidBinary(value),
+            display: (value) => value,
+            clamp: (value, min, max, settings) => clampCore(value, min, max, settings),
+            isAllowSign: false,
+            isAdjustToBounds: true,
+            isGetDigit: true,
+            isSetDigit: true,
+            min: 0x00,
+            max: 0x01,
+            isForcedDisabled : false,
+            isValidKey: (codeTouche) => 
+                codeTouche === 48 || codeTouche === 49 || // Chiffres 0 et 1
+                codeTouche === 96 || codeTouche === 97 // Pavé numérique 0 et 1
+        },
+        hexadecimal: {
+            convert: (value) => convertIntegerBase16(value),
+            validate: (value, settings) => settings.type !== 'letter' && typeof value === "string" && isValidHexadecimal(value),
+            display: (value) => convertHexadecimalToLetter(value),
+            clamp: (value, min, max, settings) => clampCore(value, min, max, settings),
+            isAllowSign: false,
+            isAdjustToBounds: false,
+            isGetDigit: true,
+            isSetDigit: true,
+            min: 0x00,
+            max: 0x0f,
+            isForcedDisabled : false,
+            isValidKey: (codeTouche) => 
+                (codeTouche >= 48 && codeTouche <= 57) || // Chiffres (0-9)
+                (codeTouche >= 65 && codeTouche <= 70) || // Lettres A-F
+                (codeTouche >= 97 && codeTouche <= 102) || // Lettres a-f
+                (codeTouche >= 96 && codeTouche <= 105) // Pavé numérique (0-9)
+        },
+        letter_hexadecimal: {
+            convert: (value) => convertLetterToHexadecimal(value),
+            validate: (value) => false,
+            display: (value) => value,
+            clamp: (value, min, max, settings) => NaN,
+            isAllowSign: false,
+            isAdjustToBounds: false,
+            isGetDigit: false,
+            isSetDigit: false,
+            min: NaN,
+            max: NaN,
+            isForcedDisabled : false,
+            isValidKey: () => false // Aucune touche valide pour ce type
+        },
+        letter: {
+            convert: (value) => convertLetter(value),
+            validate: (value) => false,
+            display: (value) => convertChar(value),
+            clamp: (value, min, max, settings) => settings.type === 'letter' ? convertChar(clampCore(convertLetter(value), min, max)) : clampCore(value, min, max),
+            isAllowSign: false,
+            isAdjustToBounds: false,
+            isGetDigit: true,
+            isSetDigit: true,
+            min: 0x00,
+            max: 0xff,
+            isForcedDisabled : false,
+            isValidKey: (codeTouche) => 
+                !(codeTouche >= 16 && codeTouche <= 18) && // Exclut Ctrl, Shift, Alt
+                codeTouche !== 91 && // Exclut Windows (Meta)
+                codeTouche !== 93 // Exclut Menu Contextuel
+        },
+        text: {
+            convert: (value) => value.toString(),
+            validate: (value) => false,
+            display: (value) => value,
+            clamp: (value, min, max, settings) => NaN,
+            isAllowSign: false,
+            isAdjustToBounds: false,
+            isGetDigit: false,
+            isSetDigit: false,
+            min: NaN,
+            max: NaN,
+            isForcedDisabled : true,
+            isValidKey: () => true // Autorise toutes les touches pour le texte
+        }
+    };
+    
+    // Fonction pour vérifier si une touche est autorisée en fonction du type d'input
+    function isKeyAllowed(codeTouche, valueMax, type) {
+        const handler = typeHandlers[type];
+        return handler ? handler.isValidKey(codeTouche, valueMax) : false;
+    }
+    
+    function convertDigitByType(value, type) {
+        const handler = typeHandlers[type];
+        return handler ? handler.convert(value) : NaN;
+    }
+
+    function valueDigitMin(settings) {
+        const handler = typeHandlers[settings.type];
+        return handler ? handler.min : NaN;
+    }
+    
+    function valueDigitMax(settings) {
+        const handler = typeHandlers[settings.type];
+        return handler ? handler.max : NaN;
+    }
+
+    function determineType(value,settings) {
+        // Parcourt chaque type dans typeHandlers pour trouver le premier type qui valide la valeur
+        for (const [type, handler] of Object.entries(typeHandlers)) {
+            if (handler.validate(value,settings)) {
+                return type;
+            }
+        }
+        // Si aucune validation de typeHandlers ne correspond, retourne "letter" par défaut
+        return "letter";
+    }
+
+    function clampValue(value, min, max, settings) {
+        const type = determineType(value,settings);
+        const handler = typeHandlers[type];
+        return handler ? handler.clamp(value,min, max,settings) : NaN;
+    }
+
+    function makeValueElement(value, settings) {
+        const handler = typeHandlers[settings.type];
+        return handler ? handler.display(value) : NaN;
+    }
+
+    function isAdjustToBounds(settings) {
+        const handler = typeHandlers[settings.type];
+        return handler ? handler.isAdjustToBounds : false;
+    }
+
+    function isAllowSign(settings) {
+        const handler = typeHandlers[settings.type];
+        return handler ? handler.isAllowSign : false && settings.allowSign;
+    }
+
+    function isGetDigit(settings) {
+        const handler = typeHandlers[settings.type];
+        return handler ? handler.isGetDigit : false;
+    }
+
+    function isSetDigit(settings) {
+        const handler = typeHandlers[settings.type];
+        return handler ? handler.isSetDigit : false;
+    }
+
+    function isForcedDisabled(settings) {
+        const handler = typeHandlers[settings.type];
+        return handler ? handler.isForcedDisabled : false;
+    }
+
+    function defaultSign(settings) {
+        return isAllowSign(settings) ? settings.defaultSign : null;
+    }
+
+    function getValueByType(index, valueArray, settings) {
+        const value = valueArray[index];
+        // Vérifie si la valeur existe et la détermine le type
+        if (value === undefined) return NaN;
+        const type = determineType(value,settings);
+        return convertDigitByType(value,(type == 'letter' && settings.type === 'hexadecimal') ? 'letter_hexadecimal' : type);
+    }
+    
+    function maxValue(index, settings) {
+        return getValueByType(index, settings.maxValues, settings);
+    }
+    
+    function minValue(index, settings) {
+        return getValueByType(index, settings.minValues, settings);
+    }
+    
+    function defaultValue(index, settings) {
+        return getValueByType(index, settings.values, settings);
+    }
+    
+    // Fonction interne pour effectuer le clamp
+    function clampCore(value, min, max ,settings ) {
+        const l_min = determineType(min,settings) === 'letter' ? convertLetter(min) : min;
+        const l_max = determineType(max,settings) === 'letter' ? convertLetter(max) : max;
+        return Math.max(l_min, Math.min(value, l_max));
+    }
+
+    function setElement(type, object, value, settings) {
+        let val = makeValueElement(value, settings);
+        if (settings.type == 'letter') val = convertToEscapedChar(val);
+        // Utiliser des fonctions spécifiques pour chaque type d'élément
+        if (type === 'input') {
+            setInputValue(object, val);
+        } else if (type === 'div') {
+            setDivValue(object, val, settings);
+        }
+    }
+    
+    // Gère la valeur pour un élément input
+    function setInputValue(object, val) {
+        $(object).val(val);
+    }
+    
+    // Gère la valeur pour un élément div
+    function setDivValue(object, val, settings) {
+        if (settings.type === 'letter') {
+            val = handleSpecialLetters(val);
+            $(object).html(escapeHtml(val));
+        } else {
+            $(object).html(val);
+        }
+    }
+    
+    // Gestion des caractères spéciaux pour le type lettre
+    function handleSpecialLetters(val) {
+        if (convertLetter(val) === 0) return '\\0x00';
+        if (convertLetter(val) === 11) return '\\0x0b';
+        return val;
     }
 
     function getElement(type, object, settings) {
-        let value = (type == 'input') ? $(object).val() : $(object).html() ;
-        value = convertFromEscapedChar(value);
-        switch (settings.type) {
-            case 'float':
-            case 'integer':
-            case 'binary':
-                return parseInt(value,10); //  Convertit en entier   
-            case 'hexadecimal':
-                // Convertit les valeurs hexadécimales (0-9, a-f)
-                return /^[0-9a-fA-F]+$/.test(value) ? parseInt(value, 16) : NaN;
-            case 'letter':
-                // Récupère le code ASCII du premier caractère (si non vide)
-                return value.length === 1 ? value.charCodeAt(0) : NaN;
-            default:
-                return NaN;
+        let value = (type === 'input') ? $(object).val() : $(object).html();
+        if (settings.type === 'letter') value = convertFromEscapedChar(value);
+        return convertDigitByType(value, settings.type);
+    }
+
+    function calculateAdjacentValues(value) 
+    {
+        const currentValue = convertIntegerBase10(value);
+        const valueTop = currentValue - 1;
+        const valueBottom = currentValue + 1;
+        return { valueTop, valueBottom };
+    }
+
+    function getValidLimitDigit(limitDigit, id) {
+        // Vérifie si l'index est valide et si la valeur correspond à un nombre
+        if (Array.isArray(limitDigit) && 
+            limitDigit[id - 1] !== undefined && 
+            typeof limitDigit[id - 1] === 'number') {
+            return convertIntegerBase10(limitDigit[id - 1]); // Retourne la valeur valide
         }
+        return 0; // Retourne la valeur par défaut si invalide
+    }
+
+    function adjustToBounds(value, min, max, othervalue = null,  othervaluemin = null, othervaluemax = null) {
+        if (min !== undefined && min !== null && typeof min === 'number' && value <= min) return (othervaluemin != null) ? othervaluemin : min;
+        if (max !== undefined && max !== null && typeof max  === 'number' && value >= max) return (othervaluemax != null) ? othervaluemax : max;
+        return ( othervalue != null ) ? othervalue : value;
     }
 
     $.fn.codeInputBuilder = function (options) {
@@ -474,19 +636,30 @@ if (typeof jQuery === 'undefined') {
             value : '',
             digits: new Array(settings.numInputs).fill(0), // Tableau pour n digits
             sign: defaultSign(settings), // Valeur pour sign
-            indexList: -1 
+            list: '' 
         };
 
         let limitDigitMin = ( settings.totalMin !== undefined && settings.totalMin != null ) ? numberToDigitsArray(settings.totalMin) : null;
         let limitDigitMax = ( settings.totalMax !== undefined && settings.totalMax != null ) ? numberToDigitsArray(settings.totalMax) : null;
         let uniqueTypeShort = settings.type + '_' + uuidShort();
         
+        function triggerValueChange($input, settings, onchange = true) {
+            if (onchange && typeof settings.onValueChange === 'function') {
+                const newValue = getCurrentValueByIndex('current');
+                // Mise à jour de la région de notification pour les lecteurs d'écran
+                $('#live-update').text(`Input ${$input.attr('id')} a changé de valeur ${newValue}`);
+                
+                // Appel du callback avec l'input et la nouvelle valeur
+                settings.onValueChange($input, newValue);
+            }
+        }
+    
         // Fonction pour mettre à jour les valeurs en fonction de l'index
         function updateCurrentValues(index, value) {
             if (index === "sign") {
                 currentValues.sign = value;
             } else if (index === "list") {
-                currentValues.indexList = value;
+                currentValues.list = value;
             } else if (index === "current") {
                 currentValues.value = value;
             } else if (index === "fillDigits") {
@@ -502,7 +675,7 @@ if (typeof jQuery === 'undefined') {
             if (index === "sign") {
                 return currentValues.sign;
             } else if (index === "list") {
-                return currentValues.indexList;
+                return currentValues.list;
             } else if (index === "current") {
                 return currentValues.value;
             } else if (index === "digits") {
@@ -513,84 +686,78 @@ if (typeof jQuery === 'undefined') {
             return null;
         }
 
-        function findPosition(array, element) {
-            return array.indexOf(element);
+        function processFloatParts(value, settings) {
+            const maxDecimalLength = settings.numInputs - settings.decimalPosition;
+            let [integer, decimal = ''] = value.split('.');
+            integer = integer.padStart(settings.decimalPosition, '0');
+            decimal = (decimal || '').slice(0, maxDecimalLength).padEnd(maxDecimalLength, '0');
+            return [integer, decimal];
         }
 
-        function uuidShort() {
-            return 'xxxxxxxx'.replace(/[x]/g, function () {
-                const r = Math.random() * 16 | 0;
-                return r.toString(16);
-            });
-        }
-
-        function convertCodeToChar(codeTouche) {
-            return String.fromCharCode(codeTouche);
-        }
-
-        function getValueLimits(inputElement) {
-            const valueMin = parseInt($(inputElement).attr('data-min'), 10);
-            const valueMax = parseInt($(inputElement).attr('data-max'), 10);
-            return { valueMin, valueMax };
-        }
-
-        function fillDigits(number, type) {
-            if (isNaN(number)) {
-                return;
-            }
-            // Ajuste `number` selon les limites `totalMin` et `totalMax`
-            let baseValue = number;
-
-            if (typeof settings.totalMin === 'number' && settings.totalMin !== null && baseValue < settings.totalMin) {
-                baseValue = settings.totalMin;
-            }
-            if (typeof settings.totalMax === 'number' && settings.totalMax !== null && baseValue > settings.totalMax) {
-                baseValue = settings.totalMax;
-            }
-
-            // Gère le signe si `allowSign` est activé
-            if (isAllowSign(settings)) {
-                $(`[id^="sign_${type}_input"]`).val((baseValue < 0) ? '-' : '+');
-            }
-        
-            let numericValue = Math.abs(baseValue).toString();
-            let integerPart, decimalPart;
-        
-            if (settings.type === 'float') {
-                // Sépare la partie entière et la partie décimale pour les floats
-                [integerPart, decimalPart] = numericValue.split('.');
-                integerPart = integerPart.padStart(settings.decimalPosition, '0'); 
-                const maxDecimalLength = settings.numInputs - settings.decimalPosition;
-                decimalPart = (decimalPart || '').slice(0, maxDecimalLength).padEnd(maxDecimalLength, '0');
-            } else if (settings.type === 'integer') {
-                // Pour les integers, utilise toute la valeur en entier
-                integerPart = numericValue;
-                decimalPart = ''; // Pas de partie décimale pour un integer
-            } else {
-                throw new Error("Type non supporté dans la fonction fillDigits.");
-            }
-        
+        function populateDigitInputs(digitString, type, settings) {
             const digitInputs = $(`[id^="digits_${type}_input_"]`).get();
             let index = digitInputs.length - 1;
         
             // Réinitialise les valeurs des inputs à zéro
-            digitInputs.forEach(input => setElement('input', input,0,settings));
-         
-            // Parcourt les chiffres et les assigne aux inputs en respectant les min/max
-            for (let digit of (integerPart + decimalPart).split('').reverse()) {
-                const { value } = getAdjustedValueSettings(index, digit, settings);
-                setElement('input', digitInputs[index],value,settings);
-                updateCurrentValues(index,value);
+            digitInputs.forEach(input => setElement('input', input, 0, settings));
+        
+            // Parcourt les chiffres et les assigne aux inputs
+            for (let digit of digitString.split('').reverse()) {
+                const { value } = getAdjustedValueSettings(index, convertDigitByType(digit, settings.type), settings);
+                setElement('input', digitInputs[index], value, settings);
+                updateCurrentValues(index, value);
                 index--;
+                if (index < 0) break;
             }
+        }
+
+        function fillDigits(number, type) {
+            // Vérifie si la valeur `number` est valide pour les types pris en charge
+            if (['float', 'integer', 'binary'].includes(settings.type) && isNaN(number)) return;
+        
+            let integerPart, decimalPart;
+            let baseValue = number;
+            let numericValue = number;
+            // Ajuste la valeur en fonction des limites si nécessaire
+            if (isAdjustToBounds(settings)) {
+                baseValue = adjustToBounds(number, settings.totalMin, settings.totalMax);
+                numericValue = Math.abs(baseValue).toString();
+            }
+        
+            // Gère le signe si `allowSign` est activé
+            if (isAllowSign(settings)) {
+                $(`[id^="sign_${type}_input"]`).val(baseValue < 0 ? '-' : '+');
+            }
+        
+            // Traite les parties entière et décimale selon le type défini
+            switch (settings.type) {
+                case 'float':
+                    [integerPart, decimalPart] = processFloatParts(numericValue, settings);
+                    break;
+                case 'integer':
+                case 'binary':
+                case 'hexadecimal':
+                case 'letter':
+                    integerPart = numericValue;
+                    decimalPart = '';
+                    break;
+                default:
+                    throw new Error("Type non supporté dans la fonction fillDigits.");
+            }
+        
+            // Remplit les inputs avec les parties entière et décimale combinées
+            populateDigitInputs(integerPart + decimalPart, type, settings);
         }
 
         function computeValueFromInputs(type) 
         {
             let numberString = computeDigitToValue(type);
-            numberString = addSignToValue(numberString,type);
-            // Conversion en nombre selon le type spécifié dans les paramètres
-            return settings.type === 'float' ? parseFloat(numberString) : parseInt(numberString, 10);
+            if (settings.type === 'float' || settings.type === 'integer') 
+            {
+                numberString = addSignToValue(numberString,type);
+                return convertDigitByType(numberString,settings.type);
+            }      
+            return numberString;
         }
 
         function computeDigitToValue(type) 
@@ -598,11 +765,19 @@ if (typeof jQuery === 'undefined') {
             let numberString = '';
             // Récupération des digits pour les types 'float' et 'integer'
             $('input[id^=digits_'+type+'_input]').each(function(index) {
-                // Ajouter un point décimal si le type est 'float' et on atteint la position décimale
-                if (settings.type === 'float' && index === settings.decimalPosition) {
-                    numberString += '.';
+                if (settings.type === 'float' || settings.type === 'integer' || settings.type === 'binary') 
+                {
+                    // Ajouter un point décimal si le type est 'float' et on atteint la position décimale
+                    if (settings.type === 'float' && index === settings.decimalPosition) {
+                        numberString += '.';
+                    }
+                    numberString += getElement('input',$(this),settings);
                 }
-                numberString += getElement('input',$(this),settings);
+                else{
+                    let value = $(this).val();
+                    if (settings.type == 'letter') value = convertFromEscapedChar(value);
+                    numberString += value;
+                }
             });
             return numberString;
         }
@@ -624,33 +799,46 @@ if (typeof jQuery === 'undefined') {
         }
         
         function updateFinalValue($input, newValue, type, onchange = true) {
-            // Calcul de la valeur finale selon le type de données
-            let finalValue = settings.type === 'text' ? newValue : computeValueFromInputs(type);
-        
-            // Met à jour la valeur 'current' dans currentValues
-            updateCurrentValues('current', finalValue);
-        
-            // Gestion des valeurs minimales et maximales pour les types numériques
-            if (settings.type === 'integer' || settings.type === 'float') {
-                const { totalMin, totalMax } = settings;
-        
+            // Fonction pour mettre à jour la valeur finale et gérer les limites
+            function updateNumericValue() {
+                let finalValue = computeValueFromInputs(type);
+                let backValue = finalValue;
                 // Applique les limites définies pour finalValue
-                if (totalMin !== undefined && totalMin !== null && finalValue <= totalMin) {
-                    updateCurrentValues('current', totalMin);
-                } else if (totalMax !== undefined && totalMax !== null && finalValue >= totalMax) {
-                    updateCurrentValues('current', totalMax);
-                }
+                finalValue = adjustToBounds(finalValue, settings.totalMin, settings.totalMax, finalValue);
+        
+                // Met à jour la valeur 'current' dans currentValues
+                updateCurrentValues('current', finalValue);
         
                 // Met à jour les digits si la valeur finale a changé
-                if (finalValue !== getCurrentValueByIndex('current')) {
+                if (backValue !== getCurrentValueByIndex('current')) {
                     fillDigits(getCurrentValueByIndex('current'), type);
                 }
             }
         
-            // Appel de la fonction de rappel `onValueChange` si `onchange` est vrai
-            if (onchange && typeof settings.onValueChange === 'function') {
-                settings.onValueChange($input, getCurrentValueByIndex('current'));
+            // Gestion des différents types de données
+            switch (settings.type) {
+                case 'integer':
+                case 'float':
+                    updateNumericValue();
+                    break;
+        
+                case 'hexadecimal':
+                case 'letter':
+                case 'binary':
+                    const finalValue = computeValueFromInputs(type);
+                    updateCurrentValues('current', finalValue);
+                    break;
+        
+                case 'text':
+                    updateCurrentValues('current', newValue);
+                    break;
+        
+                default:
+                    throw new Error("Type de données non supporté.");
             }
+        
+            // Déclenche le callback de changement de valeur si nécessaire
+            triggerValueChange($input, settings, onchange);
         }
         
         /* Changement de l'effet de persitance des valeur 
@@ -698,7 +886,7 @@ if (typeof jQuery === 'undefined') {
             const numberStr = number.toString().replace('.', '');
 
             // Initialiser le tableau de chiffres en extrayant chaque chiffre
-            let digitsArray = Array.from(numberStr, char => parseInt(char, 10));
+            let digitsArray = Array.from(numberStr, char => convertIntegerBase10(char));
 
             // Compléter avec des zéros si nécessaire
             while (digitsArray.length < settings.numInputs) {
@@ -710,16 +898,16 @@ if (typeof jQuery === 'undefined') {
         }
         
         function digitsArrayToNumber(digitsArray, isFloat = false, decimalPosition = 0) {
-        // Convertir chaque chiffre en chaîne de caractères
-          let numberStr = digitsArray.map(digit => digit.toString()).join('');
-          
-          // Si un index de décimale est fourni, insérer le point décimal
-          if (isFloat == true && decimalPosition < digitsArray.length) {
+            // Convertir chaque chiffre en chaîne de caractères
+            let numberStr = digitsArray.map(digit => digit.toString()).join('');
+
+            // Si un index de décimale est fourni, insérer le point décimal
+            if (isFloat == true && decimalPosition < digitsArray.length) {
             numberStr = numberStr.slice(0, decimalPosition) + '.' + numberStr.slice(decimalPosition);
-          }
-          
-          // Convertir la chaîne résultante en nombre (float ou integer selon la présence du point)
-          return parseFloat(numberStr);
+            }
+
+            // Convertir la chaîne résultante en nombre (float ou integer selon la présence du point)
+            return convertFloat(numberStr);
         }
 
         function calculatePeripheralDisplay(prefix, id, value, inputElement, hover) {
@@ -777,63 +965,31 @@ if (typeof jQuery === 'undefined') {
             const actions = {
                 "digits": () => {
                     updateCurrentValues((id - 1), value);
+                    setElement('input', $(inputElement),value,settings);
                     return value;
                 },
                 "sign": () => {
                     updateCurrentValues("sign", value);
+                    setElement('input', $(inputElement),value,settings);
                     return value;
                 },
                 "list": () => {
                     const listValue = settings.values[value];
                     updateCurrentValues("list", listValue);
+                    inputElement.val(listValue);
                     return listValue;
                 }
             };
-        
             // Exécute l'action correspondant au `prefix` pour définir `newValue`
             const newValue = actions[prefix] ? actions[prefix]() : "";
-        
-            // Met à jour la valeur de l'input et appelle les fonctions d'actualisation
-            if (prefix == 'list')
-            {
-                inputElement.value = newValue;
-            }
-            else
-            {
-                setElement('input', $(inputElement),newValue,settings);
-            }
-            
             updateFinalValue($(inputElement), newValue, type);
-        
             // Calcul des informations pour l'affichage périphérique
             const displayData = calculatePeripheralDisplay(prefix, id, value, inputElement, hover);
-        
             // Mise à jour de l'affichage périphérique avec les données calculées
             updatePeripheralDigit(type, displayData.index, displayData.showTop, displayData.showBottom, displayData.adjustedValueTop, displayData.adjustedValueBottom);
         }
    
-        function calculateNextIndex(id, settings) {
-            let index = id;
-        
-            if (settings.autoFocusNextInput === true && settings.autoFocusNextInputDirection !== null) {
-                switch (settings.autoFocusNextInputDirection) {
-                    case "Forward":
-                    case "Right":
-                        index += 1;
-                        break;
-                    case "Backward":
-                    case "Left":
-                        index -= 1;
-                        break;
-                    default:
-                        console.warn(`Direction "${settings.autoFocusNextInputDirection}" non reconnue. L'index reste inchangé.`);
-                }
-            }
-        
-            return index;
-        }
-        
-        function applyInput(inputElement, codeTouche, event, prefix, type, id = null, numInputs = null) {
+        function applyInput(inputElement, codeTouche, event, prefix, type, id , settings ) {
             const isPasteCode = event.ctrlKey && event.key === 'paste';
         
             // Récupérer les limites pour `digit`
@@ -846,44 +1002,32 @@ if (typeof jQuery === 'undefined') {
                 event.preventDefault();
                 return;
             }
-        
+
             // Détermine l'action en fonction du `prefix`
             if (prefix === "digits") {
+
                 // Vérifier si la touche est valide pour un chiffre
-                if ((codeTouche >= 48 && codeTouche <= (48 + valueMax)) || // Chiffres (0-9)
-                    (codeTouche >= 96 && codeTouche <= (96 + valueMax) && !isPasteCode) || // Pavé numérique (0-9)
-                    codeTouche === 8 || // Retour arrière
-                    codeTouche === 9 || // Tabulation
+                if (isKeyAllowed(codeTouche,valueMax,settings.type ,isPasteCode ) || codeTouche === 8 || // Retour arrière
+                    codeTouche === 9 || // Tabulation 
                     codeTouche === 46) { // Supprimer
+                     
                     if (codeTouche === 8) {
                         // Gestion du retour arrière
                         setValueInput(inputElement, valueMin, prefix, type);
-                        if ((id-1) === 0) id = numInputs + 1;
+                        if ((id-1) === 0) id = settings.numInputs + 1;
                         $("#" + prefix + "_" + type + "_input_" + (id-1)).focus();
 
                     } else if (codeTouche === 46) {
                         // Gestion de la touche Supprimer
                         setValueInput(inputElement, valueMin, prefix, type);
-                        if ((id + 1) === numInputs + 1) id = 0;
+                        if ((id + 1) === settings.numInputs + 1) id = 0;
                         $("#" + prefix + "_" + type + "_input_" + (id+1)).focus();
                     } else if (codeTouche !== 9) {
-                        // Gestion des chiffres
-
-                        // TODO const input = getElement('input',$(inputElement),settings);
-
-                        const lastChar = inputElement.value.slice(-1);
-                        const regex = /^[0-9]$/;
-                        if (!regex.test(lastChar)) {
-                            // Supprimer la dernière entrée si elle n'est pas valide
-                            setValueInput(inputElement, inputElement.value.slice(0, -1), prefix, type);
-                        } else {
-                            let key = event.key;
-                            if (isPasteCode) key = convertCodeToChar(codeTouche);
-                            
-                            setValueInput(inputElement, key, prefix, type);
-
-                            $("#" + prefix + "_" + type + "_input_" + calculateNextIndex(id,settings)).focus();
-                        }
+                        let key = event.key;
+                        if (settings.type == "hexadecimal") key = convertLetterToHexadecimal(event.key);
+                        if (settings.type == "letter") key = convertLetter(event.key);
+                        setValueInput(inputElement,key, prefix, type);
+                        $("#" + prefix + "_" + type + "_input_" + calculateNextIndex(id,settings)).focus();
                     }
                 } else {
                     // Valeur non valide pour un digit
@@ -902,7 +1046,7 @@ if (typeof jQuery === 'undefined') {
             }
         }
         
-        function handleTouchInput(inputElement, event, prefix, type, id = null, numInputs = null) {
+        function handleTouchInput(inputElement, event, prefix, type, id , settings ) {
             const originalEvent = event.originalEvent || event;
         
             // Récupérer le code de la touche appuyée
@@ -910,12 +1054,12 @@ if (typeof jQuery === 'undefined') {
         
             // Vérifie si la touche "Maj" (Shift) n'est pas enfoncée
             if (codeTouche !== 16) {
-                applyInput(inputElement, codeTouche, originalEvent, prefix, type, id, numInputs);
+                applyInput(inputElement, codeTouche, originalEvent, prefix, type, id, settings);
             }
         }
 
         /* Gestionnaire de modification de la mollette de la souris */
-        function adjustOnScroll(event, inputElement,prefix,type) 
+        function adjustOnScroll(inputElement, event, prefix,type) 
         {
             if (!settings.allowScroll) return;
 
@@ -960,8 +1104,8 @@ if (typeof jQuery === 'undefined') {
             {
                 let currentValue = -1;
 
-                if (inputElement.value == "-") currentValue = 0;
-                if (inputElement.value == "+") currentValue = 1;
+                if (inputElement.val() == "-") currentValue = 0;
+                if (inputElement.val() == "+") currentValue = 1;
 
                 if (currentValue != -1)
                 {
@@ -974,7 +1118,7 @@ if (typeof jQuery === 'undefined') {
             }
             else if (prefix == "list")
             {
-                let currentValue = findPosition(settings.values,inputElement.value);
+                let currentValue = findPosition(settings.values,inputElement.val());
                 if (currentValue != -1)
                 {
                     // Incrémenter ou décrémenter la valeur en fonction de la direction du scroll
@@ -982,46 +1126,23 @@ if (typeof jQuery === 'undefined') {
                     const { valueMin, valueMax } = getValueLimits(inputElement);
                     const {adjustedValue} = adjustLimits(currentValue,null,null,valueMin,valueMax);
                     currentValue = adjustedValue;
-
                     setValueInput(inputElement,currentValue,prefix,type);
                 }
             }
-        }
-
-        function calculateAdjacentValues(value) 
-        {
-            const currentValue = parseInt(value, 10);
-            const valueTop = currentValue - 1;
-            const valueBottom = currentValue + 1;
-            return { valueTop, valueBottom };
         }
 
         function calculateValueLimits(inputElement, id, currentValue, limitDigitMin, limitDigitMax) 
         {
             let {valueTop,valueBottom} = calculateAdjacentValues(getElement('input',$(inputElement),settings));
        
-            // Ajuster les valeurs top et bottom en fonction des limites globales
-            if (settings.totalMax !== undefined && settings.totalMax !== null && currentValue >= settings.totalMax) {
-                valueTop = parseInt(limitDigitMax[id - 1]) - 1;
-            }
-            if (settings.totalMin !== undefined && settings.totalMin !== null && currentValue <= settings.totalMin) {
-                valueBottom = parseInt(limitDigitMin[id - 1]) + 1;
-            }
-
+            valueTop = adjustToBounds(currentValue, -Infinity, settings.totalMax, valueTop ,null, getValidLimitDigit(limitDigitMax,id) - 1);
+            valueBottom = adjustToBounds(currentValue, settings.totalMin, +Infinity, valueBottom , getValidLimitDigit(limitDigitMin,id) + 1 , null);
+            
             let { valueMin, valueMax } = getValueLimits(inputElement);
-
-            // Récupérer les limites spécifiques de l'élément
-            valueMin = Math.max(valueMin, settings.totalMin ?? -Infinity);
-            valueMax = Math.min(valueMax, settings.totalMax ?? Infinity);
         
-            // Ajuster les valeurs min et max en fonction des limites de digits
-            if (settings.totalMin !== undefined && settings.totalMin !== null && currentValue <= settings.totalMin) {
-                valueMin = Math.max(valueMin, limitDigitMin[id - 1]);
-            }
-            if (settings.totalMax !== undefined && settings.totalMax !== null && currentValue >= settings.totalMax) {
-                valueMax = Math.min(valueMax, limitDigitMax[id - 1]);
-            }
-        
+            valueMax = adjustToBounds(currentValue, -Infinity, settings.totalMax, valueMax ,null, Math.min(valueMax,getValidLimitDigit(limitDigitMax,id)));
+            valueMin = adjustToBounds(currentValue, settings.totalMin, +Infinity, valueMin ,  Math.max(valueMin,  getValidLimitDigit(limitDigitMin,id)) , null);
+             
             // Calculer les indicateurs de visibilité pour top et bottom
             const showTop = (valueTop >= valueMin);
             const showBottom = (valueBottom <= valueMax);
@@ -1072,8 +1193,7 @@ if (typeof jQuery === 'undefined') {
         
         function hoverMouseEnter(inputElement,prefix,type) 
         {
-            let id = parseInt($(inputElement).attr('id').replace(prefix+'_'+type+'_input_', ''));
-           
+            let id = convertIntegerBase10($(inputElement).attr('id').replace(prefix+'_'+type+'_input_', ''));
             if (prefix == "digits")
             {
                 gIdHover = type + id;
@@ -1085,26 +1205,19 @@ if (typeof jQuery === 'undefined') {
                 gIdHover = type + prefix;
                 let showTop = ($(inputElement).val() == "-");
                 let showBottom = ($(inputElement).val() == "+");
-
                 updatePeripheralDigit(type,prefix,showTop,showBottom,"+","-");
             }
             else if (prefix == "list")
             {
                 gIdHover = type + prefix;
                 
-                console.log(inputElement.value);
-
                 let currentValue = findPosition(settings.values,inputElement.value);
-
                 if (currentValue != -1)
                 {
-                    const valueTop = parseInt(currentValue) - 1;
-                    const valueBottom =  parseInt(currentValue) + 1;
-        
+                    const valueTop = convertIntegerBase10(currentValue) - 1;
+                    const valueBottom =  convertIntegerBase10(currentValue) + 1;
                     const { valueMin, valueMax } = getValueLimits(inputElement);
-                    
                     let valueLimites = calculateVisibilityAndAdjustLimits(valueTop,valueBottom,valueMin,valueMax);
-
                     updatePeripheralDigit(type,prefix,valueLimites.showTop,valueLimites.showBottom,settings.values[valueLimites.adjustedValueTop],settings.values[valueLimites.adjustedValueBottom]);
                 }
             }
@@ -1208,14 +1321,14 @@ if (typeof jQuery === 'undefined') {
             let value = (inputValue != null) ? inputValue : ( settings.values[index] !== undefined 
                 ? defaultValue(index,settings) 
                 : settings.defaultValue);
-    
+
             // Ajuster `value` pour qu'il soit compris entre `min` et `max`
-            value = clampValue(value,min, max);
+            value = clampValue(value,min, max,settings);
 
             return { min, max, value };
         }
 
-        function handlePasteEvent(element, event, uniqueTypeShort, prefix) 
+        function handlePasteEvent(inputElement, event, prefix, type, id , settings ) 
         {
             const originalEvent = event.originalEvent || event;
 
@@ -1223,11 +1336,10 @@ if (typeof jQuery === 'undefined') {
             let pasteText = originalEvent.clipboardData.getData('text');
             if (pasteText.length > 1) pasteText = pasteText.substring(0, 1); // Limiter à un caractère
             let codeTouche = pasteText.charCodeAt(0);
-            originalEvent.ctrlKey = true;
-            originalEvent.key = 'paste';
-            
-            let id = $(element).attr('id').replace(`${prefix}_${uniqueTypeShort}_input_` , '');
-            applyCode(element, codeTouche, originalEvent, prefix, uniqueTypeShort, id, settings.numInputs);
+            originalEvent.ctrlKey = false;
+            originalEvent.key = pasteText;
+
+            applyInput(inputElement, codeTouche, originalEvent, prefix, type, id, settings);
         }
 
         function createTextElement(prefix, uniqueTypeShort, id, position, text) {
@@ -1241,48 +1353,101 @@ if (typeof jQuery === 'undefined') {
             ).on('click', function () { handleTextDivClick(this, prefix, uniqueTypeShort); });
         }
 
-        function createInputElement(prefix, uniqueTypeShort, id, min, max, value , maxLength = '1' , isDisabled = false) {
+        function createInputElement(prefix, uniqueTypeShort, id, min, max, value, maxLength = '1', isDisabled = false) {
+            // Créer une étiquette avec un texte descriptif pour chaque champ
+            const labelId = `${prefix}_${uniqueTypeShort}_label_${id}`;
+            const $label = $('<label>', {
+                for: `${prefix}_${uniqueTypeShort}_input_${id}`,
+                id: labelId,
+                text: `Entrée ${id} pour ${settings.type}`,  // Remplacez le texte par un libellé plus spécifique si nécessaire
+                class: 'sr-only'  // Utilisez 'sr-only' pour les lecteurs d'écran si vous ne voulez pas d'affichage visuel
+            });
+
+            const $description = $('<div>', {
+                'id': `description_${uniqueTypeShort}_input_${id}`,
+                'class': 'visually-hidden',
+                'text': 'Utilisez la molette ou cliquez sur la valeur suivante ou précédente visible pour modifier la valeur.'
+            });
+            $('body').append($description);
+            
+            const $liveRegion = $('<div>', {
+                'aria-live': 'polite',
+                'class': 'visually-hidden',
+                'id': 'live-update'
+            });
+            $('body').append($liveRegion);
+            
             const $input = $('<input>', {
                 type: 'text',
                 class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
                 maxLength: maxLength,
-                id: ( (id != null) ? `${prefix}_${uniqueTypeShort}_input_${id}` : `${prefix}_${uniqueTypeShort}_input` ) ,
-                name: (id != null) ? `${prefix}${id}` : `${prefix}` ,
+                id: `${prefix}_${uniqueTypeShort}_input_${id}`,
+                name: (id != null) ? `${prefix}${id}` : `${prefix}`,
                 autocomplete: 'off',
-                value: (settings.type === "text" ) ? value : makeValueElement(value,settings),
+                value: (settings.type === "text") ? value : makeValueElement(value, settings),
                 'data-min': min,
                 'data-max': max,
-                disabled: isDisabled ? 'disabled' : null
+                disabled: isDisabled ? 'disabled' : null,
+                // Ajouter des attributs ARIA pour améliorer l'accessibilité
+                'aria-labelledby': `${labelId}`,
+                'aria-valuemin': min,
+                'aria-valuemax': max,
+                'aria-valuenow': value,
+                'aria-live': 'polite',
+                'role': 'spinbutton'  // Indiquer qu'il s'agit d'un champ de saisie ajustable
             });
 
-            // Ajouter les événements
-            $input.on('keyup', (event) => handleTouchInput(event.currentTarget, event, prefix, uniqueTypeShort, id , settings.numInputs))
-                .on('wheel', (event) => adjustOnScroll(event, event.currentTarget, prefix, uniqueTypeShort))
-                .hover(
-                    function () { hoverMouseEnter(this, prefix, uniqueTypeShort); },
-                    function () { hoverMouseLeave(this, prefix, uniqueTypeShort); }
-                )
-                .on('paste', (event) => handlePasteEvent(this, event, uniqueTypeShort, prefix))
-                .on('copy', (event) => {
-                    event.preventDefault();
-                    navigator.clipboard.writeText($(this).val());
-                });
-
-            return $input;
+            // Lier les descriptions avec l'input
+            $input.attr('aria-describedby', 'input-description');
+        
+            // Ajouter les événements comme avant
+            $input
+            .on('keyup', (event) => {
+                if ( settings.type != "text" && settings.isDisabled ) return;
+                const $element = $(event.currentTarget);
+                handleTouchInput($element, event, prefix, uniqueTypeShort, id, settings);
+            })
+            .on('wheel', (event) => {
+                if ( settings.type != "text" && settings.isDisabled ) return;
+                const $element = $(event.currentTarget);
+                adjustOnScroll($element,event, prefix, uniqueTypeShort);
+            })
+            .hover(
+                function () {
+                    if ( settings.type != "text" && settings.isDisabled ) return;
+                    hoverMouseEnter(this, prefix, uniqueTypeShort);
+                },
+                function () {
+                    if ( settings.type != "text" && settings.isDisabled ) return;
+                    hoverMouseLeave(this, prefix, uniqueTypeShort);
+                }
+            )
+            .on('paste', (event) => {
+                const $element = $(event.currentTarget);
+                handlePasteEvent($element, event, prefix, uniqueTypeShort, id, settings);
+            })
+            .on('copy', (event) => {
+                event.preventDefault();
+                const $element = $(event.currentTarget);
+                navigator.clipboard.writeText($element.val());
+            });
+        
+            // Retourner un conteneur contenant le label et l'input
+            return $('<div>', { class: 'cla-input-wrapper', css: { position: 'relative' } })
+                .append($label)
+                .append($input);
         }
-
-        // Fonction pour ajouter un élément d'entrée complet (texte supérieur, champ d'entrée, texte inférieur)
-      
-        // Création des inputs dans chaque élément sélectionné
+       
         this.each(function () {
             const $container = $(this);
-
+        
             // Création d'un div parent avec la classe `cla-input-container` pour appliquer le `gap`
             const $inputContainer = $('<div>', {
                 class: 'cla-input-container',
-                css: { display: 'flex', 'justify-content': 'center', 'align-items' : 'center' , gap: settings.gap } // Appliquer le gap défini dans les settings
+                css: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: settings.gap }
             });
-
+        
+            // Fonction pour ajouter un élément d'input et ses éléments associés
             function addInputElement(prefix, id, min, max, value, maxLength = '1', isDisabled = false) {
                 const $wrapperDiv = $('<div>', { class: 'text-center cla-input-wrapper', css: { position: 'relative' } });
                 $wrapperDiv.append(createTextElement(prefix, uniqueTypeShort, id, "top", min ?? "..."));
@@ -1290,59 +1455,58 @@ if (typeof jQuery === 'undefined') {
                 $wrapperDiv.append(createTextElement(prefix, uniqueTypeShort, id, "bottom", min ?? "..."));
                 $inputContainer.append($wrapperDiv);
             }
-    
-            if (settings.type === "integer" || settings.type === "float" || settings.type === "binary" || settings.type === "hexadecimal" || settings.type === "letter" ) 
-            { 
-                if (isAllowSign(settings)) {
-                    addInputElement("sign", "sign", null, null, getCurrentValueByIndex("sign"));
-                }
-
-                if (settings.type === "binary" ) {
-                    $inputContainer.append($('<div>', { class: 'col-1', html: `<div><h2 class="my-5">0b</h2></div>` }));
-                }
-
-                if (settings.type === "hexadecimal" ) {
-                    $inputContainer.append($('<div>', { class: 'col-1', html: `<div><h2 class="my-5">0x</h2></div>` }));
-                }
-
-                for (let i = 1; i <= settings.numInputs; i++) {
-                    if (settings.type === 'float' && (i - 1) === settings.decimalPosition) {
-                        $inputContainer.append($('<div>', { class: 'col-1', html: `<div><h2 class="my-5">${settings.separator}</h2></div>` }));
-                    }
-                    const { min, max, value } = getAdjustedValueSettings(i - 1, null, settings);
-                    addInputElement("digits", i, min, max, value);
-                    updateCurrentValues(i - 1, value);
-                }
-
-                $container.append($inputContainer);
-                
-                for (let i = 1; i <= settings.numInputs; i++) {
-                    const prefix = "digits";
-                    const { value } = getAdjustedValueSettings(i - 1, null, settings);
-                    updateFinalValue($("#"+prefix+"_" + uniqueTypeShort + "_input_" + i), value, uniqueTypeShort , false);
+        
+            // Ajoute les préfixes spécifiques aux types "binary" et "hexadecimal"
+            function addPrefixLabel(prefix) {
+                const labelMap = { binary: "0b", hexadecimal: "0x" };
+                if (labelMap[prefix]) {
+                    $inputContainer.append($('<div>', { class: 'col-1', html: `<div><h2 class="my-5">${labelMap[prefix]}</h2></div>` }));
                 }
             }
-            else if (settings.type === "text" )
-            {
-                addInputElement("list", "list", 0, settings.values.length - 1, settings.values[settings.defaultValue], '30', true);
-                $container.append($inputContainer);
-                updateCurrentValues('current',settings.values[settings.defaultValue]);
-            } 
-        });
-       
-        // Méthode pour récupérer la valeur complète
-        this.getCompleteValue = function() {
-            return getCurrentValueByIndex('current');
-        };
         
+            if (['integer', 'float', 'binary', 'hexadecimal', 'letter'].includes(settings.type)) {
+                if (isAllowSign(settings)) {
+                    addInputElement("sign", "sign", null, null, getCurrentValueByIndex("sign"),'1',isForcedDisabled(settings) || settings.isDisabled);
+                }
+        
+                // Ajoute le préfixe "0b" pour binaire et "0x" pour hexadécimal si nécessaire
+                addPrefixLabel(settings.type);
+        
+                const prefix = "digits";
+                for (let i = 1; i <= settings.numInputs; i++) {
+                    // Ajoute le séparateur décimal pour les nombres flottants
+                    if (settings.type === 'float' && i - 1 === settings.decimalPosition) {
+                        $inputContainer.append($('<div>', { class: 'col-1', html: `<div><h2 class="my-5">${settings.separator}</h2></div>` }));
+                    }
+                    // Récupère les paramètres pour chaque input et ajoute l'élément
+                    const { min, max, value } = getAdjustedValueSettings(i - 1, null, settings);
+                    addInputElement("digits", i, min, max, value,'1',isForcedDisabled(settings) || settings.isDisabled);
+        
+                    // Met à jour les valeurs actuelles et finales pour l'input
+                    updateCurrentValues(i - 1, value);
+                    updateFinalValue($(`#${prefix}_${uniqueTypeShort}_input_${i}`), value, uniqueTypeShort, false);
+                }
+        
+                $container.append($inputContainer);
+            } else if (settings.type === 'text') {
+                // Ajoute l'élément de liste pour le type texte
+                addInputElement("list", "list", 0, settings.values.length - 1, settings.values[settings.defaultValue], '30', isForcedDisabled(settings) || settings.isDisabled);
+                $container.append($inputContainer);
+                updateCurrentValues('current', settings.values[settings.defaultValue]);
+            }
+        });
+
         // Méthode pour récupérer un chiffre spécifique à un index donné
         this.getDigitAt = function(index) {
-            if (settings.type === "integer" || settings.type === "float" ) 
-            { 
+
+            if (index === undefined || index == null) {
+                throw new Error("Un index doit être renseignée.");
+            }
+
+            if (isGetDigit(settings)) {
                 // Vérifie si l'index est dans la plage de currentValue
                 if (index >= 0 && index < currentDigit.length) {
-                    const digit = getCurrentValueByIndex(index);
-                    return parseInt(digit, 10); // Ignorer le point décimal
+                    return getCurrentValueByIndex(index);
                 } else {
                     throw new Error("L'index est en dehors de la plage");
                 }
@@ -1352,61 +1516,118 @@ if (typeof jQuery === 'undefined') {
             }
         };
 
-       // Fonction pour définir la valeur complète en répartissant les caractères dans les inputs
-       this.setCompleteValue = function(value, onchange = false) 
-       { 
-            const isNumber = (val) => /^[-+]?\d+(\.\d+)?$/.test(val); // Vérifie si la valeur est un float ou un integer
-        
-            // Vérifie si le type est bien défini dans settings
-            if (settings.type === "integer" || settings.type === "float" ) {
-                
-                // Vérifie que la valeur est un nombre valide
-                if (isNumber(value)) {
+        // Méthode pour récupérer un chiffre spécifique à un index donné
+        this.setDigitAt = function(index,value) {
 
-                    updateCurrentValues("fillDigits",0);
+            if (value === undefined || !value || value.length === 0) {
+                throw new Error("Une valeur doit être renseignée.");
+            }
 
-                    fillDigits(value,uniqueTypeShort);
-   
-                    let newValue = digitsArrayToNumber(getCurrentValueByIndex('digits'), settings.type === 'float', settings.decimalPosition);
-                    newValue = addSignToValue(newValue,uniqueTypeShort);
+            if (index === undefined || index == null) {
+                throw new Error("Un index doit être renseignée.");
+            }
 
-                    updateCurrentValues('current',newValue);
-
-                    // Déclenche le callback onValueChange si demandé
-                    if (onchange && typeof settings.onValueChange === 'function') {
-                        settings.onValueChange(null, getCurrentValueByIndex('current'));
-                    }
+            if (isSetDigit(settings)) {
+                // Vérifie si l'index est dans la plage de currentValue
+                if (index >= 0 && index < currentDigit.length) {
+                    updateCurrentValues(index,value);
+                    updateCurrentValues('current', computeValueFromInputs(`${uniqueTypeShort}`));
                 } else {
-                    throw new Error("La valeur doit être un nombre flottant ou un entier.");
+                    throw new Error("L'index est en dehors de la plage");
                 }
-            } 
-            else if (settings.type === "text") {
-                // Vérifie si la valeur existe dans settings.values
-                let index = findPosition(settings.values, value);
-                if (index !== -1) {
-                    $("#list_" + uniqueTypeShort + "_input").val(value);
-                    
-                    updateCurrentValues('current',value);
-                          
-                    // Déclenche le callback onValueChange si demandé
-                    if (onchange && typeof settings.onValueChange === 'function') {
-                        settings.onValueChange(null, getCurrentValueByIndex('current'));
-                    }
-                } else {
-                    throw new Error("Le texte n'est pas reconnu dans les valeurs disponibles.");
-                }
-            } 
-            else {
-                throw new Error("Le type spécifié dans settings n'est pas compatible avec setCompleteValue.");
+            }
+            else{
+                throw new Error("settings.type non disponible avec la fonction setDigitAt");
             }
         };
 
+        this.toggleInputs = function(disabled) {
+            settings.isDisabled = disabled; // Met à jour l'option dans les paramètres
+            this.find('input').prop('disabled', isForcedDisabled(settings) || disabled); // Applique le changement à tous les inputs
+        };
+
+        // Méthode pour récupérer la valeur complète
+        this.getCompleteValue = function() {
+            return getCurrentValueByIndex('current');
+        };
+
+        this.setCompleteValue = function(value, onchange = false) {
+            if (value === undefined || !value || value.length === 0) {
+                throw new Error("Une valeur doit être renseignée.");
+            }
+        
+            // Fonctions auxiliaires pour supprimer les préfixes
+            const removeBinaryPrefix = (value) => value.replace(/^0b/, '');
+            const removeHexadecimalPrefix = (value) => value.replace(/^0x/, '');
+        
+            // Fonction pour valider la valeur, remplir les digits et mettre à jour
+            function validateAndFillDigits(value, conversionFunction) {
+                updateCurrentValues("fillDigits", 0);
+                fillDigits(conversionFunction(value), uniqueTypeShort);
+                let newValue = digitsArrayToNumber(getCurrentValueByIndex('digits'), settings.type === 'float', settings.decimalPosition);
+                newValue = addSignToValue(newValue, uniqueTypeShort);
+                updateCurrentValues('current', newValue);
+                triggerValueChange(null, settings, onchange);
+            }
+        
+            switch (settings.type) {
+                case "integer":
+                case "float":
+                    if (isValidIntegerOrFloat(value)) {
+                        const conversionFunction = settings.type === "float" ? convertFloat : convertIntegerBase10;
+                        validateAndFillDigits(value, conversionFunction);
+                    } else {
+                        throw new Error("La valeur doit être un nombre flottant ou un entier.");
+                    }
+                    break;
+        
+                case "binary":
+                    if (isValidBinary(value)) {
+                        validateAndFillDigits(removeBinaryPrefix(value), convertIntegerBase10);
+                    } else {
+                        throw new Error("La valeur doit être un nombre binaire (composé uniquement de 0 et 1).");
+                    }
+                    break;
+        
+                case "hexadecimal":
+                    if (isValidHexadecimal(value)) {
+                        const cleanValue = removeHexadecimalPrefix(value);
+                        updateCurrentValues("fillDigits", 0);
+                        fillDigits(cleanValue, uniqueTypeShort);
+                        updateCurrentValues('current', cleanValue);
+                        triggerValueChange(null, settings, onchange);
+                    } else {
+                        throw new Error("La valeur doit être un nombre hexadécimal.");
+                    }
+                    break;
+        
+                case "letter":
+                    updateCurrentValues("fillDigits", 0);
+                    fillDigits(value, uniqueTypeShort);
+                    updateCurrentValues('current', value);
+                    triggerValueChange(null, settings, onchange);
+                    break;
+        
+                case "text":
+                    const index = findPosition(settings.values, value);
+                    if (index !== -1) {
+                        $(`input[id^=list_${uniqueTypeShort}_input]`).val(value);
+                        updateCurrentValues('current', value);
+                        triggerValueChange(null, settings, onchange);
+                    } else {
+                        throw new Error("Le texte n'est pas reconnu dans les valeurs disponibles.");
+                    }
+                    break;
+        
+                default:
+                    throw new Error("Le type spécifié dans settings n'est pas compatible avec setCompleteValue.");
+            }
+        };
         return this;
     };
 
     $.fn.codeInputBuilder.version = "0.0.7";
     $.fn.codeInputBuilder.title = "CodeInputBuilder";
-    $.fn.codeInputBuilder.description = "Un plugin jQuery pour créer des champs d'input configurables pour des valeurs numériques ou flottantes et pour les textes.";
+    $.fn.codeInputBuilder.description = "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";
 
 }(jQuery));
-

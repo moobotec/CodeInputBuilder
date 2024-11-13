@@ -1,7 +1,8 @@
 
 # CodeInputBuilder
 
-**CodeInputBuilder** est un plugin JavaScript basé sur jQuery permettant de créer des champs de saisie numérique personnalisés. Il supporte plusieurs options de configuration pour gérer les entiers et les nombres flottants avec des limites de valeurs, des signes,des textes et des interactions avancées.
+**CodeInputBuilder** est un plugin JavaScript basé sur jQuery permettant de créer des champs de saisie numérique personnalisés.
+Il supporte plusieurs options de configuration pour gérer les entiers, les nombres flottants, les textes et des interactions avancées.
 
 ## Table des matières
 - [Fonctionnalités](#fonctionnalités)
@@ -9,6 +10,8 @@
 - [Utilisation](#utilisation)
 - [Options](#options)
 - [Exemples](#exemples)
+- [Méthodes](#méthodes)
+- [Accessibilité](#accessibilité)
 - [Styles personnalisés](#styles-personnalisés)
 - [Dépendances](#dépendances)
 - [Licence](#licence)
@@ -17,25 +20,26 @@
 
 **CodeInputBuilder** propose une large gamme de fonctionnalités permettant une saisie numérique flexible et personnalisable. Voici les principales fonctionnalités disponibles :
 
-- **Saisie de nombres entiers ou flottants** : Prend en charge la saisie de valeurs de type `integer` (entiers) ou `float` (flottants), avec possibilité de configurer des limites minimales et maximales pour chaque champ de saisie.
-- **Saisie d'un texte** : Prend en charge la selection d'un texte parmis une liste de texte.
-- **Configuration de limites min/max** : Chaque champ peut avoir des valeurs spécifiques minimales et maximales par position, permettant un contrôle précis des valeurs.
-- **Option de signe (+/-)** : Possibilité d’ajouter un signe (positif ou négatif) pour chaque valeur, avec une option de signe par défaut (paramètre `defaultSign`).
-- **Gestion des événements `onValueChange`** : Déclenche une fonction personnalisée lors de chaque changement de valeur, permettant de réagir en temps réel aux modifications d’entrée.
-- **Défilement pour incrémenter/décrémenter** : Ajustement des valeurs des champs en utilisant la molette de la souris pour faciliter les modifications. 
-- **Affichage des valeurs limites en périphérie** : Visualisation des valeurs supérieures et inférieures à l’aide d’un effet de survol (hover) pour guider l'utilisateur.
-- **Nombre d'entrées configurables** : Possibilité de spécifier le nombre de champs de saisie pour les valeurs numériques (`numInputs`).
-- **Espacement personnalisable entre les champs** : Contrôle de l’espace entre chaque champ d’entrée, pour une mise en page adaptable.
-- **Position de la virgule** : Paramètre pour définir la position de la virgule dans les nombres flottants (`decimalPosition`), offrant plus de flexibilité pour la saisie de valeurs décimales.
-- **Valeurs maximales et minimales totales** : Définition de limites totales (`totalMax` et `totalMin`) pour contrôler la somme des valeurs saisies.
-- **Contrôle de validité des entrées** : Limite les caractères saisis aux chiffres et empêche les entrées non autorisées en fonction des valeurs min/max.
-- **Interactions copier-coller** : Gestion du copier-coller pour limiter la saisie à un seul caractère par champ et empêcher les entrées multiples.
-- **Styles visuels personnalisés pour les champs** : Apparence inspirée d’un style de titre `<h2>`, avec des classes CSS (`cla-h2-like`) pour les valeurs de survol (`.top-text`, `.bottom-text`) et les transitions pour un affichage fluide.
-- **Affichage et mise à jour des valeurs** : Possibilité de récupérer et de définir la valeur complète via des méthodes (`setCompleteValue` et `getCompleteValue`).
-- **Déplacement automatique du focus** : Possibilité de déplacer automatiquement le focus entre les champs après chaque saisie, avec la possibilité de choisir le sens du déplacement pour une navigation plus intuitive.
+- **Saisie de différents types de données** : Prend en charge `integer`, `float`, `binary`, `hexadecimal`, `letter`, et `text`.
+- **Configuration des limites min/max** : Chaque champ peut avoir des valeurs minimales et maximales spécifiques.
+- **Option de signe (+/-)** : Permet d’ajouter un signe (positif ou négatif) pour chaque valeur.
+- **Callback `onValueChange`** : Fonction personnalisée déclenchée à chaque changement de valeur.
+- **Défilement pour ajuster les valeurs** : Permet d’ajuster les valeurs des champs en utilisant la molette de la souris, avec une sensibilité configurable (`scrollSensitivity`).
+- **Requête de touche pour le défilement** : Une touche spécifique (`Control`, `Shift`, `Alt`, `Meta`) peut être requise pour activer la fonctionnalité de défilement (`requireKeyForScroll`), permettant un contrôle précis des valeurs.
+- **Affichage des valeurs limites** : Visualisation des valeurs limites avec un effet de survol pour indiquer la plage autorisée à l’utilisateur.
+- **Nombre d'entrées configurables** : Définit le nombre de champs de saisie (`numInputs`).
+- **Espacement personnalisable entre les champs** : Permet de définir l’espace entre les champs d'input (`gap`).
+- **Position de la virgule pour `float`** : Paramètre pour définir la position du séparateur décimal (`decimalPosition`).
+- **Contrôle de validité des entrées** : Limite les caractères saisis en fonction des valeurs min/max et du type de données spécifié.
+- **Accessibilité améliorée** : Intègre les attributs ARIA (`aria-valuemin`, `aria-valuemax`, `aria-valuenow`, `aria-live="polite"`) et le rôle `spinbutton` pour une expérience accessible aux utilisateurs de technologies d’assistance.
+- **Descriptions et instructions** : Des messages d’aide sont intégrés pour guider les utilisateurs dans l’utilisation des champs, en particulier pour le défilement et l'ajustement des valeurs.
+- **Gestion des copier-coller** : Restreint les valeurs saisies à un seul caractère, ce qui permet de conserver une saisie cohérente.
+- **Activation et désactivation des champs** : Utilisation de l'option `isDisabled` pour désactiver les champs et empêcher les modifications si nécessaire.
+- **Affichage et mise à jour des valeurs** : Utilisation des méthodes `setCompleteValue` et `getCompleteValue` pour définir et obtenir la valeur totale du champ d'input.
+- **Manipulation fine des valeurs** : Grâce aux méthodes `getDigitAt` et `setDigitAt`, il est possible d’accéder et de modifier chaque chiffre individuel d’une valeur, offrant un contrôle granulaire.
 
-Ces fonctionnalités permettent une expérience utilisateur enrichie et une flexibilité avancée pour les saisies numériques dans les applications web.
-  
+Ces fonctionnalités enrichissent l'expérience utilisateur et offrent une flexibilité avancée pour la saisie numérique dans les applications web, permettant une personnalisation adaptée aux besoins spécifiques des utilisateurs.
+
 ## Installation
 
 1. Clonez le dépôt ou téléchargez les fichiers.
@@ -70,25 +74,27 @@ Ces fonctionnalités permettent une expérience utilisateur enrichie et une flex
 ## Options
 
 | Option              | Type         | Description                                                                                      | Valeur par défaut |
-|---------------------|--------------|--------------------------------------------------------------------------------------------------|--------------------|
-| `type`              | `string`     | Type de valeur (`integer` ou `float` ou `text`).                                                 | `integer`         |
-| `numInputs`         | `integer`    | Nombre d'entrées/chiffres.                                                                       | `1`               |
-| `minValues`         | `array`      | Valeurs minimales par position.                                                                  | `[]`              |
-| `maxValues`         | `array`      | Valeurs maximales par position.                                                                  | `[]`              |
-| `values`            | `array`      | Valeurs par défaut par position.                                                                 | `[]`              |
-| `defaultValue`      | `integer`    | Valeur par défaut des champs.                                                                    | `0`               |
-| `gap`               | `string`     | Espace entre les champs d'entrée.                                                                | `'10px'`          |
-| `allowSign`         | `boolean`    | Autorise l'ajout d'un signe (+/-).                                                               | `false`           |
-| `defaultSign`       | `string`     | Signe par défaut (`+` ou `-`).                                                                   | `'+'`             |
-| `decimalPosition`   | `integer`    | Position de la virgule pour les flottants.                                                       | `1`               |
-| `totalMax`          | `float`      | Valeur maximale totale possible.                                                                 | `null`            |
-| `totalMin`          | `float`      | Valeur minimale totale possible.                                                                 | `null`            |
-| `allowScroll`       | `boolean`    | Active ou désactive la fonctionnalité de défilement.                                             | `true`            |
-| `scrollSensitivity` | `integer`    | Définit la sensibilité du défilement.                                                            | `50`            |
-| `requireKeyForScroll` | `string`   | Touche à enfoncer (par exemple 'Control' ou 'Shift') pour activer le défilement sur les inputs. Valeurs possibles : 'Control', 'Shift', 'Alt', 'Meta'. Sensible à la casse.  | `null`            |
-| `autoFocusNextInput`| `boolean`    |  Active le décalage automatique du focus vers l'input suivant lors de la saisie.                 | `false`            |
+|---------------------|-------------------|--------------------------------------------------------------------------------------------------|--------------------|
+| `type`              | `string`         | Type de valeur (`integer`, `float`, `binary`, `hexadecimal`, `letter`, `text`).                  | `integer`         |
+| `numInputs`         | `integer`        | Nombre d'entrées/chiffres.                                                                       | `1`               |
+| `minValues`         | `array`          | Valeurs minimales par position.                                                                  | `[]`              |
+| `maxValues`         | `array`          | Valeurs maximales par position.                                                                  | `[]`              |
+| `values`            | `array`          | Valeurs par défaut par position.                                                                 | `[]`              |
+| `defaultValue`      | `number|string`    | Valeur par défaut des champs.                                                                    | `0`               |
+| `gap`               | `string`         | Espace entre les champs d'entrée.                                                                | `'10px'`          |
+| `allowSign`         | `boolean`        | Autorise l'ajout d'un signe (+/-).                                                               | `false`           |
+| `defaultSign`       | `string`         | Signe par défaut (`+` ou `-`).                                                                   | `'+'`             |
+| `decimalPosition`   | `integer`        | Position de la virgule pour les flottants.                                                       | `1`               |
+| `separator`         | `string`         | Caractère de séparation pour les décimales (ex. `.`).                                            | `'.'`             |
+| `totalMax`          | `float`          | Valeur maximale totale possible.                                                                 | `null`            |
+| `totalMin`          | `float`          | Valeur minimale totale possible.                                                                 | `null`            |
+| `allowScroll`       | `boolean`        | Active ou désactive la fonctionnalité de défilement.                                             | `true`            |
+| `scrollSensitivity` | `integer`        | Définit la sensibilité du défilement.                                                            | `50`            |
+| `requireKeyForScroll` | `string`       | Touche à enfoncer (par exemple 'Control' ou 'Shift') pour activer le défilement sur les inputs. Valeurs possibles : 'Control', 'Shift', 'Alt', 'Meta'. Sensible à la casse.  | `null`            |
+| `autoFocusNextInput`| `boolean`        |  Active le décalage automatique du focus vers l'input suivant lors de la saisie.                 | `false`            |
 | `autoFocusNextInputDirection`| `string`    |  Détermine la direction du décalage automatique du focus. Valeurs possibles : 'Forward', 'Right', 'Backward', 'Left'. Sensible à la casse.                                | `null`            |
 | `onValueChange`     | `function`   | Fonction déclenchée lorsque la valeur change.                                                    | `null`            |
+| `isDisabled`       | `boolean`        | Permet de désactiver les inputs. Si activé, les champs ne seront pas modifiables par l'utilisateur. Dans le cas d'un CodeInput de type "text" cette option n'est pas utilisable.                                             | `true`            |
 
 ## Exemples
 
@@ -142,12 +148,75 @@ $('#codeInputFloat').codeInputBuilder({
 $('#codeInputText').codeInputBuilder({
     type: 'text',
     values: ['Lorem', 'Consectetur', 'Eiusmod', 'Nulla', 'Vestibulum', 'Sollicitudin'], 
-    defaultValue : 0,
+    defaultValue: 'Lorem',
     onValueChange: function($input, newValue) {
         console.log(`Valeur complète : ${newValue}`);
     }
 });
 ```
+
+## Méthodes
+
+Le plugin `Code Input Builder` offre plusieurs méthodes pour interagir avec et manipuler les champs d'input. Voici une description de chaque méthode disponible :
+
+- ### `getDigitAt(index)`
+    - **Description** : Récupère la valeur d'un chiffre spécifique à un index donné dans le champ d'input.
+    - **Paramètre** : 
+      - `index` (integer) : L'index du chiffre à récupérer.
+    - **Retour** : La valeur du chiffre à l'index spécifié.
+    - **Exemple** :
+      ```javascript
+      $('#element').codeInputBuilder().getDigitAt(2);
+      ```
+
+- ### `setDigitAt(index, value)`
+    - **Description** : Définit la valeur d'un chiffre spécifique à un index donné dans le champ d'input.
+    - **Paramètres** :
+      - `index` (integer) : L'index du chiffre à définir.
+      - `value` (integer/string) : La nouvelle valeur à définir pour ce chiffre.
+    - **Exemple** :
+      ```javascript
+      $('#element').codeInputBuilder().setDigitAt(2, 5);
+      ```
+
+- ### `getCompleteValue()`
+    - **Description** : Récupère la valeur complète saisie dans l'input, en prenant en compte tous les chiffres.
+    - **Retour** : La valeur complète sous forme de nombre ou de chaîne de caractères, en fonction du type d'input configuré.
+    - **Exemple** :
+      ```javascript
+      const fullValue = $('#element').codeInputBuilder().getCompleteValue();
+      ```
+
+- ### `setCompleteValue(value, onchange = false)`
+    - **Description** : Définit la valeur complète dans l'input. Cette méthode prend en compte tous les chiffres et met à jour l'input.
+    - **Paramètres** :
+      - `value` (integer/string) : La valeur complète à définir.
+      - `onchange` (boolean, optionnel) : Si défini sur `true`, déclenche le callback `onValueChange` après la mise à jour de la valeur. Par défaut `false`.
+    - **Exemple** :
+      ```javascript
+      $('#element').codeInputBuilder().setCompleteValue("1234", true);
+      ```
+
+- ### `toggleInputs(disabled)`
+    - **Description** : Active ou désactive tous les champs d'input du plugin.
+    - **Paramètre** :
+      - `disabled` (boolean) : Si `true`, désactive les inputs ; si `false`, les active.
+    - **Exemple** :
+      ```javascript
+      $('#element').codeInputBuilder().toggleInputs(true); // Désactive tous les inputs
+      ```
+
+Ces méthodes permettent de contrôler et manipuler les valeurs des champs d'input générés par le plugin, offrant une grande flexibilité et une intégration aisée dans des applications interactives.
+
+
+## Accessibilité
+
+Ce plugin a été conçu pour être accessible aux utilisateurs de lecteurs d'écran et inclut plusieurs améliorations pour une meilleure prise en charge de l'accessibilité :
+
+- **Attributs ARIA** : Les attributs `aria-valuemin`, `aria-valuemax`, et `aria-valuenow` sont utilisés pour indiquer les limites minimales, maximales et la valeur actuelle de chaque champ d'input.
+- **Annonces dynamiques** : `aria-live="polite"` permet de notifier les changements de valeur aux utilisateurs de lecteurs d'écran de manière non intrusive, pour une meilleure compréhension des modifications en temps réel.
+- **Rôle `spinbutton`** : Les éléments d'input sont marqués avec le rôle `spinbutton`, ce qui indique aux technologies d'assistance qu'ils sont ajustables, pour une meilleure expérience de navigation.
+- **Instructions claires** : Des descriptions et instructions sont intégrées dans les attributs ARIA pour guider l'utilisateur dans l'utilisation des champs de saisie, notamment pour la saisie et l’ajustement de valeurs.
 
 ## Styles personnalisés
 

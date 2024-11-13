@@ -20,7 +20,7 @@ describe("CodeInputBuilder Plugin Tests", function() {
     it("devrait initialiser les valeurs par défaut correctement", function() {
         // Utiliser la variable globale pour accéder aux méthodes du plugin
         const value = codeInputTest.getCompleteValue();
-        expect(value).to.equal(0);
+        expect(value).to.equal(12);
     });
 
     it("devrait mettre à jour la valeur correctement", function() {

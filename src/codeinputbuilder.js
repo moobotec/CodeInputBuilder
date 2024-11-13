@@ -809,10 +809,8 @@ if (typeof jQuery === 'undefined') {
                 let backValue = finalValue;
                 // Applique les limites définies pour finalValue
                 finalValue = adjustToBounds(finalValue, settings.totalMin, settings.totalMax, finalValue);
-        
                 // Met à jour la valeur 'current' dans currentValues
                 updateCurrentValues('current', finalValue);
-        
                 // Met à jour les digits si la valeur finale a changé
                 if (backValue !== getCurrentValueByIndex('current')) {
                     fillDigits(getCurrentValueByIndex('current'), type);
@@ -1470,8 +1468,6 @@ if (typeof jQuery === 'undefined') {
         
             if (['integer', 'float', 'binary', 'hexadecimal', 'letter'].includes(settings.type)) {
 
-                console.log(isAllowSign(settings));
-
                 if (isAllowSign(settings)) {
                     addInputElement("sign", "sign", null, null, getCurrentValueByIndex("sign"),'1',isDisabled(settings));
                 }
@@ -1488,13 +1484,14 @@ if (typeof jQuery === 'undefined') {
                     // Récupère les paramètres pour chaque input et ajoute l'élément
                     const { min, max, value } = getAdjustedValueSettings(i - 1, null, settings);
                     addInputElement("digits", i, min, max, value,'1',isDisabled(settings));
-        
                     // Met à jour les valeurs actuelles et finales pour l'input
                     updateCurrentValues(i - 1, value);
-                    updateFinalValue($(`#${prefix}_${uniqueTypeShort}_input_${i}`), value, uniqueTypeShort, false);
                 }
-        
                 $container.append($inputContainer);
+
+                const { value } = getAdjustedValueSettings(settings.numInputs - 1, null, settings);
+                updateFinalValue($(`#${prefix}_${uniqueTypeShort}_input_${settings.numInputs}`), value, uniqueTypeShort, false);
+
             } else if (settings.type === 'text') {
                 // Ajoute l'élément de liste pour le type texte
                 addInputElement("list", "list", 0, settings.values.length - 1, settings.values[settings.defaultValue], '30', isDisabled(settings));

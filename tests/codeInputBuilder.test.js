@@ -1,7 +1,7 @@
 // tests/codeInputBuilder.test.js
 const expect = require('chai').expect;
 const $ = require('jquery');
-require('../path/to/your/codeinputbuilder.js');
+require('../src/codeinputbuilder.js');
 
 describe("CodeInputBuilder Plugin Tests", function() {
 

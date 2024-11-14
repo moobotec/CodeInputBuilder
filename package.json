@@ -7,7 +7,8 @@
     "test": "karma start karma.conf.js",
     "lint": "eslint src/codeinputbuilder.js",
     "format": "prettier --write \"src/codeinputbuilder.js\"",
-    "check:quality": "npm run lint && npm run format -- --check"
+    "check:quality": "npm run lint && npm run format -- --check",
+    "minify": "terser src/codeinputbuilder.js -o src/codeinputbuilder.min.js --compress --mangle"
   },
   "keywords": [
     "jquery",
@@ -35,7 +36,8 @@
     "lint-staged": "^11.1.2",
     "mocha": "^9.0.0",
     "prettier": "^2.3.2",
-    "webpack": "^5.64.0"
+    "webpack": "^5.64.0",
+    "terser": "^5.10.0"
   },
   "husky": {
     "hooks": {

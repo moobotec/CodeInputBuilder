@@ -29,3 +29,14 @@ jobs:
       # Run tests
       - name: Run tests
         run: npm test
+
+      # Run Minify JavaScript
+      - name: Minify JavaScript
+        run: npm run minify
+
+      # Upload
+      - name: Upload minified file
+        uses: actions/upload-artifact@v2
+        with:
+          name: codeinputbuilder-minified
+          path: src/codeinputbuilder.min.js

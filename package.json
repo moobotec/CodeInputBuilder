@@ -1,16 +1,30 @@
 {
   "name": "code-input-builder",
-  "version": "1.0.0",
+  "version": "0.0.8",
   "description": "Plugin jQuery pour créer des champs d'input configurables",
   "main": "src/codeinputbuilder.js",
   "scripts": {
-    "test": "karma start karma.conf.js"
+    "test": "karma start karma.conf.js",
+    "lint": "eslint src/codeinputbuilder.js",
+    "format": "prettier --write \"src/codeinputbuilder.js\"",
+    "check:quality": "npm run lint && npm run format -- --check"
   },
-  "keywords": ["jquery", "plugin", "input", "test"],
+  "keywords": [
+    "jquery",
+    "plugin",
+    "input",
+    "test"
+  ],
   "author": "Daumand David",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
+    "@babel/core": "^7.15.0",
+    "@babel/preset-env": "^7.15.0",
+    "babel-loader": "^8.2.2",
     "chai": "^4.3.4",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^9.1.0",
+    "husky": "^7.0.2",
     "jquery": "^3.6.0",
     "jsdom": "^20.0.0",
     "karma": "^6.3.0",
@@ -18,11 +32,21 @@
     "karma-chrome-launcher": "^3.1.0",
     "karma-mocha": "^2.0.1",
     "karma-webpack": "^5.0.0",
+    "lint-staged": "^11.1.2",
     "mocha": "^9.0.0",
-    "webpack": "^5.64.0",
-    "babel-loader": "^8.2.2",
-    "@babel/core": "^7.15.0",
-    "@babel/preset-env": "^7.15.0"
+    "prettier": "^2.3.2",
+    "webpack": "^5.64.0"
   },
-  "dependencies": {}
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "prettier --write",
+      "git add"
+    ]
+  }
 }

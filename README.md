@@ -14,6 +14,7 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
 - [Accessibilité](#accessibilité)
 - [Styles personnalisés](#styles-personnalisés)
 - [Dépendances](#dépendances)
+- [Tests Unitaires](#tests-unitaires)
 - [Licence](#licence)
 
 ## Fonctionnalités
@@ -228,6 +229,47 @@ Le fichier CSS `codeinputbuilder.css` personnalise l'apparence des champs :
 
 - [jQuery](https://jquery.com) (3.5.1+)
 - [Bootstrap](https://getbootstrap.com) (4.5.2+)
+
+## Tests Unitaires
+
+Le projet inclut des tests unitaires pour garantir le bon fonctionnement du plugin `CodeInputBuilder`. Ces tests couvrent plusieurs aspects clés du plugin :
+
+- **Vérification des options** : Assure que toutes les options de configuration, comme `type`, `numInputs`, `minValues`, `maxValues`, et autres, sont valides et se comportent comme prévu. Des erreurs sont levées si des valeurs incorrectes sont fournies.
+- **Gestion des types** : Teste le comportement du plugin pour différents types de valeurs (`integer`, `float`, `text`, etc.), en vérifiant les spécificités de chaque type, comme les positions décimales pour `float` ou les limitations pour `integer`.
+- **Génération dynamique des éléments DOM** : Vérifie que les éléments HTML (inputs, labels, conteneurs) sont correctement générés avec les attributs, classes et identifiants adéquats, même avec des parties d'ID générées aléatoirement.
+- **Accessibilité** : Valide que chaque élément a les attributs ARIA appropriés pour garantir une bonne accessibilité.
+- **Callbacks et interactivité** : Teste le déclenchement de certains événements, comme `onValueChange`, et l’interaction avec des fonctionnalités dynamiques (par exemple, la gestion des signes, les limites de valeurs).
+
+### Exécution des tests
+
+Les tests sont configurés avec [Karma](https://karma-runner.github.io/), [Mocha](https://mochajs.org/), et [Chai](https://www.chaijs.com/) pour une exécution facile et rapide. Les tests sont exécutés dans un environnement de navigateur simulé avec Chrome en mode headless.
+
+Pour exécuter les tests en local, suivez ces étapes :
+
+1. Assurez-vous d’avoir toutes les dépendances installées :
+
+   ```bash
+   npm install
+
+2. Lancez les tests :
+
+  ```bash
+   npm test
+
+### Intégration continue
+
+Les tests unitaires sont également exécutés automatiquement dans un environnement d'intégration continue (CI) via [GitHub Actions](https://docs.github.com/en/actions). Chaque push et pull request déclenche le workflow CI, qui exécute les tests dans un environnement standardisé. En cas de succès, les tests garantissent que les modifications du code respectent les spécifications du plugin.
+
+### Couverture des tests
+Les tests actuels couvrent :
+
+- Les options et leur validation
+- Les types de valeurs (integer, float, text, etc.)
+- La génération d'éléments HTML (inputs et labels) dans le DOM
+- Les attributs d'accessibilité ARIA
+- Les fonctionnalités de callback et l'interaction utilisateur
+
+Ces tests permettent d'assurer la stabilité et la fiabilité du plugin, et de détecter les régressions potentielles lors des mises à jour.
 
 ## Licence
 

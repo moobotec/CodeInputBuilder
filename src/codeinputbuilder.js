@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.7
+Version: 0.0.8
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -123,7 +123,7 @@ if (typeof jQuery === 'undefined') {
             autoFocusNextInput: false,
             autoFocusNextInputDirection: null,
             gap: '10px',
-            isDisabled: false // Nouvelle option pour désactiver les inputs
+            isDisabled: false
         };
 
         const settings = $.extend({}, defaultOptions, options);
@@ -162,6 +162,12 @@ if (typeof jQuery === 'undefined') {
             if (typeof settings.allowScroll !== 'boolean') {
                 throw new Error("Option 'allowScroll' doit être un booléen.");
             }
+            if (typeof settings.allowSign !== 'boolean') {
+                throw new Error("Option 'allowSign' doit être un booléen.");
+            }
+            if (typeof settings.isDisabled !== 'boolean') {
+                throw new Error("Option 'isDisabled' doit être un booléen.");
+            }
             if (typeof settings.autoFocusNextInput !== 'boolean') {
                 throw new Error("Option 'autoFocusNextInput' doit être un booléen.");
             }
@@ -173,6 +179,9 @@ if (typeof jQuery === 'undefined') {
             }
             if (settings.requireKeyForScroll && !['Control', 'Shift', 'Alt', 'Meta'].includes(settings.requireKeyForScroll)) {
                 throw new Error("Option 'requireKeyForScroll' doit être 'Control', 'Shift', 'Alt', 'Meta' ou null.");
+            }
+            if (settings.defaultSign && !['+', '-'].includes(settings.defaultSign)) {
+                throw new Error("Option 'defaultSign' doit être '+', '-'.");
             }
         }
 
@@ -1630,7 +1639,7 @@ if (typeof jQuery === 'undefined') {
         return this;
     };
 
-    $.fn.codeInputBuilder.version = "0.0.7";
+    $.fn.codeInputBuilder.version = "0.0.8";
     $.fn.codeInputBuilder.title = "CodeInputBuilder";
     $.fn.codeInputBuilder.description = "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";
 

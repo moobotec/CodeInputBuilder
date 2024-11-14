@@ -248,14 +248,16 @@ Pour exécuter les tests en local, suivez ces étapes :
 
 1. Assurez-vous d’avoir toutes les dépendances installées :
 
-   ```bash
-   npm install
+  ```bash
+  npm install
+  ```
 
 2. Lancez les tests :
 
   ```bash
-   npm test
-
+  npm test
+  ```
+  
 ### Intégration continue
 
 Les tests unitaires sont également exécutés automatiquement dans un environnement d'intégration continue (CI) via [GitHub Actions](https://docs.github.com/en/actions). Chaque push et pull request déclenche le workflow CI, qui exécute les tests dans un environnement standardisé. En cas de succès, les tests garantissent que les modifications du code respectent les spécifications du plugin.

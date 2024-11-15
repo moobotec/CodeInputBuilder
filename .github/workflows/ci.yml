@@ -15,25 +15,6 @@ jobs:
 
     steps:
 
-
-      - name: Slack Notification
-        uses: slackapi/slack-github-action@v1.18.0
-        with:
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Workflow Failure Detected* \n*Workflow:* Run JavaScript Tests Unitaires avec Karma \n*Job:* test \n*Commit Message:* Test notification Slack \n*Committer:* Moobotec \n*URL:* <https://github.com/moobotec/CodeInputBuilder/actions/runs/11855720353|View in GitHub>"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}  # Assurez-vous que SLACK_WEBHOOK_URL est bien défini dans vos secrets GitHub
-
       # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v2
@@ -76,14 +57,14 @@ jobs:
           git push origin HEAD:main
 
       - name: Slack Notification
-        if: failure()
+        if: failure() 
         uses: slackapi/slack-github-action@v1.18.0
         with:
-          slack-message: |
-            *Workflow Failure Detected*
-            *Workflow:* ${{ github.workflow }}
-            *Job:* ${{ github.job }}
-            *Commit Message:* ${{ github.event.head_commit.message }}
-            *Committer:* ${{ github.event.head_commit.committer.name }}
-            *URL:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+            slack-message: |
+                *Workflow Failure Detected*
+                *Workflow:* ${{ github.workflow }}
+                *Job:* ${{ github.job }}
+                *Commit Message:* ${{ github.event.head_commit.message }}
+                *Committer:* ${{ github.event.head_commit.committer.name }}
+                *URL:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}  

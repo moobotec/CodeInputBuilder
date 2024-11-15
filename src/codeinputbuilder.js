@@ -363,26 +363,44 @@ if (typeof jQuery === 'undefined') {
     return index;
   }
 
-  function escapeHtml(text) {
-    const map = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-      ' ': 'Espace', // espace insécable
-      '©': '&copy;',
-      '®': '&reg;',
-      '™': '&trade;',
-      '€': '&euro;',
-      '¢': '&cent;',
-      '£': '&pound;',
-      '¥': '&yen;',
-    };
-    return text.replace(/[&<>"' ©®™€¢£¥]/g, (m) => map[m]);
+  const charEscapeMap = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+    ' ': 'Espace', // espace insécable
+    '©': '&copy;',
+    '®': '&reg;',
+    '™': '&trade;',
+    '€': '&euro;',
+    '¢': '&cent;',
+    '£': '&pound;',
+    '¥': '&yen;',
+  };
+
+  // Map inversée pour les caractères échappés vers leurs caractères originaux
+  const escapeToCharMap = Object.fromEntries(
+    Object.entries(charEscapeMap).map(([char, escaped]) => [escaped, char])
+  );
+
+  // Fonction de conversion commune
+  function convertCharEscapeOrEscapeToChar(char, toEscape = true) {
+    return toEscape
+      ? charEscapeMap[char] || char
+      : escapeToCharMap[char] || char;
   }
 
+  // Fonction pour échapper les caractères spéciaux dans une chaîne
+  function escapeHtml(text) {
+    return text.replace(/[&<>"' ©®™€¢£¥]/g, (m) =>
+      convertCharEscapeOrEscapeToChar(m, true)
+    );
+  }
+
+  // Fonction pour convertir une chaîne échappée en caractères normaux
   function convertFromEscapedChar(escapedStr) {
+    // Cas spéciaux non dans la map commune
     switch (escapedStr) {
       case '\\0x00':
         return convertChar(0);
@@ -398,37 +416,12 @@ if (typeof jQuery === 'undefined') {
         return '\b'; // Retour arrière
       case '\\f':
         return '\f'; // Saut de page
-      case '&amp;':
-        return '&';
-      case '&lt;':
-        return '<';
-      case '&gt;':
-        return '>';
-      case '&quot;':
-        return '"';
-      case '&#39;':
-        return "'";
-      case 'Espace':
-        return ' ';
-      case '&copy;':
-        return '©';
-      case '&reg;':
-        return '®';
-      case '&trade;':
-        return '™';
-      case '&euro;':
-        return '€';
-      case '&cent;':
-        return '¢';
-      case '&pound;':
-        return '£';
-      case '&yen;':
-        return '¥';
       default:
-        return escapedStr; // Retourne la chaîne elle-même si elle n'est pas reconnue
+        return convertCharEscapeOrEscapeToChar(escapedStr, false); // Utilise la map pour le reste
     }
   }
 
+  // Fonction pour convertir un caractère en version échappée si nécessaire
   function convertToEscapedChar(char) {
     const charCode = convertLetter(char);
 
@@ -444,7 +437,7 @@ if (typeof jQuery === 'undefined') {
       case 12:
         return '\\f'; // Saut de page
       default:
-        return char; // Retourne le caractère lui-même s'il n'est pas un caractère de contrôle
+        return char; // Utilise la map pour les caractères spéciaux
     }
   }
 
@@ -1559,84 +1552,6 @@ if (typeof jQuery === 'undefined') {
         setValueInput(inputElement, currentValue, 'list', type);
       }
     }
-
-    /*function adjustOnScroll(inputElement, event, prefix, type) {
-      if (!settings.allowScroll) return;
-
-      const originalEvent = event.originalEvent || event;
-
-      originalEvent.preventDefault();
-
-      // Vérifie si une touche est nécessaire pour le scroll
-      if (settings.requireKeyForScroll) {
-        const keyRequired = settings.requireKeyForScroll.toLowerCase();
-        // Vérifie si la touche requise est enfoncée
-        if (
-          (keyRequired === 'control' && !event.ctrlKey) ||
-          (keyRequired === 'shift' && !event.shiftKey) ||
-          (keyRequired === 'alt' && !event.altKey) ||
-          (keyRequired === 'meta' && !event.metaKey)
-        ) {
-          return; // Sort de la fonction si la touche n'est pas enfoncée
-        }
-      }
-
-      let delta;
-      if (originalEvent.deltaY !== undefined) {
-        delta = originalEvent.deltaY;
-      } else if (originalEvent.wheelDelta !== undefined) {
-        delta = originalEvent.wheelDelta;
-      } else {
-        delta = 0;
-      }
-
-      if (Math.abs(delta) < settings.scrollSensitivity) {
-        return; // Ignore les petits défilements
-      }
-
-      if (prefix == 'digits') {
-        let currentValue = getElement('input', $(inputElement), settings);
-        if (currentValue != -1) {
-          // Incrémenter ou décrémenter la valeur en fonction de la direction du scroll
-          currentValue += delta < 0 ? -1 : 1;
-          const { valueMin, valueMax } = getValueLimits(inputElement);
-          const { adjustedValue } = adjustLimits(
-            currentValue,
-            valueMin,
-            valueMax
-          );
-          currentValue = adjustedValue;
-          setValueInput(inputElement, currentValue, prefix, type);
-        }
-      } else if (prefix == 'sign') {
-        let currentValue = -1;
-
-        if (inputElement.val() == '-') currentValue = 0;
-        if (inputElement.val() == '+') currentValue = 1;
-
-        if (currentValue != -1) {
-          // Incrémenter ou décrémenter la valeur en fonction de la direction du scroll
-          currentValue += delta < 0 ? -1 : 1;
-          // Contrôler les limites de la valeur
-          if (currentValue < 0) setValueInput(inputElement, '+', prefix, type);
-          if (currentValue > 1) setValueInput(inputElement, '-', prefix, type);
-        }
-      } else if (prefix == 'list') {
-        let currentValue = findPosition(settings.values, inputElement.val());
-        if (currentValue != -1) {
-          // Incrémenter ou décrémenter la valeur en fonction de la direction du scroll
-          currentValue += delta < 0 ? -1 : 1;
-          const { valueMin, valueMax } = getValueLimits(inputElement);
-          const { adjustedValue } = adjustLimits(
-            currentValue,
-            valueMin,
-            valueMax
-          );
-          currentValue = adjustedValue;
-          setValueInput(inputElement, currentValue, prefix, type);
-        }
-      }
-    }*/
 
     function calculateValueLimits(
       inputElement,

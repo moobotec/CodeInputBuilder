@@ -14,6 +14,20 @@ jobs:
     if: github.actor != 'github-actions[bot]'  # Ignore les commits de GitHub Actions
 
     steps:
+
+
+      - name: Slack Notification
+        uses: slackapi/slack-github-action@v1.18.0
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}  # Assurez-vous que ce secret est bien défini
+          slack-message: |
+            *Workflow Failure Detected*
+            *Workflow:* Run JavaScript Tests Unitaires avec Karma
+            *Job:* test
+            *Commit Message:* Test notification Slack
+            *Committer:* Moobotec
+            *URL:* https://github.com/moobotec/CodeInputBuilder/actions/runs/11855720353
+
       # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v2

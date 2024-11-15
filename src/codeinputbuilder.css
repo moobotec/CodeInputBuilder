@@ -1,7 +1,6 @@
 .cla-h2-like {
     font-size: 1.5rem; /* Taille de police similaire à celle de <h2> dans Bootstrap */
     font-weight: bold; /* Gras comme un titre <h2> */
-    /* Ajouter d\'autres styles de <h2> si nécessaire */
 }
 
 .cla-hover-text {
@@ -10,8 +9,6 @@
     font-weight: bold; /* Gras comme un titre <h2> */
     user-select: none;
     cursor: pointer;
-    /* Ajouter d\'autres styles de <h2> si nécessaire */
-    /*pointer-events: none;*/ /* Empêche le texte d\'interférer avec les événements de la souris */
 }
 
 [class*="top-text"]

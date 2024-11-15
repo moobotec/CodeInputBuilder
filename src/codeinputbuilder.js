@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.9
+Version: 0.0.10
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -128,7 +128,7 @@ if (typeof jQuery === 'undefined') {
 
     const settings = $.extend({}, defaultOptions, options);
 
-    function validateOptions() {
+    function validateType(type) {
       if (
         ![
           'integer',
@@ -137,119 +137,182 @@ if (typeof jQuery === 'undefined') {
           'binary',
           'hexadecimal',
           'letter',
-        ].includes(settings.type)
+        ].includes(type)
       ) {
         throw new Error(
           "Option 'type' invalide. Valeurs autorisées : 'integer', 'float', 'text','binary', 'hexadecimal', 'letter'."
         );
       }
-      if (typeof settings.numInputs !== 'number' || settings.numInputs < 1) {
+    }
+
+    function validateNumInputs(numInputs) {
+      if (typeof numInputs !== 'number' || numInputs < 1) {
         throw new Error("Option 'numInputs' doit être un entier positif.");
       }
+    }
+
+    function validateMinValues(type, minValues, numInputs) {
       if (
-        settings.type !== 'text' &&
-        Array.isArray(settings.minValues) &&
-        settings.minValues.length > 0 &&
-        settings.minValues.length !== settings.numInputs
+        type !== 'text' &&
+        Array.isArray(minValues) &&
+        minValues.length > 0 &&
+        minValues.length !== numInputs
       ) {
         throw new Error(
           "'minValues' doit contenir autant d'éléments que 'numInputs'."
         );
       }
+    }
+
+    function validateMaxValues(type, maxValues, numInputs) {
       if (
-        settings.type !== 'text' &&
-        Array.isArray(settings.maxValues) &&
-        settings.maxValues.length > 0 &&
-        settings.maxValues.length !== settings.numInputs
+        type !== 'text' &&
+        Array.isArray(maxValues) &&
+        maxValues.length > 0 &&
+        maxValues.length !== numInputs
       ) {
         throw new Error(
           "'maxValues' doit contenir autant d'éléments que 'numInputs'."
         );
       }
+    }
+
+    function validateValues(type, values, numInputs) {
       if (
-        settings.type !== 'text' &&
-        Array.isArray(settings.values) &&
-        settings.values.length > 0 &&
-        settings.values.length !== settings.numInputs
+        type !== 'text' &&
+        Array.isArray(values) &&
+        values.length > 0 &&
+        values.length !== numInputs
       ) {
         throw new Error(
           "'values' doit contenir autant d'éléments que 'numInputs'."
         );
       }
+    }
+
+    function validateDecimalPosition(type, decimalPosition) {
       if (
-        settings.type === 'float' &&
-        (typeof settings.decimalPosition !== 'number' ||
-          settings.decimalPosition < 1)
+        type === 'float' &&
+        (typeof decimalPosition !== 'number' || decimalPosition < 1)
       ) {
         throw new Error(
           "Option 'decimalPosition' doit être un entier positif pour les types flottants."
         );
       }
+    }
+
+    function validateDefaultValue(defaultValue) {
       if (
-        typeof settings.defaultValue !== 'number' &&
-        typeof settings.defaultValue !== 'string'
+        typeof defaultValue !== 'number' &&
+        typeof defaultValue !== 'string'
       ) {
         throw new Error(
           "Option 'defaultValue' doit être un nombre ou une chaîne."
         );
       }
-      if (settings.totalMin !== null && typeof settings.totalMin !== 'number') {
+    }
+
+    function validateTotalMin(totalMin) {
+      if (totalMin !== null && typeof totalMin !== 'number') {
         throw new Error("Option 'totalMin' doit être un nombre ou null.");
       }
-      if (settings.totalMax !== null && typeof settings.totalMax !== 'number') {
+    }
+
+    function validateTotalMax(totalMax) {
+      if (totalMax !== null && typeof totalMax !== 'number') {
         throw new Error("Option 'totalMax' doit être un nombre ou null.");
       }
-      if (
-        settings.onValueChange !== null &&
-        typeof settings.onValueChange !== 'function'
-      ) {
+    }
+
+    function validateOnValueChange(onValueChange) {
+      if (onValueChange !== null && typeof onValueChange !== 'function') {
         throw new Error(
           "Option 'onValueChange' doit être une fonction ou null."
         );
       }
-      if (typeof settings.allowScroll !== 'boolean') {
+    }
+
+    function validateAllowScroll(allowScroll) {
+      if (typeof allowScroll !== 'boolean') {
         throw new Error("Option 'allowScroll' doit être un booléen.");
       }
-      if (typeof settings.allowSign !== 'boolean') {
+    }
+
+    function validateAllowSign(allowSign) {
+      if (typeof allowSign !== 'boolean') {
         throw new Error("Option 'allowSign' doit être un booléen.");
       }
-      if (typeof settings.isDisabled !== 'boolean') {
+    }
+
+    function validateIsDisabled(isDisabled) {
+      if (typeof isDisabled !== 'boolean') {
         throw new Error("Option 'isDisabled' doit être un booléen.");
       }
-      if (typeof settings.autoFocusNextInput !== 'boolean') {
+    }
+
+    function validateAutoFocusNextInput(autoFocusNextInput) {
+      if (typeof autoFocusNextInput !== 'boolean') {
         throw new Error("Option 'autoFocusNextInput' doit être un booléen.");
       }
+    }
+
+    function validateAutoFocusNextInputDirection(autoFocusNextInputDirection) {
       if (
-        settings.autoFocusNextInputDirection &&
+        autoFocusNextInputDirection &&
         !['Forward', 'Backward', 'Right', 'Left'].includes(
-          settings.autoFocusNextInputDirection
+          autoFocusNextInputDirection
         )
       ) {
         throw new Error(
           "Option 'autoFocusNextInputDirection' doit être 'Forward', 'Backward', 'Right', 'Left' ou null."
         );
       }
-      if (
-        typeof settings.scrollSensitivity !== 'number' ||
-        settings.scrollSensitivity <= 0
-      ) {
+    }
+
+    function validateScrollSensitivity(scrollSensitivity) {
+      if (typeof scrollSensitivity !== 'number' || scrollSensitivity <= 0) {
         throw new Error(
           "Option 'scrollSensitivity' doit être un entier positif."
         );
       }
+    }
+
+    function validateRequireKeyForScroll(requireKeyForScroll) {
       if (
-        settings.requireKeyForScroll &&
-        !['Control', 'Shift', 'Alt', 'Meta'].includes(
-          settings.requireKeyForScroll
-        )
+        requireKeyForScroll &&
+        !['Control', 'Shift', 'Alt', 'Meta'].includes(requireKeyForScroll)
       ) {
         throw new Error(
           "Option 'requireKeyForScroll' doit être 'Control', 'Shift', 'Alt', 'Meta' ou null."
         );
       }
-      if (settings.defaultSign && !['+', '-'].includes(settings.defaultSign)) {
+    }
+
+    function validateDefaultSign(defaultSign) {
+      if (defaultSign && !['+', '-'].includes(defaultSign)) {
         throw new Error("Option 'defaultSign' doit être '+', '-'.");
       }
+    }
+
+    function validateOptions() {
+      validateType(settings.type);
+      validateNumInputs(settings.numInputs);
+      validateMinValues(settings.type, settings.minValues, settings.numInputs);
+      validateMaxValues(settings.type, settings.maxValues, settings.numInputs);
+      validateValues(settings.type, settings.values, settings.numInputs);
+      validateDecimalPosition(settings.type, settings.decimalPosition);
+      validateDefaultValue(settings.defaultValue);
+      validateTotalMin(settings.totalMin);
+      validateTotalMax(settings.totalMax);
+      validateOnValueChange(settings.onValueChange);
+      validateAllowScroll(settings.allowScroll);
+      validateAllowSign(settings.allowSign);
+      validateIsDisabled(settings.isDisabled);
+      validateAutoFocusNextInput(settings.autoFocusNextInput);
+      validateAutoFocusNextInputDirection(settings.autoFocusNextInputDirection);
+      validateScrollSensitivity(settings.scrollSensitivity);
+      validateRequireKeyForScroll(settings.requireKeyForScroll);
+      validateDefaultSign(settings.defaultSign);
     }
 
     validateOptions();
@@ -262,7 +325,7 @@ if (typeof jQuery === 'undefined') {
   }
 
   function uuidShort() {
-    return 'xxxxxxxx'.replace(/[x]/g, function () {
+    return 'xxxxxxxx'.replace(/x/g, function () {
       const r = (Math.random() * 16) | 0;
       return r.toString(16);
     });
@@ -278,7 +341,7 @@ if (typeof jQuery === 'undefined') {
     let index = id;
 
     if (
-      settings.autoFocusNextInput === true &&
+      settings.autoFocusNextInput &&
       settings.autoFocusNextInputDirection !== null
     ) {
       switch (settings.autoFocusNextInputDirection) {
@@ -861,8 +924,8 @@ if (typeof jQuery === 'undefined') {
       for (let digit of digitString.split('').reverse()) {
         const { value } = getAdjustedValueSettings(
           index,
-          convertDigitByType(digit, settings.type),
-          settings
+          settings,
+          convertDigitByType(digit, settings.type)
         );
         setElement('input', digitInputs[index], value, settings);
         updateCurrentValues(index, value);
@@ -1111,7 +1174,7 @@ if (typeof jQuery === 'undefined') {
       let numberStr = digitsArray.map((digit) => digit.toString()).join('');
 
       // Si un index de décimale est fourni, insérer le point décimal
-      if (isFloat == true && decimalPosition < digitsArray.length) {
+      if (isFloat && decimalPosition < digitsArray.length) {
         numberStr =
           numberStr.slice(0, decimalPosition) +
           '.' +
@@ -1246,6 +1309,114 @@ if (typeof jQuery === 'undefined') {
       );
     }
 
+    function isSpecialKey(event, codeTouche) {
+      return (
+        (event.ctrlKey && (event.key === 'c' || codeTouche === 67)) ||
+        (event.ctrlKey && (event.key === 'v' || codeTouche === 86)) ||
+        (!event.ctrlKey && codeTouche === 17)
+      );
+    }
+
+    function isControlKey(codeTouche) {
+      return [8, 9, 46].includes(codeTouche); // Backspace, Tab, Delete
+    }
+
+    function handleBackspace(
+      inputElement,
+      type,
+      id,
+      prefix,
+      valueMin,
+      settings
+    ) {
+      setValueInput(inputElement, valueMin, prefix, type);
+      if (id - 1 === 0) id = settings.numInputs + 1;
+      $('#' + prefix + '_' + type + '_input_' + (id - 1)).focus();
+    }
+
+    function handleDelete(inputElement, type, id, prefix, valueMin, settings) {
+      setValueInput(inputElement, valueMin, prefix, type);
+      if (id + 1 === settings.numInputs + 1) id = 0;
+      $('#' + prefix + '_' + type + '_input_' + (id + 1)).focus();
+    }
+
+    function handleDigitEntry(inputElement, event, type, id, prefix, settings) {
+      let key = event.key;
+      if (settings.type == 'hexadecimal')
+        key = convertLetterToHexadecimal(event.key);
+      if (settings.type == 'letter') key = convertLetter(event.key);
+      setValueInput(inputElement, key, prefix, type);
+      $(
+        '#' + prefix + '_' + type + '_input_' + calculateNextIndex(id, settings)
+      ).focus();
+    }
+
+    function processDigitInput(
+      inputElement,
+      codeTouche,
+      event,
+      type,
+      id,
+      prefix,
+      valueMin,
+      settings
+    ) {
+      if (codeTouche === 8) {
+        // Handle Backspace
+        handleBackspace(inputElement, type, id, prefix, valueMin, settings);
+      } else if (codeTouche === 46) {
+        // Handle Delete
+        handleDelete(inputElement, type, id, prefix, valueMin, settings);
+      } else {
+        handleDigitEntry(inputElement, event, type, id, prefix, settings);
+      }
+    }
+
+    function handleDigitsInput(
+      inputElement,
+      codeTouche,
+      event,
+      type,
+      prefix,
+      id,
+      settings
+    ) {
+      // Récupérer les limites pour `digit`
+      const { valueMin, valueMax } = getValueLimits(inputElement);
+
+      // Vérifier si la touche est valide pour un chiffre
+      if (
+        isKeyAllowed(codeTouche, valueMax, settings.type) ||
+        isControlKey(codeTouche)
+      ) {
+        processDigitInput(
+          inputElement,
+          codeTouche,
+          event,
+          type,
+          id,
+          prefix,
+          valueMin,
+          settings
+        );
+      } else {
+        // Valeur non valide pour un digit
+        setValueInput(inputElement, valueMin, prefix, type);
+        event.preventDefault();
+      }
+    }
+
+    function handleSignInput(inputElement, codeTouche, event, type, prefix) {
+      // Gestion des signes
+      if (event.key === '+' || event.key === '-') {
+        setValueInput(inputElement, event.key, prefix, type);
+      } else if (codeTouche !== 9) {
+        // Valeur non valide pour un signe
+        setValueInput(inputElement, '+', prefix, type);
+        event.preventDefault();
+      }
+    }
+
     function applyInput(
       inputElement,
       codeTouche,
@@ -1255,71 +1426,27 @@ if (typeof jQuery === 'undefined') {
       id,
       settings
     ) {
-      const isPasteCode = event.ctrlKey && event.key === 'paste';
-
-      // Récupérer les limites pour `digit`
-      const { valueMin, valueMax } = getValueLimits(inputElement);
-
       // Gestion des touches de contrôle (Copier, Coller)
-      if (
-        (event.ctrlKey && (event.key === 'c' || codeTouche === 67)) ||
-        (event.ctrlKey && (event.key === 'v' || codeTouche === 86)) ||
-        (!event.ctrlKey && codeTouche === 17)
-      ) {
+      if (isSpecialKey(event, codeTouche)) {
         event.preventDefault();
         return;
       }
 
-      // Détermine l'action en fonction du `prefix`
-      if (prefix === 'digits') {
-        // Vérifier si la touche est valide pour un chiffre
-        if (
-          isKeyAllowed(codeTouche, valueMax, settings.type, isPasteCode) ||
-          codeTouche === 8 || // Retour arrière
-          codeTouche === 9 || // Tabulation
-          codeTouche === 46
-        ) {
-          // Supprimer
-
-          if (codeTouche === 8) {
-            // Gestion du retour arrière
-            setValueInput(inputElement, valueMin, prefix, type);
-            if (id - 1 === 0) id = settings.numInputs + 1;
-            $('#' + prefix + '_' + type + '_input_' + (id - 1)).focus();
-          } else if (codeTouche === 46) {
-            // Gestion de la touche Supprimer
-            setValueInput(inputElement, valueMin, prefix, type);
-            if (id + 1 === settings.numInputs + 1) id = 0;
-            $('#' + prefix + '_' + type + '_input_' + (id + 1)).focus();
-          } else if (codeTouche !== 9) {
-            let key = event.key;
-            if (settings.type == 'hexadecimal')
-              key = convertLetterToHexadecimal(event.key);
-            if (settings.type == 'letter') key = convertLetter(event.key);
-            setValueInput(inputElement, key, prefix, type);
-            $(
-              '#' +
-                prefix +
-                '_' +
-                type +
-                '_input_' +
-                calculateNextIndex(id, settings)
-            ).focus();
-          }
-        } else {
-          // Valeur non valide pour un digit
-          setValueInput(inputElement, valueMin, prefix, type);
-          event.preventDefault();
-        }
-      } else if (prefix === 'sign') {
-        // Gestion des signes
-        if (event.key === '+' || event.key === '-') {
-          setValueInput(inputElement, event.key, prefix, type);
-        } else if (codeTouche !== 9) {
-          // Valeur non valide pour un signe
-          setValueInput(inputElement, '+', prefix, type);
-          event.preventDefault();
-        }
+      switch (prefix) {
+        case 'digits':
+          handleDigitsInput(
+            inputElement,
+            codeTouche,
+            event,
+            type,
+            prefix,
+            id,
+            settings
+          );
+          break;
+        case 'sign':
+          handleSignInput(inputElement, codeTouche, event, type, prefix);
+          break;
       }
     }
 
@@ -1344,7 +1471,96 @@ if (typeof jQuery === 'undefined') {
     }
 
     /* Gestionnaire de modification de la mollette de la souris */
+
     function adjustOnScroll(inputElement, event, prefix, type) {
+      if (!settings.allowScroll) return;
+      const originalEvent = event.originalEvent || event;
+      originalEvent.preventDefault();
+
+      if (!isKeyRequiredForScroll(event)) return;
+
+      const delta = calculateDelta(originalEvent);
+      if (Math.abs(delta) < settings.scrollSensitivity) return;
+
+      handlePrefixScroll(prefix, inputElement, delta, type);
+    }
+
+    function isKeyRequiredForScroll(event) {
+      if (!settings.requireKeyForScroll) return true;
+      const keyRequired = settings.requireKeyForScroll.toLowerCase();
+      return (
+        (keyRequired === 'control' && event.ctrlKey) ||
+        (keyRequired === 'shift' && event.shiftKey) ||
+        (keyRequired === 'alt' && event.altKey) ||
+        (keyRequired === 'meta' && event.metaKey)
+      );
+    }
+
+    function calculateDelta(originalEvent) {
+      if (originalEvent.deltaY !== undefined) return originalEvent.deltaY;
+      if (originalEvent.wheelDelta !== undefined)
+        return originalEvent.wheelDelta;
+      return 0;
+    }
+
+    function handlePrefixScroll(prefix, inputElement, delta, type) {
+      switch (prefix) {
+        case 'digits':
+          handleDigitsScroll(inputElement, delta, type);
+          break;
+        case 'sign':
+          handleSignScroll(inputElement, delta, type);
+          break;
+        case 'list':
+          handleListScroll(inputElement, delta, type);
+          break;
+      }
+    }
+
+    function handleDigitsScroll(inputElement, delta, type) {
+      let currentValue = getElement('input', $(inputElement), settings);
+      if (currentValue != -1) {
+        currentValue += delta < 0 ? -1 : 1;
+        const { valueMin, valueMax } = getValueLimits(inputElement);
+        currentValue = adjustLimits(
+          currentValue,
+          valueMin,
+          valueMax
+        ).adjustedValue;
+        setValueInput(inputElement, currentValue, 'digits', type);
+      }
+    }
+
+    function handleSignScroll(inputElement, delta, type) {
+      let currentValue = -1;
+
+      if (inputElement.val() == '-') currentValue = 0;
+      if (inputElement.val() == '+') currentValue = 1;
+
+      if (currentValue != -1) {
+        // Incrémenter ou décrémenter la valeur en fonction de la direction du scroll
+        currentValue += delta < 0 ? -1 : 1;
+        // Contrôler les limites de la valeur
+        if (currentValue < 0) setValueInput(inputElement, '+', 'sign', type);
+        if (currentValue > 1) setValueInput(inputElement, '-', 'sign', type);
+      }
+    }
+
+    function handleListScroll(inputElement, delta, type) {
+      let currentValue = findPosition(settings.values, inputElement.val());
+      if (currentValue != -1) {
+        currentValue += delta < 0 ? -1 : 1;
+        const { valueMin, valueMax } = getValueLimits(inputElement);
+        currentValue = adjustLimits(
+          currentValue,
+          valueMin,
+          valueMax
+        ).adjustedValue;
+        setValueInput(inputElement, currentValue, 'list', type);
+      }
+    }
+
+    /*function adjustOnScroll(inputElement, event, prefix, type) {
       if (!settings.allowScroll) return;
 
       const originalEvent = event.originalEvent || event;
@@ -1365,12 +1581,14 @@ if (typeof jQuery === 'undefined') {
         }
       }
 
-      const delta =
-        originalEvent.deltaY !== undefined
-          ? originalEvent.deltaY
-          : originalEvent.wheelDelta
-          ? -originalEvent.wheelDelta
-          : 0;
+      let delta;
+      if (originalEvent.deltaY !== undefined) {
+        delta = originalEvent.deltaY;
+      } else if (originalEvent.wheelDelta !== undefined) {
+        delta = originalEvent.wheelDelta;
+      } else {
+        delta = 0;
+      }
 
       if (Math.abs(delta) < settings.scrollSensitivity) {
         return; // Ignore les petits défilements
@@ -1384,8 +1602,6 @@ if (typeof jQuery === 'undefined') {
           const { valueMin, valueMax } = getValueLimits(inputElement);
           const { adjustedValue } = adjustLimits(
             currentValue,
-            null,
-            null,
             valueMin,
             valueMax
           );
@@ -1413,8 +1629,6 @@ if (typeof jQuery === 'undefined') {
           const { valueMin, valueMax } = getValueLimits(inputElement);
           const { adjustedValue } = adjustLimits(
             currentValue,
-            null,
-            null,
             valueMin,
             valueMax
           );
@@ -1422,7 +1636,7 @@ if (typeof jQuery === 'undefined') {
           setValueInput(inputElement, currentValue, prefix, type);
         }
       }
-    }
+    }*/
 
     function calculateValueLimits(
       inputElement,
@@ -1480,10 +1694,10 @@ if (typeof jQuery === 'undefined') {
 
     function adjustLimits(
       value,
-      valueTop = null,
-      valueBottom = null,
       valueMin,
-      valueMax
+      valueMax,
+      valueTop = null,
+      valueBottom = null
     ) {
       // Si seule la valeur unique est fournie, ajuster selon les limites min/max
       if (valueTop === null && valueBottom === null) {
@@ -1524,10 +1738,10 @@ if (typeof jQuery === 'undefined') {
       // Ajuster les valeurs si elles sont en dehors des limites
       const { adjustedValueTop, adjustedValueBottom } = adjustLimits(
         null,
-        valueTop,
-        valueBottom,
         valueMin,
-        valueMax
+        valueMax,
+        valueTop,
+        valueBottom
       );
 
       return {
@@ -1753,7 +1967,7 @@ if (typeof jQuery === 'undefined') {
       }
     }
 
-    function getAdjustedValueSettings(index, inputValue = null, settings) {
+    function getAdjustedValueSettings(index, settings, inputValue = null) {
       // prettier-ignore
       const min = settings.minValues[index] !== undefined 
                 ? Math.max(valueDigitMin(settings), Math.min(minValue(index,settings), valueDigitMax(settings))) 
@@ -1764,10 +1978,14 @@ if (typeof jQuery === 'undefined') {
                 ? Math.max(valueDigitMin(settings), Math.min(maxValue(index,settings), valueDigitMax(settings))) 
                 : valueDigitMax(settings);
 
-      // prettier-ignore
-      let value = (inputValue != null) ? inputValue : ( settings.values[index] !== undefined 
-                ? defaultValue(index,settings) 
-                : settings.defaultValue);
+      let value;
+      if (inputValue != null) {
+        value = inputValue;
+      } else if (settings.values[index] !== undefined) {
+        value = defaultValue(index, settings);
+      } else {
+        value = settings.defaultValue;
+      }
 
       // Ajuster `value` pour qu'il soit compris entre `min` et `max`
       value = clampValue(value, min, max, settings);
@@ -1825,11 +2043,8 @@ if (typeof jQuery === 'undefined') {
       prefix,
       uniqueTypeShort,
       id,
-      min,
-      max,
       value,
-      maxLength = '1',
-      isDisabled = false
+      { min, max, maxLength = '1', isDisabled = false } = {}
     ) {
       // Créer une étiquette avec un texte descriptif pour chaque champ
       const labelId = `${prefix}_${uniqueTypeShort}_label_${id}`;
@@ -1962,34 +2177,19 @@ if (typeof jQuery === 'undefined') {
           css: { position: 'relative' },
         });
         $wrapperDiv.append(
-          createTextElement(
-            prefix,
-            uniqueTypeShort,
-            id,
-            'top',
-            min !== undefined ? min : '...'
-          )
+          createTextElement(prefix, uniqueTypeShort, id, 'top', '&nbsp;')
         );
+
         $wrapperDiv.append(
-          createInputElement(
-            prefix,
-            uniqueTypeShort,
-            id,
+          createInputElement(prefix, uniqueTypeShort, id, value, {
             min,
             max,
-            value,
             maxLength,
-            isDisabled
-          )
+            isDisabled,
+          })
         );
         $wrapperDiv.append(
-          createTextElement(
-            prefix,
-            uniqueTypeShort,
-            id,
-            'bottom',
-            min !== undefined ? min : '...'
-          )
+          createTextElement(prefix, uniqueTypeShort, id, 'bottom', '&nbsp;')
         );
         $inputContainer.append($wrapperDiv);
       }
@@ -2039,11 +2239,7 @@ if (typeof jQuery === 'undefined') {
             );
           }
           // Récupère les paramètres pour chaque input et ajoute l'élément
-          const { min, max, value } = getAdjustedValueSettings(
-            i - 1,
-            null,
-            settings
-          );
+          const { min, max, value } = getAdjustedValueSettings(i - 1, settings);
           addInputElement(
             'digits',
             i,
@@ -2060,7 +2256,6 @@ if (typeof jQuery === 'undefined') {
 
         const { value } = getAdjustedValueSettings(
           settings.numInputs - 1,
-          null,
           settings
         );
         updateFinalValue(
@@ -2143,28 +2338,29 @@ if (typeof jQuery === 'undefined') {
       return getCurrentValueByIndex('current');
     };
 
-    this.setCompleteValue = function (value, onchange = false) {
+    function validateValue(value) {
       if (value === undefined || !value || value.length === 0) {
         throw new Error('Une valeur doit être renseignée.');
       }
+    }
 
+    // Fonction pour valider la valeur, remplir les digits et mettre à jour
+    function validateAndFillDigits(value, conversionFunction) {
+      updateCurrentValues('fillDigits', 0);
+      fillDigits(conversionFunction(value), uniqueTypeShort);
+      let newValue = digitsArrayToNumber(
+        getCurrentValueByIndex('digits'),
+        settings.type === 'float',
+        settings.decimalPosition
+      );
+      newValue = addSignToValue(newValue, uniqueTypeShort);
+      updateCurrentValues('current', newValue);
+    }
+
+    function updateValue(value) {
       // Fonctions auxiliaires pour supprimer les préfixes
       const removeBinaryPrefix = (value) => value.replace(/^0b/, '');
       const removeHexadecimalPrefix = (value) => value.replace(/^0x/, '');
-
-      // Fonction pour valider la valeur, remplir les digits et mettre à jour
-      function validateAndFillDigits(value, conversionFunction) {
-        updateCurrentValues('fillDigits', 0);
-        fillDigits(conversionFunction(value), uniqueTypeShort);
-        let newValue = digitsArrayToNumber(
-          getCurrentValueByIndex('digits'),
-          settings.type === 'float',
-          settings.decimalPosition
-        );
-        newValue = addSignToValue(newValue, uniqueTypeShort);
-        updateCurrentValues('current', newValue);
-        triggerValueChange(null, settings, onchange);
-      }
 
       let index = -1;
 
@@ -2201,7 +2397,6 @@ if (typeof jQuery === 'undefined') {
             updateCurrentValues('fillDigits', 0);
             fillDigits(cleanValue, uniqueTypeShort);
             updateCurrentValues('current', cleanValue);
-            triggerValueChange(null, settings, onchange);
           } else {
             throw new Error('La valeur doit être un nombre hexadécimal.');
           }
@@ -2211,7 +2406,6 @@ if (typeof jQuery === 'undefined') {
           updateCurrentValues('fillDigits', 0);
           fillDigits(value, uniqueTypeShort);
           updateCurrentValues('current', value);
-          triggerValueChange(null, settings, onchange);
           break;
 
         case 'text':
@@ -2219,7 +2413,6 @@ if (typeof jQuery === 'undefined') {
           if (index !== -1) {
             $(`input[id^=list_${uniqueTypeShort}_input]`).val(value);
             updateCurrentValues('current', value);
-            triggerValueChange(null, settings, onchange);
           } else {
             throw new Error(
               "Le texte n'est pas reconnu dans les valeurs disponibles."
@@ -2232,11 +2425,17 @@ if (typeof jQuery === 'undefined') {
             "Le type spécifié dans settings n'est pas compatible avec setCompleteValue."
           );
       }
+    }
+
+    this.setCompleteValue = function (value, onchange = false) {
+      validateValue(value);
+      updateValue(value);
+      triggerValueChange(null, settings, onchange);
     };
     return this;
   };
 
-  $.fn.codeInputBuilder.version = '0.0.9';
+  $.fn.codeInputBuilder.version = '0.0.10';
   $.fn.codeInputBuilder.title = 'CodeInputBuilder';
   $.fn.codeInputBuilder.description =
     "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";

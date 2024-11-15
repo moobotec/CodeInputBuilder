@@ -384,23 +384,23 @@ if (typeof jQuery === 'undefined') {
     Object.entries(charEscapeMap).map(([char, escaped]) => [escaped, char])
   );
 
-  // Fonction de conversion commune
-  function convertCharEscapeOrEscapeToChar(char, toEscape = true) {
-    return toEscape
-      ? charEscapeMap[char] || char
-      : escapeToCharMap[char] || char;
+  // Fonction pour échapper un caractère
+  function escapeChar(char) {
+    return charEscapeMap[char] || char;
+  }
+
+  // Fonction pour convertir un caractère échappé en caractère normal
+  function unescapeChar(escapedChar) {
+    return escapeToCharMap[escapedChar] || escapedChar;
   }
 
   // Fonction pour échapper les caractères spéciaux dans une chaîne
   function escapeHtml(text) {
-    return text.replace(/[&<>"' ©®™€¢£¥]/g, (m) =>
-      convertCharEscapeOrEscapeToChar(m, true)
-    );
+    return text.replace(/[&<>"' ©®™€¢£¥]/g, (m) => escapeChar(m));
   }
 
   // Fonction pour convertir une chaîne échappée en caractères normaux
   function convertFromEscapedChar(escapedStr) {
-    // Cas spéciaux non dans la map commune
     switch (escapedStr) {
       case '\\0x00':
         return convertChar(0);
@@ -417,7 +417,7 @@ if (typeof jQuery === 'undefined') {
       case '\\f':
         return '\f'; // Saut de page
       default:
-        return convertCharEscapeOrEscapeToChar(escapedStr, false); // Utilise la map pour le reste
+        return unescapeChar(escapedStr); // Utilise la fonction unescapeChar pour le reste
     }
   }
 

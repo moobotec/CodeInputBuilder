@@ -19,7 +19,7 @@ jobs:
       - name: Slack Notification
         uses: slackapi/slack-github-action@v1.18.0
         with:
-          slack-message: |
+          payload: |
             {
               "blocks": [
                 {

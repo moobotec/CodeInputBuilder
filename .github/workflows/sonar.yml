@@ -29,6 +29,11 @@ jobs:
       - name: Check SonarScanner Installation
         run: sonar-scanner -v
 
+      - name: Check src directory
+        run: |
+          ls -la
+          ls -la src
+      
       - name: Run SonarQube Scanner
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  # Assurez-vous que SONAR_TOKEN est défini dans vos secrets GitHub

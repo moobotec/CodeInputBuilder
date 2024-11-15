@@ -54,11 +54,9 @@ jobs:
         if: failure() 
         uses: slackapi/slack-github-action@v1.18.0
         with:
-            slack-message: |
-                *Workflow Failure Detected*
-                *Workflow:* ${{ github.workflow }}
-                *Job:* ${{ github.job }}
-                *Commit Message:* ${{ github.event.head_commit.message }}
-                *Committer:* ${{ github.event.head_commit.committer.name }}
-                *URL:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}  
+          payload: |
+            {
+              "text": "*Workflow Failure Detected*\n*Workflow:* ${{ github.workflow }}\n*Job:* ${{ github.job }}\n*Commit Message:* ${{ github.event.head_commit.message }}\n*Committer:* ${{ github.event.head_commit.committer.name }}\n*URL:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

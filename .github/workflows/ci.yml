@@ -19,7 +19,6 @@ jobs:
       - name: Slack Notification
         uses: slackapi/slack-github-action@v1.18.0
         with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}  # Assurez-vous que ce secret est bien défini
           slack-message: |
             *Workflow Failure Detected*
             *Workflow:* Run JavaScript Tests Unitaires avec Karma
@@ -27,6 +26,8 @@ jobs:
             *Commit Message:* Test notification Slack
             *Committer:* Moobotec
             *URL:* https://github.com/moobotec/CodeInputBuilder/actions/runs/11855720353
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}  # Assurez-vous que SLACK_WEBHOOK_URL est bien défini dans vos secrets GitHub
 
       # Checkout the repository
       - name: Checkout code

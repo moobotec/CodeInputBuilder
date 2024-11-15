@@ -20,6 +20,7 @@ describe("CodeInputBuilder Plugin Test du type Float", function() {
                 separator: ',',
                 autoFocusNextInput: true,
                 autoFocusNextInputDirection: 'Right',
+                scrollSensitivity : 0.1,
             });
 
             $element = $('#element');
@@ -156,6 +157,61 @@ describe("CodeInputBuilder Plugin Test du type Float", function() {
             codeInputTest.setCompleteValue(-1000.000); // En-dessous de la valeur minimale
             expect(codeInputTest.getCompleteValue()).to.equal(0); // Devrait être limité à 0
         });
+
+
+        it("devrait incrémenter la valeur du premier champ d'input en utilisant la molette vers le bas pour le signe ", function() {
+            // Définir la valeur initiale du premier input
+
+            codeInputTest.setCompleteValue(42.300);
+
+            const codeInputTestSigne = $('#element').find('input').eq(0);
+            
+            // Simuler l'événement de défilement vers le haut sur le premier input qui est le sign
+            codeInputTestSigne.trigger({
+                type: 'wheel',
+                originalEvent: { deltaY: +1 , preventDefault: function() {} } // Défilement vers le bas
+                
+            });
+    
+            expect(codeInputTest.getCompleteValue()).to.equal(-42.3); 
+        });
+
+        it("devrait incrémenter la valeur du premier champ d'input en utilisant la molette vers le bas pour les digits ", function() {
+            // Définir la valeur initiale du premier input
+
+            codeInputTest.setCompleteValue(42.300);
+
+            const codeInputs = $('#element').find("input[id^='digits_float_']");
+
+            // Simuler l'événement de défilement vers le haut sur chaque input correspondant
+            codeInputs.each((index, input) => {
+                $(input).trigger({
+                    type: 'wheel',
+                    originalEvent: { deltaY: +1, preventDefault: function() {} } // Défilement vers le bas
+                });
+            });
+    
+            expect(codeInputTest.getCompleteValue()).to.equal(53.411); 
+        });
+
+        it("devrait incrémenter la valeur du premier champ d'input en utilisant la molette vers le haut pour les digits ", function() {
+            // Définir la valeur initiale du premier input
+
+            codeInputTest.setCompleteValue(42.300);
+
+            const codeInputs = $('#element').find("input[id^='digits_float_']");
+
+            // Simuler l'événement de défilement vers le haut sur chaque input correspondant
+            codeInputs.each((index, input) => {
+                $(input).trigger({
+                    type: 'wheel',
+                    originalEvent: { deltaY: -1, preventDefault: function() {} } // Défilement vers le haut
+                });
+            });
+    
+            expect(codeInputTest.getCompleteValue()).to.equal(31.2); 
+        });
+
     });
 
     describe("Sans signe autorisé", function() {

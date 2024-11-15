@@ -32,6 +32,7 @@
     "karma": "^6.3.0",
     "karma-chai": "^0.1.0",
     "karma-chrome-launcher": "^3.1.0",
+    "karma-coverage": "^2.2.1",
     "karma-mocha": "^2.0.1",
     "karma-webpack": "^5.0.0",
     "license-checker": "^25.0.1",

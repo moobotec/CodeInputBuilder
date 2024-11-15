@@ -3,8 +3,8 @@ name: SonarQube Analysis
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    paths-ignore: ['**/*.min.js']
   pull_request:
     branches:
       - main
@@ -33,11 +33,20 @@ jobs:
       - name: Check SonarScanner Installation
         run: sonar-scanner -v
 
-      - name: Check src directory
+       # Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Run tests
+      - name: Run tests
+        run: npm test
+
+      - name: Check directory
         run: |
           ls -la
           ls -la src
-      
+          ls -la coverage
+
       - name: Run SonarQube Scanner
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 

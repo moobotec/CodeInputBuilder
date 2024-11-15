@@ -1351,7 +1351,7 @@ if (typeof jQuery === 'undefined') {
       ).focus();
     }
 
-    function processDigitInput(
+    function processDigitInput({
       inputElement,
       codeTouche,
       event,
@@ -1359,8 +1359,8 @@ if (typeof jQuery === 'undefined') {
       id,
       prefix,
       valueMin,
-      settings
-    ) {
+      settings,
+    }) {
       if (codeTouche === 8) {
         // Handle Backspace
         handleBackspace(inputElement, type, id, prefix, valueMin, settings);
@@ -1389,7 +1389,7 @@ if (typeof jQuery === 'undefined') {
         isKeyAllowed(codeTouche, valueMax, settings.type) ||
         isControlKey(codeTouche)
       ) {
-        processDigitInput(
+        processDigitInput({
           inputElement,
           codeTouche,
           event,
@@ -1397,8 +1397,8 @@ if (typeof jQuery === 'undefined') {
           id,
           prefix,
           valueMin,
-          settings
-        );
+          settings,
+        });
       } else {
         // Valeur non valide pour un digit
         setValueInput(inputElement, valueMin, prefix, type);
@@ -2357,69 +2357,84 @@ if (typeof jQuery === 'undefined') {
       updateCurrentValues('current', newValue);
     }
 
+    function updateValueInteger(value) {
+      if (isValidIntegerOrFloat(value)) {
+        validateAndFillDigits(value, convertIntegerBase10);
+      } else {
+        throw new Error('La valeur doit être un nombre entier.');
+      }
+    }
+
+    function updateValueFloat(value) {
+      if (isValidIntegerOrFloat(value)) {
+        validateAndFillDigits(value, convertFloat);
+      } else {
+        throw new Error('La valeur doit être un nombre flottant.');
+      }
+    }
+
+    function updateValueBinary(value) {
+      const removeBinaryPrefix = (value) => value.replace(/^0b/, '');
+      if (isValidBinary(value)) {
+        validateAndFillDigits(removeBinaryPrefix(value), convertIntegerBase10);
+      } else {
+        throw new Error(
+          'La valeur doit être un nombre binaire (composé uniquement de 0 et 1).'
+        );
+      }
+    }
+
+    function updateValueHexadecimal(value) {
+      const removeHexadecimalPrefix = (value) => value.replace(/^0x/, '');
+      if (isValidHexadecimal(value)) {
+        const cleanValue = removeHexadecimalPrefix(value);
+        updateCurrentValues('fillDigits', 0);
+        fillDigits(cleanValue, uniqueTypeShort);
+        updateCurrentValues('current', cleanValue);
+      } else {
+        throw new Error('La valeur doit être un nombre hexadécimal.');
+      }
+    }
+
+    function updateValueLetter(value) {
+      updateCurrentValues('fillDigits', 0);
+      fillDigits(value, uniqueTypeShort);
+      updateCurrentValues('current', value);
+    }
+
+    function updateValueText(value) {
+      const index = findPosition(settings.values, value);
+      if (index !== -1) {
+        $(`input[id^=list_${uniqueTypeShort}_input]`).val(value);
+        updateCurrentValues('current', value);
+      } else {
+        throw new Error(
+          "Le texte n'est pas reconnu dans les valeurs disponibles."
+        );
+      }
+    }
+
     function updateValue(value) {
       // Fonctions auxiliaires pour supprimer les préfixes
-      const removeBinaryPrefix = (value) => value.replace(/^0b/, '');
-      const removeHexadecimalPrefix = (value) => value.replace(/^0x/, '');
-
-      let index = -1;
-
       switch (settings.type) {
         case 'integer':
+          updateValueInteger(value);
+          break;
         case 'float':
-          if (isValidIntegerOrFloat(value)) {
-            const conversionFunction =
-              settings.type === 'float' ? convertFloat : convertIntegerBase10;
-            validateAndFillDigits(value, conversionFunction);
-          } else {
-            throw new Error(
-              'La valeur doit être un nombre flottant ou un entier.'
-            );
-          }
+          updateValueFloat(value);
           break;
-
         case 'binary':
-          if (isValidBinary(value)) {
-            validateAndFillDigits(
-              removeBinaryPrefix(value),
-              convertIntegerBase10
-            );
-          } else {
-            throw new Error(
-              'La valeur doit être un nombre binaire (composé uniquement de 0 et 1).'
-            );
-          }
+          updateValueBinary(value);
           break;
-
         case 'hexadecimal':
-          if (isValidHexadecimal(value)) {
-            const cleanValue = removeHexadecimalPrefix(value);
-            updateCurrentValues('fillDigits', 0);
-            fillDigits(cleanValue, uniqueTypeShort);
-            updateCurrentValues('current', cleanValue);
-          } else {
-            throw new Error('La valeur doit être un nombre hexadécimal.');
-          }
+          updateValueHexadecimal(value);
           break;
-
         case 'letter':
-          updateCurrentValues('fillDigits', 0);
-          fillDigits(value, uniqueTypeShort);
-          updateCurrentValues('current', value);
+          updateValueLetter(value);
           break;
-
         case 'text':
-          index = findPosition(settings.values, value);
-          if (index !== -1) {
-            $(`input[id^=list_${uniqueTypeShort}_input]`).val(value);
-            updateCurrentValues('current', value);
-          } else {
-            throw new Error(
-              "Le texte n'est pas reconnu dans les valeurs disponibles."
-            );
-          }
+          updateValueText(value);
           break;
-
         default:
           throw new Error(
             "Le type spécifié dans settings n'est pas compatible avec setCompleteValue."

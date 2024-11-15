@@ -27,7 +27,6 @@
                 <li><a href="#test-binary"> <i class="fas fa-microchip text-info"></i> 6. Saisissez une valeur entière avec le type Binary</a></li>
                 <li><a href="#test-letter"> <i class="fas fa-keyboard text-primary"></i> 7. Saisissez un caractère avec le type Letter</a></li>
                 <li><a href="#test-text"><i class="fas fa-font text-primary"></i> 8. Sélectionnez un texte avec le champ de type Text</a></li>
-                <li><a href="#test-not"><i class="fas fa-ban text-danger"></i> 9. Exemple d’un champ de type Not, pour une saisie non disponible</a></li>
             </ul>
         </nav>
         <hr>
@@ -306,19 +305,6 @@
             </div>
         </div>
         <hr>
-
-        <!-- Section Not Available -->
-        <div class="mt-4">
-            <div class="row text-center">
-                <div class="d-flex justify-content-around w-100">
-                    <div class = "w-100">
-                        <h3 id="test-not"><i class="fas fa-ban text-danger"></i> 9. Exemple d’un champ de type Not, pour une saisie non disponible</h3>
-                         <code> { type: 'xxxx' }</code>
-                        <div id="codeInputNot"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <footer class="bg-dark text-center text-lg-start mt-5">
@@ -660,11 +646,6 @@
             $('#setCompleteValueButtonText').on('click', function() {
                 const completeValue = $('#valueInputText').val();
                 codeInputText.setCompleteValue(completeValue);
-            });
-            
-            // Initialiser avec 5 inputs, avec des valeurs min et max différentes pour chaque input
-            let codeInputNot = $('#codeInputNot').codeInputBuilder({ 
-                type: 'xxxxx'
             });
             
         });

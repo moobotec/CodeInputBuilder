@@ -1962,7 +1962,13 @@ if (typeof jQuery === 'undefined') {
           css: { position: 'relative' },
         });
         $wrapperDiv.append(
-          createTextElement(prefix, uniqueTypeShort, id, 'top', min ?? '...')
+          createTextElement(
+            prefix,
+            uniqueTypeShort,
+            id,
+            'top',
+            min !== undefined ? min : '...'
+          )
         );
         $wrapperDiv.append(
           createInputElement(
@@ -1977,7 +1983,13 @@ if (typeof jQuery === 'undefined') {
           )
         );
         $wrapperDiv.append(
-          createTextElement(prefix, uniqueTypeShort, id, 'bottom', min ?? '...')
+          createTextElement(
+            prefix,
+            uniqueTypeShort,
+            id,
+            'bottom',
+            min !== undefined ? min : '...'
+          )
         );
         $inputContainer.append($wrapperDiv);
       }

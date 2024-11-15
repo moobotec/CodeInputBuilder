@@ -30,3 +30,16 @@ jobs:
 
       - name: Check dependencies licenses
         run: npm run check-licenses
+
+      - name: Slack Notification
+        if: failure()
+        uses: slackapi/slack-github-action@v1.18.0
+        with:
+          slack-message: |
+            *Workflow Failure Detected*
+            *Workflow:* ${{ github.workflow }}
+            *Job:* ${{ github.job }}
+            *Commit Message:* ${{ github.event.head_commit.message }}
+            *Committer:* ${{ github.event.head_commit.committer.name }}
+            *URL:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}

@@ -40,7 +40,7 @@ jobs:
       
       - name: Run SonarQube Scanner
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  # Assurez-vous que SONAR_TOKEN est défini dans vos secrets GitHub
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
         run: |
           sonar-scanner \
             -Dsonar.projectKey=code-input-builder \
@@ -49,3 +49,16 @@ jobs:
             -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.sourceEncoding=UTF-8 \
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+
+      - name: Slack Notification
+        if: failure() 
+        uses: slackapi/slack-github-action@v1.18.0
+        with:
+            slack-message: |
+                *Workflow Failure Detected*
+                *Workflow:* ${{ github.workflow }}
+                *Job:* ${{ github.job }}
+                *Commit Message:* ${{ github.event.head_commit.message }}
+                *Committer:* ${{ github.event.head_commit.committer.name }}
+                *URL:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}  

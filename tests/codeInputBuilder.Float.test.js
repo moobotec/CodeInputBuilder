@@ -209,7 +209,7 @@ describe("CodeInputBuilder Plugin Test du type Float", function() {
                 });
             });
     
-            expect(codeInputTest.getCompleteValue()).to.equal(31.2); 
+            expect(codeInputTest.getCompleteValue()).to.equal(31.201); 
         });
 
     });

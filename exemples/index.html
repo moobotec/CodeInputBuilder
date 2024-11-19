@@ -40,7 +40,7 @@
                         <code> { type: 'integer', <br>
                 numInputs: 5, <br>
                 values: [0x00, 0x02, 1, 0, 4], <br>
-                minValues: [0, 0, 0, 0, 0], <br>
+                minValues: [9, 9, 9, 9, 9], <br>
                 maxValues: [9, 8, 7, 6, 5], <br>
                 allowSign: true, // Nouveau paramètre pour autoriser le signe <br>
                 defaultSign: '+', // Signe par défaut (peut être "+" ou "-") <br>
@@ -384,7 +384,7 @@
                 type: 'integer',
                 numInputs: 5,
                 values: [0x00, 0x02, 1, 0, 4],
-                minValues: [0, 0, 0, 0, 0],
+                minValues: [9, 9, 9, 9, 9],
                 maxValues: [9, 8, 7, 6, 5],
                 allowSign: true, // Nouveau paramètre pour autoriser le signe
                 defaultSign: '+', // Signe par défaut (peut être "+" ou "-")
@@ -461,8 +461,8 @@
                 type: 'float',
                 numInputs: 6,
                 values: [0, 0, 0, 0, 0, 0],
-                minValues: [0, 0, 0, 0, 0, 0],
-                maxValues: [9, 9, 9, 9, 9, 9],
+                minValues: [9, 9, 9, 9, 9, 9], // [-9 à 0]
+                maxValues: [9, 9, 9, 9, 9, 9], // [0 à +9]
                 decimalPosition : 2,
                 gap: '10px', // Espace entre les inputs
                 totalMin: -90.0,
@@ -501,7 +501,7 @@
                 type: 'float',
                 numInputs: 7,
                 values: [0, 0, 0, 0, 0, 0, 0],
-                minValues: [0, 0, 0, 0, 0, 0, 0],
+                minValues: [9, 9, 9, 9, 9, 9, 9],
                 maxValues: [9, 9, 9, 9, 9, 9, 9],
                 decimalPosition : 3,
                 gap: '10px', // Espace entre les inputs

@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.10
+Version: 0.0.11
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -331,9 +331,26 @@ if (typeof jQuery === 'undefined') {
     });
   }
 
-  function getValueLimits(inputElement) {
-    const valueMin = convertIntegerBase10($(inputElement).attr('data-min'));
-    const valueMax = convertIntegerBase10($(inputElement).attr('data-max'));
+  function getValueLimits(settings) {
+    const valueMin = valueDigitMin(settings); //convertIntegerBase10($(inputElement).attr('data-min'));
+    const valueMax = valueDigitMax(settings); //convertIntegerBase10($(inputElement).attr('data-max'));
+    return { valueMin, valueMax };
+  }
+
+  function getValueInputLimits(currentValue, inputElement, settings) {
+    let valueMin = 0;
+    let valueMax = 0;
+    if (isAllowSign(settings)) {
+      valueMin = 0;
+      valueMax =
+        currentValue < 0
+          ? convertIntegerBase10($(inputElement).attr('data-min'))
+          : convertIntegerBase10($(inputElement).attr('data-max'));
+    } else {
+      valueMin = convertIntegerBase10($(inputElement).attr('data-min'));
+      valueMax = convertIntegerBase10($(inputElement).attr('data-max'));
+    }
+
     return { valueMin, valueMax };
   }
 
@@ -543,7 +560,7 @@ if (typeof jQuery === 'undefined') {
       clamp: (value, min, max, settings) =>
         clampCore(value, min, max, settings),
       isForcedAllowSign: false,
-      isAdjustToBounds: true,
+      isAdjustToBounds: false,
       isGetDigit: true,
       isSetDigit: true,
       min: 0x00,
@@ -581,13 +598,13 @@ if (typeof jQuery === 'undefined') {
       convert: (value) => convertLetterToHexadecimal(value),
       validate: () => false,
       display: (value) => value,
-      clamp: () => NaN,
+      clamp: () => null,
       isForcedAllowSign: false,
       isAdjustToBounds: false,
       isGetDigit: false,
       isSetDigit: false,
-      min: NaN,
-      max: NaN,
+      min: null,
+      max: null,
       isForcedDisabled: false,
       isValidKey: () => false, // Aucune touche valide pour ce type
     },
@@ -615,13 +632,13 @@ if (typeof jQuery === 'undefined') {
       convert: (value) => value.toString(),
       validate: () => false,
       display: (value) => value,
-      clamp: () => NaN,
+      clamp: () => null,
       isForcedAllowSign: false,
       isAdjustToBounds: false,
       isGetDigit: false,
       isSetDigit: false,
-      min: NaN,
-      max: NaN,
+      min: null,
+      max: null,
       isForcedDisabled: true,
       isValidKey: () => true, // Autorise toutes les touches pour le texte
     },
@@ -637,19 +654,19 @@ if (typeof jQuery === 'undefined') {
   function convertDigitByType(value, type) {
     const handler = typeHandlers[type];
     // prettier-ignore
-    return handler ? handler.convert(value) : NaN;
+    return handler ? handler.convert(value) : null;
   }
 
   function valueDigitMin(settings) {
     const handler = typeHandlers[settings.type];
     // prettier-ignore
-    return handler ? handler.min : NaN;
+    return handler ? handler.min : null;
   }
 
   function valueDigitMax(settings) {
     const handler = typeHandlers[settings.type];
     // prettier-ignore
-    return handler ? handler.max : NaN;
+    return handler ? handler.max : null;
   }
 
   function determineType(value, settings) {
@@ -667,13 +684,13 @@ if (typeof jQuery === 'undefined') {
     const type = determineType(value, settings);
     const handler = typeHandlers[type];
     // prettier-ignore
-    return handler ? handler.clamp(value,min, max,settings) : NaN;
+    return handler ? handler.clamp(value,min, max,settings) : null;
   }
 
   function makeValueElement(value, settings) {
     const handler = typeHandlers[settings.type];
     // prettier-ignore
-    return handler ? handler.display(value) : NaN;
+    return handler ? handler.display(value) : null;
   }
 
   function isAdjustToBounds(settings) {
@@ -713,7 +730,7 @@ if (typeof jQuery === 'undefined') {
   function getValueByType(index, valueArray, settings) {
     const value = valueArray[index];
     // Vérifie si la valeur existe et la détermine le type
-    if (value === undefined) return NaN;
+    if (value === undefined) return null;
     const type = determineType(value, settings);
     // prettier-ignore
     return convertDigitByType(value,(type == 'letter' && settings.type === 'hexadecimal') ? 'letter_hexadecimal' : type);
@@ -834,17 +851,83 @@ if (typeof jQuery === 'undefined') {
       digits: new Array(settings.numInputs).fill(0), // Tableau pour n digits
       sign: defaultSign(settings), // Valeur pour sign
       list: '',
+      limitDigitMin: null,
+      limitDigitMax: null,
+      limitMin: null,
+      limitMax: null,
+      totalMin: null,
+      totalMax: null,
     };
 
-    let limitDigitMin =
-      settings.totalMin !== undefined && settings.totalMin != null
-        ? numberToDigitsArray(settings.totalMin)
-        : null;
-    let limitDigitMax =
-      settings.totalMax !== undefined && settings.totalMax != null
-        ? numberToDigitsArray(settings.totalMax)
-        : null;
+    initLimitValue(currentValues, settings);
+    initTotalValue(currentValues, settings);
+
     let uniqueTypeShort = settings.type + '_' + uuidShort();
+
+    function initTotalValue(currentValues, settings) {
+      // prettier-ignore
+      let totalMin =
+        settings.totalMin !== undefined && settings.totalMin != null
+          ? settings.totalMin
+          : digitsArrayToNumber(
+            settings.minValues,
+            settings.type === 'float',
+            settings.decimalPosition
+          ) * (isAllowSign(settings) ? -1 : 1);
+
+      // prettier-ignore
+      let totalMax =
+        settings.totalMax !== undefined && settings.totalMax != null
+          ? settings.totalMax
+          : digitsArrayToNumber(
+            settings.maxValues,
+            settings.type === 'float',
+            settings.decimalPosition
+          );
+
+      currentValues.totalMin = totalMin;
+      currentValues.totalMax = totalMax;
+      currentValues.limitDigitMin = numberToDigitsArray(totalMin);
+      currentValues.limitDigitMax = numberToDigitsArray(totalMax);
+    }
+
+    function initLimitValue(currentValues, settings) {
+      if (settings.type === 'float' || settings.type === 'integer') {
+        let minDigitArray = new Array();
+        let maxDigitArray = new Array();
+
+        for (let i = 0; i < settings.numInputs; i++) {
+          // prettier-ignore
+          const min = settings.minValues[i] !== undefined 
+          ? Math.max(valueDigitMin(settings), Math.min(minValue(i,settings), valueDigitMax(settings))) 
+          :  valueDigitMin(settings);
+
+          minDigitArray.push(min);
+
+          // prettier-ignore
+          const max = settings.maxValues[i] !== undefined 
+          ? Math.max(valueDigitMin(settings), Math.min(maxValue(i,settings), valueDigitMax(settings))) 
+          : valueDigitMax(settings);
+
+          maxDigitArray.push(max);
+        }
+
+        let limitMax = digitsArrayToNumber(
+          maxDigitArray,
+          settings.type === 'float',
+          settings.decimalPosition
+        );
+        let limitMin = digitsArrayToNumber(
+          minDigitArray,
+          settings.type === 'float',
+          settings.decimalPosition
+        );
+        if (isAllowSign(settings)) limitMin *= -1;
+
+        currentValues.limitMax = limitMax;
+        currentValues.limitMin = limitMin;
+      }
+    }
 
     function triggerValueChange($input, settings, onchange = true) {
       if (onchange && typeof settings.onValueChange === 'function') {
@@ -927,13 +1010,78 @@ if (typeof jQuery === 'undefined') {
       }
     }
 
+    function adjustToBoundsByAllDigit(
+      number,
+      limitDigitMin,
+      limitDigitMax,
+      settings
+    ) {
+      // Détermine le signe du nombre et les limites correspondantes
+      const sign = number > 0 ? '+' : '-';
+      const limitDigit =
+        number > 0
+          ? numberToDigitsArray(limitDigitMax)
+          : numberToDigitsArray(limitDigitMin);
+
+      const decimalPosition =
+        settings.type === 'float' && settings.decimalPosition
+          ? settings.decimalPosition
+          : 0;
+
+      // Séparation des parties entière et décimale
+      let [integer, decimal = ''] = processFloatParts(
+        Math.abs(number).toString(),
+        settings
+      );
+      if (settings.type === 'integer') {
+        decimal = '';
+      }
+
+      // Traitement des parties entière et décimale
+      const adjustedInteger = adjustDigits(
+        integer,
+        limitDigit,
+        limitDigit.length - decimalPosition - 1
+      );
+      const adjustedDecimal = adjustDigits(
+        decimal,
+        limitDigit,
+        decimalPosition
+      );
+
+      // Fusionne les parties entière et décimale, puis convertit en nombre
+      const adjustedDigits = adjustedInteger.concat(adjustedDecimal);
+      let baseValue = digitsArrayToNumber(
+        adjustedDigits,
+        settings.type === 'float',
+        settings.decimalPosition
+      );
+
+      if (sign === '-') baseValue *= -1;
+
+      return baseValue;
+    }
+
+    // Fonction auxiliaire pour ajuster les digits
+    function adjustDigits(part, limitDigit, startIndex) {
+      const adjustedPart = [];
+      const partArray = part.split('').reverse();
+
+      partArray.forEach((digit, index) => {
+        const limitIndex = startIndex - index;
+        adjustedPart.unshift(
+          digit > limitDigit[limitIndex]
+            ? limitDigit[limitIndex].toString()
+            : digit
+        );
+      });
+
+      return adjustedPart;
+    }
+
     function fillDigits(number, type) {
       // Vérifie si la valeur `number` est valide pour les types pris en charge
-      if (
-        ['float', 'integer', 'binary'].includes(settings.type) &&
-        isNaN(number)
-      )
-        return;
+      if (['float', 'integer'].includes(settings.type) && isNaN(number)) return;
 
       let integerPart, decimalPart;
       let baseValue = number;
@@ -942,8 +1090,15 @@ if (typeof jQuery === 'undefined') {
       if (isAdjustToBounds(settings)) {
         baseValue = adjustToBounds(
           number,
-          settings.totalMin,
-          settings.totalMax
+          currentValues.totalMin,
+          currentValues.totalMax
+        );
+
+        baseValue = adjustToBoundsByAllDigit(
+          baseValue,
+          currentValues.limitMin,
+          currentValues.limitMax,
+          settings
         );
         numericValue = Math.abs(baseValue).toString();
       }
@@ -1029,13 +1184,21 @@ if (typeof jQuery === 'undefined') {
       function updateNumericValue() {
         let finalValue = computeValueFromInputs(type);
         let backValue = finalValue;
-        // Applique les limites définies pour finalValue
+
         finalValue = adjustToBounds(
           finalValue,
-          settings.totalMin,
-          settings.totalMax,
+          currentValues.totalMin,
+          currentValues.totalMax,
           finalValue
         );
+
+        finalValue = adjustToBoundsByAllDigit(
+          finalValue,
+          currentValues.limitMin,
+          currentValues.limitMax,
+          settings
+        );
+
         // Met à jour la valeur 'current' dans currentValues
         updateCurrentValues('current', finalValue);
         // Met à jour les digits si la valeur finale a changé
@@ -1142,17 +1305,12 @@ if (typeof jQuery === 'undefined') {
 
     function numberToDigitsArray(number) {
       // Convertir le nombre en chaîne de caractères, supprimer le point décimal pour les floats
-      const numberStr = number.toString().replace('.', '');
+      const numberStr = Math.abs(number).toString().replace('.', '');
 
       // Initialiser le tableau de chiffres en extrayant chaque chiffre
       let digitsArray = Array.from(numberStr, (char) =>
         convertIntegerBase10(char)
       );
-
-      // Compléter avec des zéros si nécessaire
-      while (digitsArray.length < settings.numInputs) {
-        digitsArray.push(0);
-      }
 
       // Limiter le tableau à la taille numInputs, au cas où il y aurait trop de chiffres
       return digitsArray.slice(0, settings.numInputs);
@@ -1183,7 +1341,8 @@ if (typeof jQuery === 'undefined') {
       id,
       value,
       inputElement,
-      hover
+      hover,
+      type
     ) {
       // Vérification initiale pour le hover
       if (hover !== gIdHover) {
@@ -1199,18 +1358,26 @@ if (typeof jQuery === 'undefined') {
       // Dictionnaire d'actions pour chaque type de `prefix`
       const actions = {
         digits: () => {
-          const newValue = digitsArrayToNumber(
+          let newValue = digitsArrayToNumber(
             getCurrentValueByIndex(prefix),
             settings.type === 'float',
             settings.decimalPosition
           );
+
+          if (isAllowSign(settings)) {
+            const signInput = $('input[id^=sign_' + type + '_input]');
+            const sign = signInput.length ? signInput.val() : '+';
+            sign === '-' ? (newValue *= -1) : newValue;
+          }
+
           const valueLimits = calculateValueLimits(
             inputElement,
             id,
             newValue,
-            limitDigitMin,
-            limitDigitMax
+            currentValues.limitDigitMin,
+            currentValues.limitDigitMax
           );
+
           return {
             index: id,
             showTop: valueLimits.showTop,
@@ -1230,12 +1397,11 @@ if (typeof jQuery === 'undefined') {
         },
         list: () => {
           const { valueTop, valueBottom } = calculateAdjacentValues(value);
-          const { valueMin, valueMax } = getValueLimits(inputElement);
           const valueLimits = calculateVisibilityAndAdjustLimits(
             valueTop,
             valueBottom,
-            valueMin,
-            valueMax
+            0,
+            settings.values.length - 1
           );
           return {
             index: prefix,
@@ -1289,8 +1455,10 @@ if (typeof jQuery === 'undefined') {
         id,
         value,
         inputElement,
-        hover
+        hover,
+        type
       );
+
       // Mise à jour de l'affichage périphérique avec les données calculées
       updatePeripheralDigit(
         type,
@@ -1375,7 +1543,7 @@ if (typeof jQuery === 'undefined') {
       settings
     ) {
       // Récupérer les limites pour `digit`
-      const { valueMin, valueMax } = getValueLimits(inputElement);
+      const { valueMin, valueMax } = getValueLimits(settings);
 
       // Vérifier si la touche est valide pour un chiffre
       if (
@@ -1512,14 +1680,21 @@ if (typeof jQuery === 'undefined') {
 
     function handleDigitsScroll(inputElement, delta, type) {
       let currentValue = getElement('input', $(inputElement), settings);
+
       if (currentValue != -1) {
         currentValue += delta < 0 ? -1 : 1;
-        const { valueMin, valueMax } = getValueLimits(inputElement);
+        const { valueMin, valueMax } = getValueInputLimits(
+          getCurrentValueByIndex('current'),
+          inputElement,
+          settings
+        );
+
         currentValue = adjustLimits(
           currentValue,
           valueMin,
           valueMax
         ).adjustedValue;
+
         setValueInput(inputElement, currentValue, 'digits', type);
       }
     }
@@ -1543,11 +1718,10 @@ if (typeof jQuery === 'undefined') {
       let currentValue = findPosition(settings.values, inputElement.val());
       if (currentValue != -1) {
         currentValue += delta < 0 ? -1 : 1;
-        const { valueMin, valueMax } = getValueLimits(inputElement);
         currentValue = adjustLimits(
           currentValue,
-          valueMin,
-          valueMax
+          0,
+          settings.values.length - 1
         ).adjustedValue;
         setValueInput(inputElement, currentValue, 'list', type);
       }
@@ -1557,8 +1731,8 @@ if (typeof jQuery === 'undefined') {
       inputElement,
       id,
       currentValue,
-      limitDigitMin,
-      limitDigitMax
+      digitMinLimit,
+      digitMaxLimit
     ) {
       let { valueTop, valueBottom } = calculateAdjacentValues(
         getElement('input', $(inputElement), settings)
@@ -1567,42 +1741,56 @@ if (typeof jQuery === 'undefined') {
       valueTop = adjustToBounds(
         currentValue,
         -Infinity,
-        settings.totalMax,
+        currentValues.limitMax,
         valueTop,
         null,
-        getValidLimitDigit(limitDigitMax, id) - 1
+        getValidLimitDigit(digitMaxLimit, id) - 1
       );
       valueBottom = adjustToBounds(
         currentValue,
-        settings.totalMin,
+        currentValues.limitMin,
         +Infinity,
         valueBottom,
-        getValidLimitDigit(limitDigitMin, id) + 1,
+        getValidLimitDigit(digitMinLimit, id) + 1,
         null
       );
 
-      let { valueMin, valueMax } = getValueLimits(inputElement);
+      let { valueMin, valueMax } = getValueInputLimits(
+        currentValue,
+        inputElement,
+        settings
+      );
 
-      valueMax = adjustToBounds(
+      /*valueMax = adjustToBounds(
         currentValue,
         -Infinity,
-        settings.totalMax,
+        currentValues.limitMax,
         valueMax,
         null,
-        Math.min(valueMax, getValidLimitDigit(limitDigitMax, id))
+        Math.min(valueMax, getValidLimitDigit(digitMaxLimit, id))
       );
       valueMin = adjustToBounds(
         currentValue,
-        settings.totalMin,
+        currentValues.limitMin,
         +Infinity,
         valueMin,
-        Math.max(valueMin, getValidLimitDigit(limitDigitMin, id)),
+        Math.max(valueMin, getValidLimitDigit(digitMinLimit, id)),
         null
-      );
+      );*/
 
       // Calculer les indicateurs de visibilité pour top et bottom
-      const showTop = valueTop >= valueMin;
-      const showBottom = valueBottom <= valueMax;
+      let showTop = valueTop >= valueMin;
+      let showBottom = valueBottom <= valueMax;
+
+      showBottom =
+        currentValue > 0 && currentValue >= currentValues.limitMax
+          ? false
+          : showBottom;
+      showBottom =
+        currentValue < 0 &&
+        Math.abs(currentValue) >= Math.abs(currentValues.limitMin)
+          ? false
+          : showBottom;
 
       return { valueTop, valueBottom, valueMin, valueMax, showTop, showBottom };
     }
@@ -1675,13 +1863,15 @@ if (typeof jQuery === 'undefined') {
       );
       if (prefix == 'digits') {
         gIdHover = type + id;
+
         let valueLimites = calculateValueLimits(
           inputElement,
           id,
           getCurrentValueByIndex('current'),
-          limitDigitMin,
-          limitDigitMax
+          currentValues.limitDigitMin,
+          currentValues.limitDigitMax
         );
+
         updatePeripheralDigit(
           type,
           id,
@@ -1702,12 +1892,11 @@ if (typeof jQuery === 'undefined') {
         if (currentValue != -1) {
           const valueTop = convertIntegerBase10(currentValue) - 1;
           const valueBottom = convertIntegerBase10(currentValue) + 1;
-          const { valueMin, valueMax } = getValueLimits(inputElement);
           let valueLimites = calculateVisibilityAndAdjustLimits(
             valueTop,
             valueBottom,
-            valueMin,
-            valueMax
+            0,
+            settings.values.length - 1
           );
           updatePeripheralDigit(
             type,
@@ -1757,6 +1946,9 @@ if (typeof jQuery === 'undefined') {
         if (suffix.includes('top')) {
           id = suffix.replace('top_', '');
           value = getElement('div', $(element), settings);
+
+          if (value === null || value === '' || isNaN(value)) return;
+
           setElement(
             'input',
             $('#' + prefix + '_' + type + '_input_' + id),
@@ -1774,8 +1966,8 @@ if (typeof jQuery === 'undefined') {
             $('#' + prefix + '_' + type + '_input_' + id),
             id,
             valueTop,
-            limitDigitMin,
-            limitDigitMax
+            currentValues.limitDigitMin,
+            currentValues.limitDigitMax
           );
           updatePeripheralDigit(
             type,
@@ -1789,6 +1981,9 @@ if (typeof jQuery === 'undefined') {
         } else {
           id = suffix.replace('bottom_', '');
           value = getElement('div', $(element), settings);
+
+          if (value === null || value === '' || isNaN(value)) return;
+
           setElement(
             'input',
             $('#' + prefix + '_' + type + '_input_' + id),
@@ -1806,8 +2001,8 @@ if (typeof jQuery === 'undefined') {
             $('#' + prefix + '_' + type + '_input_' + id),
             id,
             valueBottom,
-            limitDigitMin,
-            limitDigitMax
+            currentValues.limitDigitMin,
+            currentValues.limitDigitMax
           );
           updatePeripheralDigit(
             type,
@@ -1820,39 +2015,33 @@ if (typeof jQuery === 'undefined') {
           gIdHover = null;
         }
       } else if (prefix == 'sign') {
-        $('#' + prefix + '_' + type + '_input_' + prefix).val(
-          $(element).html()
-        );
+        const value = $(element).html();
+        if (value === null || value === '') return;
+
+        $('#' + prefix + '_' + type + '_input_' + prefix).val(value);
         updateFinalValue(
           $('#' + prefix + '_' + type + '_input_' + prefix),
-          $(element).html(),
+          value,
           type
         );
         gIdHover = type + prefix;
         updatePeripheralDigit(type, prefix, false, false, 0, 0);
         gIdHover = null;
       } else if (prefix == 'list') {
-        const { valueMin, valueMax } = getValueLimits(
-          '#' + prefix + '_' + type + '_input_' + prefix
-        );
-        $('#' + prefix + '_' + type + '_input_' + prefix).val(
-          $(element).html()
-        );
+        const value = $(element).html();
+        if (value === null || value === '') return;
+
+        $('#' + prefix + '_' + type + '_input_' + prefix).val(value);
         updateFinalValue(
           $('#' + prefix + '_' + type + '_input_' + prefix),
-          $(element).html(),
+          value,
           type
         );
         gIdHover = type + prefix;
-        let currentValue = findPosition(settings.values, $(element).html());
+        let currentValue = findPosition(settings.values, value);
         if (suffix.includes('top')) {
           valueTop = currentValue - 1;
-          valueLimites = calculateVisibilityAndAdjustLimits(
-            valueTop,
-            0,
-            valueMin,
-            0
-          );
+          valueLimites = calculateVisibilityAndAdjustLimits(valueTop, 0, 0, 0);
           updatePeripheralDigit(
             type,
             prefix,
@@ -1867,7 +2056,7 @@ if (typeof jQuery === 'undefined') {
             0,
             valueBottom,
             0,
-            valueMax
+            settings.values.length - 1
           );
           updatePeripheralDigit(
             type,
@@ -1885,7 +2074,7 @@ if (typeof jQuery === 'undefined') {
     function getAdjustedValueSettings(index, settings, inputValue = null) {
       // prettier-ignore
       const min = settings.minValues[index] !== undefined 
-                ? Math.max(valueDigitMin(settings), Math.min(minValue(index,settings), valueDigitMax(settings))) 
+                ? Math.max(valueDigitMin(settings), Math.min( minValue(index,settings), valueDigitMax(settings))) 
                 :  valueDigitMin(settings);
 
       // prettier-ignore
@@ -1903,7 +2092,12 @@ if (typeof jQuery === 'undefined') {
       }
 
       // Ajuster `value` pour qu'il soit compris entre `min` et `max`
-      value = clampValue(value, min, max, settings);
+      value = clampValue(
+        value,
+        valueDigitMin(settings),
+        valueDigitMax(settings),
+        settings
+      );
 
       return { min, max, value };
     }
@@ -2291,7 +2485,7 @@ if (typeof jQuery === 'undefined') {
     function updateValueBinary(value) {
       const removeBinaryPrefix = (value) => value.replace(/^0b/, '');
       if (isValidBinary(value)) {
-        validateAndFillDigits(removeBinaryPrefix(value), convertIntegerBase10);
+        updateValueDigits(removeBinaryPrefix(value));
       } else {
         throw new Error(
           'La valeur doit être un nombre binaire (composé uniquement de 0 et 1).'
@@ -2302,16 +2496,17 @@ if (typeof jQuery === 'undefined') {
     function updateValueHexadecimal(value) {
       const removeHexadecimalPrefix = (value) => value.replace(/^0x/, '');
       if (isValidHexadecimal(value)) {
-        const cleanValue = removeHexadecimalPrefix(value);
-        updateCurrentValues('fillDigits', 0);
-        fillDigits(cleanValue, uniqueTypeShort);
-        updateCurrentValues('current', cleanValue);
+        updateValueDigits(removeHexadecimalPrefix(value));
       } else {
         throw new Error('La valeur doit être un nombre hexadécimal.');
       }
     }
 
     function updateValueLetter(value) {
+      updateValueDigits(value);
+    }
+
+    function updateValueDigits(value) {
       updateCurrentValues('fillDigits', 0);
       fillDigits(value, uniqueTypeShort);
       updateCurrentValues('current', value);
@@ -2365,7 +2560,7 @@ if (typeof jQuery === 'undefined') {
     return this;
   };
 
-  $.fn.codeInputBuilder.version = '0.0.10';
+  $.fn.codeInputBuilder.version = '0.0.11';
   $.fn.codeInputBuilder.title = 'CodeInputBuilder';
   $.fn.codeInputBuilder.description =
     "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";

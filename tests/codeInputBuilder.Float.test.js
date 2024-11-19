@@ -12,7 +12,7 @@ describe("CodeInputBuilder Plugin Test du type Float", function() {
                 type: 'float',
                 numInputs: numInputs,
                 values: [0, 0, 0, 0, 0],
-                minValues: [0, 0, 0, 0, 0],
+                minValues: [9, 9, 9, 9, 9],
                 maxValues: [9, 9, 9, 9, 9],
                 decimalPosition : 2,
                 allowSign : true,
@@ -149,25 +149,182 @@ describe("CodeInputBuilder Plugin Test du type Float", function() {
             expect(codeInputTest.getCompleteValue()).to.equal(99.999);
 
             codeInputTest.setCompleteValue(100.000); // Au-delà de la valeur maximale
-            expect(codeInputTest.getCompleteValue()).to.equal(0); // Devrait être limité à 9999
+            expect(codeInputTest.getCompleteValue()).to.equal(99.999); 
         
             codeInputTest.setCompleteValue(-1); // En-dessous de la valeur minimale
             expect(codeInputTest.getCompleteValue()).to.equal(-1); 
 
             codeInputTest.setCompleteValue(-1000.000); // En-dessous de la valeur minimale
-            expect(codeInputTest.getCompleteValue()).to.equal(0); // Devrait être limité à 0
+            expect(codeInputTest.getCompleteValue()).to.equal(-99.999); // Devrait être limité à 0
         });
 
 
-        it("devrait incrémenter la valeur du premier champ d'input en utilisant la molette vers le bas pour le signe ", function() {
+        it("devrait incrémenter toutes les valeurs d'input en utilisant un signal keyup sur les div associées au survol", function () {
+            // Initialiser la valeur complète
+            codeInputTest.setCompleteValue(42.300);
+        
+            // Sélectionner les inputs et leurs divs associés
+            const codeInputs = $('#element').find("input[id^='digits_float_']");
+
+            // Parcourir les divs pour simuler le survol et le keyup
+            codeInputs.each((index, input) => {
+                // Simuler un événement `mouseover` sur l'input associé
+                const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+                codeInputs[index].dispatchEvent(hoverEvent);
+        
+                // Simuler un événement `keyup` avec keyCode
+                const keyupEvent = new KeyboardEvent('keyup', {
+                    key: '7', // Simule une touche spécifique
+                    keyCode: 103,
+                    bubbles: true,
+                    cancelable: true,
+                });
+
+                input.dispatchEvent(keyupEvent);
+        
+            });
+        
+            // Vérification de la valeur finale
+            expect(codeInputTest.getCompleteValue()).to.equal(77.777);
+
+
+              // Parcourir les divs pour simuler le survol et le keyup
+            codeInputs.each((index, input) => {
+                // Simuler un événement `mouseover` sur l'input associé
+                const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+                codeInputs[index].dispatchEvent(hoverEvent);
+        
+                // Simuler un événement `keyup` sur l'input
+                const keyupEvent = new KeyboardEvent('keyup', {
+                    key: 'd', // Simule une touche spécifique (par exemple, flèche haut)
+                    bubbles: true,
+                    cancelable: true,
+                });
+                input.dispatchEvent(keyupEvent);
+        
+            });
+
+            // Vérification de la valeur finale
+            expect(codeInputTest.getCompleteValue()).to.equal(0);
+
+            codeInputTest.setCompleteValue(42.300);
+        
+            // Parcourir les divs pour simuler le survol et le keyup
+            codeInputs.each((index, input) => {
+                // Simuler un événement `mouseover` sur l'input associé
+                const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+                codeInputs[index].dispatchEvent(hoverEvent);
+        
+                // Simuler un événement `keyup` avec keyCode
+                const keyupEvent = new KeyboardEvent('keyup', {
+                    key: '5', // Simule une touche spécifique
+                    keyCode: 53, 
+                    bubbles: true,
+                    cancelable: true,
+                });
+
+                input.dispatchEvent(keyupEvent);
+        
+            });
+        
+            // Vérification de la valeur finale
+            expect(codeInputTest.getCompleteValue()).to.equal(55.555);
+
+            // Parcourir les divs pour simuler le survol et le keyup
+            codeInputs.each((index, input) => {
+                // Simuler un événement `mouseover` sur l'input associé
+                const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+                codeInputs[index].dispatchEvent(hoverEvent);
+        
+                // Simuler un événement `keyup` avec keyCode
+                const keyupEvent = new KeyboardEvent('keyup', {
+                    key: 'Delete', // Simule une touche spécifique
+                    keyCode: 46, 
+                    bubbles: true,
+                    cancelable: true,
+                });
+
+                input.dispatchEvent(keyupEvent);
+        
+            });
+
+            expect(codeInputTest.getCompleteValue()).to.equal(0);
+
+            codeInputTest.setCompleteValue(42.300);
+        
+            // Parcourir les divs pour simuler le survol et le keyup
+            codeInputs.each((index, input) => {
+                // Simuler un événement `mouseover` sur l'input associé
+                const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+                codeInputs[index].dispatchEvent(hoverEvent);
+        
+                // Simuler un événement `keyup` avec keyCode
+                const keyupEvent = new KeyboardEvent('keyup', {
+                    key: 'Backspace', // Simule une touche spécifique
+                    keyCode: 8, 
+                    bubbles: true,
+                    cancelable: true,
+                });
+
+                input.dispatchEvent(keyupEvent);
+        
+            });
+            expect(codeInputTest.getCompleteValue()).to.equal(0);
+        });
+
+        it("devrait incrémenter toutes les valeurs d'input en utilisant le click du haut pour les div associes au survole", function() {
+
+            codeInputTest.setCompleteValue(42.300);
+
+            const codeInputs = $('#element').find("input[id^='digits_float_']");
+            
+            const topDivs = $("div[id^='digits_float_'][id*='_div_top_']");
+
+            topDivs.each((index, div) => {
+
+                const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+                codeInputs[index].dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
+                const event = new Event('click');
+                div.dispatchEvent(event);
+
+            });
+            expect(codeInputTest.getCompleteValue()).to.equal(31.200);          
+        });
+
+        it("devrait incrémenter toutes les valeurs d'input en utilisant le click du bas pour les div associes au survole", function() {
+
+            codeInputTest.setCompleteValue(42.300);
+
+            const codeInputs = $('#element').find("input[id^='digits_float_']");
+            
+            const bottomDivs = $("div[id^='digits_float_'][id*='_div_bottom_']");
+
+            bottomDivs.each((index, div) => {
+
+                const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+                codeInputs[index].dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
+                const event = new Event('click');
+                div.dispatchEvent(event);
+
+            });
+            expect(codeInputTest.getCompleteValue()).to.equal(53.411);          
+        });
+
+        //signe
+        it("devrait incrémenter la valeur du premier champ d'input (signe) en utilisant la molette vers le bas pour le signe ", function() {
             // Définir la valeur initiale du premier input
 
             codeInputTest.setCompleteValue(42.300);
 
-            const codeInputTestSigne = $('#element').find('input').eq(0);
+            const codeInputTestSigne = $('#element').find('input');
             
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            codeInputTestSigne[0].dispatchEvent(hoverEvent);
+
             // Simuler l'événement de défilement vers le haut sur le premier input qui est le sign
-            codeInputTestSigne.trigger({
+            $(codeInputTestSigne[0]).trigger({
                 type: 'wheel',
                 originalEvent: { deltaY: +1 , preventDefault: function() {} } // Défilement vers le bas
                 
@@ -176,7 +333,7 @@ describe("CodeInputBuilder Plugin Test du type Float", function() {
             expect(codeInputTest.getCompleteValue()).to.equal(-42.3); 
         });
 
-        it("devrait incrémenter la valeur du premier champ d'input en utilisant la molette vers le bas pour les digits ", function() {
+        it("devrait incrémenter les valeurs d'input (digit) en utilisant la molette vers le bas pour les digits ", function() {
             // Définir la valeur initiale du premier input
 
             codeInputTest.setCompleteValue(42.300);
@@ -185,6 +342,10 @@ describe("CodeInputBuilder Plugin Test du type Float", function() {
 
             // Simuler l'événement de défilement vers le haut sur chaque input correspondant
             codeInputs.each((index, input) => {
+
+                const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+                input.dispatchEvent(hoverEvent);
+
                 $(input).trigger({
                     type: 'wheel',
                     originalEvent: { deltaY: +1, preventDefault: function() {} } // Défilement vers le bas
@@ -194,7 +355,7 @@ describe("CodeInputBuilder Plugin Test du type Float", function() {
             expect(codeInputTest.getCompleteValue()).to.equal(53.411); 
         });
 
-        it("devrait incrémenter la valeur du premier champ d'input en utilisant la molette vers le haut pour les digits ", function() {
+        it("devrait incrémenter les valeurs d'input (digit) en utilisant la molette vers le haut pour les digits ", function() {
             // Définir la valeur initiale du premier input
 
             codeInputTest.setCompleteValue(42.300);
@@ -203,6 +364,10 @@ describe("CodeInputBuilder Plugin Test du type Float", function() {
 
             // Simuler l'événement de défilement vers le haut sur chaque input correspondant
             codeInputs.each((index, input) => {
+
+                const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+                input.dispatchEvent(hoverEvent);
+
                 $(input).trigger({
                     type: 'wheel',
                     originalEvent: { deltaY: -1, preventDefault: function() {} } // Défilement vers le haut
@@ -258,10 +423,10 @@ describe("CodeInputBuilder Plugin Test du type Float", function() {
             expect(codeInputTest.getCompleteValue()).to.equal(99.999);
 
             codeInputTest.setCompleteValue(100.000); // Au-delà de la valeur maximale
-            expect(codeInputTest.getCompleteValue()).to.equal(0); // Devrait être limité à 9999
+            expect(codeInputTest.getCompleteValue()).to.equal(99.999); // Devrait être limité à 9999
         
             codeInputTest.setCompleteValue(-1); // En-dessous de la valeur minimale
-            expect(codeInputTest.getCompleteValue()).to.equal(1); 
+            expect(codeInputTest.getCompleteValue()).to.equal(0); 
 
             codeInputTest.setCompleteValue(-1000.000); // En-dessous de la valeur minimale
             expect(codeInputTest.getCompleteValue()).to.equal(0); // Devrait être limité à 0

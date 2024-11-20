@@ -35,10 +35,12 @@ jobs:
 
       # Run Minify JavaScript
       - name: Minify JavaScript
+        if: success() && github.event_name == 'push' 
         run: npm run minify
 
       # Upload
       - name: Upload minified file
+        if: success() && github.event_name == 'push' 
         uses: actions/upload-artifact@v3
         with:
           name: codeinputbuilder-minified
@@ -46,7 +48,7 @@ jobs:
       
       # Commit
       - name: Commit and Push changes
-        if: success()  # Exécuter seulement en cas de succès
+        if: success() && github.event_name == 'push' 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

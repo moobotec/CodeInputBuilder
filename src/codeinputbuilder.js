@@ -341,7 +341,6 @@ if (typeof jQuery === 'undefined') {
     let valueMin = 0;
     let valueMax = 0;
     if (isAllowSign(settings)) {
-      valueMin = 0;
       valueMax =
         currentValue < 0
           ? convertIntegerBase10($(inputElement).attr('data-min'))
@@ -502,11 +501,11 @@ if (typeof jQuery === 'undefined') {
     return null;
   }
 
-  function isInteger(value) {
+  function validateInteger(value) {
     return Number(value) === value && Number.isInteger(value);
   }
 
-  function isFloat(value) {
+  function validateFloat(value) {
     return Number(value) === value && !Number.isInteger(value);
   }
 
@@ -520,7 +519,7 @@ if (typeof jQuery === 'undefined') {
     integer: {
       convert: (value) => convertIntegerBase10(value),
       validate: (value) =>
-        typeof value === 'number' && !isNaN(value) && isInteger(value),
+        typeof value === 'number' && !isNaN(value) && validateInteger(value),
       display: (value) => value,
       clamp: (value, min, max, settings) =>
         clampCore(value, min, max, settings),
@@ -538,7 +537,7 @@ if (typeof jQuery === 'undefined') {
     float: {
       convert: (value) => convertFloat(value),
       validate: (value) =>
-        typeof value === 'number' && !isNaN(value) && isFloat(value),
+        typeof value === 'number' && !isNaN(value) && validateFloat(value),
       display: (value) => value,
       clamp: (value, min, max, settings) =>
         clampCore(value, min, max, settings),
@@ -865,6 +864,8 @@ if (typeof jQuery === 'undefined') {
     let uniqueTypeShort = settings.type + '_' + uuidShort();
 
     function initTotalValue(currentValues, settings) {
+      const signMultiplier = isAllowSign(settings) ? -1 : 1;
+
       // prettier-ignore
       let totalMin =
         settings.totalMin !== undefined && settings.totalMin != null
@@ -873,7 +874,7 @@ if (typeof jQuery === 'undefined') {
             settings.minValues,
             settings.type === 'float',
             settings.decimalPosition
-          ) * (isAllowSign(settings) ? -1 : 1);
+          ) * signMultiplier;
 
       // prettier-ignore
       let totalMax =
@@ -979,6 +980,14 @@ if (typeof jQuery === 'undefined') {
       return null;
     }
 
+    function processIntegerParts(value) {
+      let integer = value; // Partie entière (par défaut, la valeur entière est le "value")
+      let decimal = ''; // Partie décimale par défaut est une chaîne vide
+
+      // Retourner un tableau contenant la partie entière et décimale
+      return [integer, decimal];
+    }
+
     function processFloatParts(value, settings) {
       const maxDecimalLength = settings.numInputs - settings.decimalPosition;
       let [integer, decimal = ''] = value.split('.');
@@ -1029,13 +1038,10 @@ if (typeof jQuery === 'undefined') {
           : 0;
 
       // Séparation des parties entière et décimale
-      let [integer, decimal = ''] = processFloatParts(
-        Math.abs(number).toString(),
-        settings
-      );
-      if (settings.type === 'integer') {
-        decimal = '';
-      }
+      let [integer, decimal = ''] =
+        settings.type === 'float'
+          ? processFloatParts(Math.abs(number).toString(), settings)
+          : processIntegerParts(Math.abs(number).toString());
 
       // Traitement des parties entière et décimale
       const adjustedInteger = adjustDigits(
@@ -1341,8 +1347,7 @@ if (typeof jQuery === 'undefined') {
       id,
       value,
       inputElement,
-      hover,
-      type
+      hover
     ) {
       // Vérification initiale pour le hover
       if (hover !== gIdHover) {
@@ -1358,22 +1363,10 @@ if (typeof jQuery === 'undefined') {
       // Dictionnaire d'actions pour chaque type de `prefix`
       const actions = {
         digits: () => {
-          let newValue = digitsArrayToNumber(
-            getCurrentValueByIndex(prefix),
-            settings.type === 'float',
-            settings.decimalPosition
-          );
-
-          if (isAllowSign(settings)) {
-            const signInput = $('input[id^=sign_' + type + '_input]');
-            const sign = signInput.length ? signInput.val() : '+';
-            sign === '-' ? (newValue *= -1) : newValue;
-          }
-
           const valueLimits = calculateValueLimits(
             inputElement,
             id,
-            newValue,
+            getCurrentValueByIndex('current'),
             currentValues.limitDigitMin,
             currentValues.limitDigitMax
           );
@@ -1414,7 +1407,6 @@ if (typeof jQuery === 'undefined') {
         },
       };
 
-      // Exécution de l'action correspondante au `prefix`, sinon retour par défaut
       // prettier-ignore
       return actions[prefix] ? actions[prefix]() : { index: -1, showTop: false, showBottom: false, adjustedValueTop: 0, adjustedValueBottom: 0 };
     }
@@ -1448,15 +1440,16 @@ if (typeof jQuery === 'undefined') {
       };
       // Exécute l'action correspondant au `prefix` pour définir `newValue`
       const newValue = actions[prefix] ? actions[prefix]() : '';
+
       updateFinalValue($(inputElement), newValue, type);
+
       // Calcul des informations pour l'affichage périphérique
       const displayData = calculatePeripheralDisplay(
         prefix,
         id,
         value,
         inputElement,
-        hover,
-        type
+        hover
       );
 
       // Mise à jour de l'affichage périphérique avec les données calculées
@@ -1761,36 +1754,9 @@ if (typeof jQuery === 'undefined') {
         settings
       );
 
-      /*valueMax = adjustToBounds(
-        currentValue,
-        -Infinity,
-        currentValues.limitMax,
-        valueMax,
-        null,
-        Math.min(valueMax, getValidLimitDigit(digitMaxLimit, id))
-      );
-      valueMin = adjustToBounds(
-        currentValue,
-        currentValues.limitMin,
-        +Infinity,
-        valueMin,
-        Math.max(valueMin, getValidLimitDigit(digitMinLimit, id)),
-        null
-      );*/
-
       // Calculer les indicateurs de visibilité pour top et bottom
       let showTop = valueTop >= valueMin;
       let showBottom = valueBottom <= valueMax;
-
-      showBottom =
-        currentValue > 0 && currentValue >= currentValues.limitMax
-          ? false
-          : showBottom;
-      showBottom =
-        currentValue < 0 &&
-        Math.abs(currentValue) >= Math.abs(currentValues.limitMin)
-          ? false
-          : showBottom;
 
       return { valueTop, valueBottom, valueMin, valueMax, showTop, showBottom };
     }
@@ -1937,6 +1903,104 @@ if (typeof jQuery === 'undefined') {
     }
 
     function handleTextDivClick(element, prefix, type) {
+      const suffix = $(element)
+        .attr('id')
+        .replace(`${prefix}_${type}_div_`, '');
+
+      if (prefix === 'digits') {
+        handleDigitsClick(element, suffix, prefix, type);
+      } else if (prefix === 'sign') {
+        handleSignClick(element, prefix, type);
+      } else if (prefix === 'list') {
+        handleListClick(element, suffix, prefix, type);
+      }
+    }
+
+    // Gestion du préfixe 'digits'
+    function handleDigitsClick(element, suffix, prefix, type) {
+      const id = suffix.replace(/(top_|bottom_)/, '');
+      const value = getElement('div', $(element), settings);
+      if (!isValidValue(value) || isNaN(value)) return;
+
+      setElement('input', $(`#${prefix}_${type}_input_${id}`), value, settings);
+      updateFinalValue($(`#${prefix}_${type}_input_${id}`), value, type);
+      gIdHover = `${type}${id}`;
+
+      const isTop = suffix.includes('top');
+
+      const valueLimits = calculateValueLimits(
+        $(`#${prefix}_${type}_input_${id}`),
+        id,
+        getCurrentValueByIndex('current'),
+        currentValues.limitDigitMin,
+        currentValues.limitDigitMax
+      );
+
+      updatePeripheralDigit(
+        type,
+        id,
+        isTop ? valueLimits.showTop : false,
+        isTop ? false : valueLimits.showBottom,
+        isTop ? valueLimits.valueTop : 0,
+        isTop ? 0 : valueLimits.valueBottom
+      );
+
+      gIdHover = null;
+    }
+
+    // Gestion du préfixe 'sign'
+    function handleSignClick(element, prefix, type) {
+      const value = $(element).html();
+      if (!isValidValue(value)) return;
+
+      const inputElement = $(`#${prefix}_${type}_input_${prefix}`);
+      inputElement.val(value);
+      updateFinalValue(inputElement, value, type);
+
+      gIdHover = `${type}${prefix}`;
+      updatePeripheralDigit(type, prefix, false, false, 0, 0);
+      gIdHover = null;
+    }
+
+    // Gestion du préfixe 'list'
+    function handleListClick(element, suffix, prefix, type) {
+      const value = $(element).html();
+      if (!isValidValue(value)) return;
+
+      const inputElement = $(`#${prefix}_${type}_input_${prefix}`);
+      inputElement.val(value);
+      updateFinalValue(inputElement, value, type);
+
+      gIdHover = `${type}${prefix}`;
+      const currentValue = findPosition(settings.values, value);
+
+      const isTop = suffix.includes('top');
+      const adjustedValue = isTop ? currentValue - 1 : currentValue + 1;
+      const valueLimits = calculateVisibilityAndAdjustLimits(
+        isTop ? adjustedValue : 0,
+        isTop ? 0 : adjustedValue,
+        0,
+        settings.values.length - 1
+      );
+
+      updatePeripheralDigit(
+        type,
+        prefix,
+        isTop ? valueLimits.showTop : false,
+        isTop ? false : valueLimits.showBottom,
+        isTop ? settings.values[valueLimits.adjustedValueTop] : '...',
+        isTop ? '...' : settings.values[valueLimits.adjustedValueBottom]
+      );
+
+      gIdHover = null;
+    }
+
+    // Validation de la valeur
+    function isValidValue(value) {
+      return value !== null && value !== '';
+    }
+
+    /*function handleTextDivClick(element, prefix, type) {
       let suffix = $(element)
         .attr('id')
         .replace(prefix + '_' + type + '_div_', '');
@@ -2069,7 +2133,7 @@ if (typeof jQuery === 'undefined') {
         }
         gIdHover = null;
       }
-    }
+    }*/
 
     function getAdjustedValueSettings(index, settings, inputValue = null) {
       // prettier-ignore

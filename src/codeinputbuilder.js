@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.12
+Version: 0.0.13
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -77,6 +77,9 @@ Options disponibles:
         
     - `isDisabled`: (boolean) Permet de désactiver les inputs. Si activé, les champs ne seront pas modifiables par l'utilisateur. Dans le cas d'un CodeInput de type "text" cette option n'est pas utilisable.
         * Par défaut : false.
+  
+    - `allowArrowKeys`: (boolean) Permet d'active la fonctionnalité de navigation via les touches `ArrowLeft`,`ArrowRight`,`ArrowUp`,`ArrowDown`
+      * Par défaut : false.
 
 Usage basique :
     $('#element').codeInputBuilder({
@@ -328,6 +331,13 @@ if (typeof jQuery === 'undefined') {
     return settings;
   }
 
+  function truncateFromEnd(text, maxLength) {
+    if (text.length > maxLength) {
+      return text.slice(-maxLength); // Tronque le texte et conserve les derniers caractères
+    }
+    return text; // Retourne le texte original s'il est plus court que maxLength
+  }
+
   function findPosition(array, element) {
     return array.indexOf(element);
   }
@@ -340,8 +350,8 @@ if (typeof jQuery === 'undefined') {
   }
 
   function getValueLimits(settings) {
-    const valueMin = valueDigitMin(settings); //convertIntegerBase10($(inputElement).attr('data-min'));
-    const valueMax = valueDigitMax(settings); //convertIntegerBase10($(inputElement).attr('data-max'));
+    const valueMin = valueDigitMin(settings);
+    const valueMax = valueDigitMax(settings);
     return { valueMin, valueMax };
   }
 
@@ -2110,141 +2120,6 @@ if (typeof jQuery === 'undefined') {
       return value !== null && value !== '';
     }
 
-    /*function handleTextDivClick(element, prefix, type) {
-      let suffix = $(element)
-        .attr('id')
-        .replace(prefix + '_' + type + '_div_', '');
-      let id, value, valueTop, valueBottom, valueLimites;
-
-      if (prefix == 'digits') {
-        if (suffix.includes('top')) {
-          id = suffix.replace('top_', '');
-          value = getElement('div', $(element), settings);
-
-          if (value === null || value === '' || isNaN(value)) return;
-
-          setElement(
-            'input',
-            $('#' + prefix + '_' + type + '_input_' + id),
-            value,
-            settings
-          );
-          updateFinalValue(
-            $('#' + prefix + '_' + type + '_input_' + id),
-            value,
-            type
-          );
-          gIdHover = type + id;
-          valueTop = value - 1;
-          valueLimites = calculateValueLimits(
-            $('#' + prefix + '_' + type + '_input_' + id),
-            id,
-            valueTop,
-            currentValues.limitDigitMin,
-            currentValues.limitDigitMax
-          );
-          updatePeripheralDigit(
-            type,
-            id,
-            valueLimites.showTop,
-            false,
-            valueLimites.valueTop,
-            0
-          );
-          gIdHover = null;
-        } else {
-          id = suffix.replace('bottom_', '');
-          value = getElement('div', $(element), settings);
-
-          if (value === null || value === '' || isNaN(value)) return;
-
-          setElement(
-            'input',
-            $('#' + prefix + '_' + type + '_input_' + id),
-            value,
-            settings
-          );
-          updateFinalValue(
-            $('#' + prefix + '_' + type + '_input_' + id),
-            value,
-            type
-          );
-          gIdHover = type + id;
-          valueBottom = value + 1;
-          valueLimites = calculateValueLimits(
-            $('#' + prefix + '_' + type + '_input_' + id),
-            id,
-            valueBottom,
-            currentValues.limitDigitMin,
-            currentValues.limitDigitMax
-          );
-          updatePeripheralDigit(
-            type,
-            id,
-            false,
-            valueLimites.showBottom,
-            0,
-            valueLimites.valueBottom
-          );
-          gIdHover = null;
-        }
-      } else if (prefix == 'sign') {
-        const value = $(element).html();
-        if (value === null || value === '') return;
-
-        $('#' + prefix + '_' + type + '_input_' + prefix).val(value);
-        updateFinalValue(
-          $('#' + prefix + '_' + type + '_input_' + prefix),
-          value,
-          type
-        );
-        gIdHover = type + prefix;
-        updatePeripheralDigit(type, prefix, false, false, 0, 0);
-        gIdHover = null;
-      } else if (prefix == 'list') {
-        const value = $(element).html();
-        if (value === null || value === '') return;
-
-        $('#' + prefix + '_' + type + '_input_' + prefix).val(value);
-        updateFinalValue(
-          $('#' + prefix + '_' + type + '_input_' + prefix),
-          value,
-          type
-        );
-        gIdHover = type + prefix;
-        let currentValue = findPosition(settings.values, value);
-        if (suffix.includes('top')) {
-          valueTop = currentValue - 1;
-          valueLimites = calculateVisibilityAndAdjustLimits(valueTop, 0, 0, 0);
-          updatePeripheralDigit(
-            type,
-            prefix,
-            valueLimites.showTop,
-            false,
-            settings.values[valueLimites.adjustedValueTop],
-            '...'
-          );
-        } else {
-          valueBottom = currentValue + 1;
-          valueLimites = calculateVisibilityAndAdjustLimits(
-            0,
-            valueBottom,
-            0,
-            settings.values.length - 1
-          );
-          updatePeripheralDigit(
-            type,
-            prefix,
-            false,
-            valueLimites.showBottom,
-            '...',
-            settings.values[valueLimites.adjustedValueBottom]
-          );
-        }
-        gIdHover = null;
-      }
-    }*/
-
     function getAdjustedValueSettings(index, settings, inputValue = null) {
       // prettier-ignore
       const min = settings.minValues[index] !== undefined 
@@ -2585,9 +2460,7 @@ if (typeof jQuery === 'undefined') {
 
     // Méthode pour récupérer un chiffre spécifique à un index donné
     this.setDigitAt = function (index, value) {
-      if (value === undefined || !value || value.length === 0) {
-        throw new Error('Une valeur doit être renseignée.');
-      }
+      validateValue(value);
 
       if (index === undefined || index == null) {
         throw new Error('Un index doit être renseignée.');
@@ -2622,7 +2495,10 @@ if (typeof jQuery === 'undefined') {
     };
 
     function validateValue(value) {
-      if (value === undefined || !value || value.length === 0) {
+      if (
+        value === undefined ||
+        (typeof value == 'string' && (!value || value.length === 0))
+      ) {
         throw new Error('Une valeur doit être renseignée.');
       }
     }
@@ -2657,9 +2533,10 @@ if (typeof jQuery === 'undefined') {
     }
 
     function updateValueBinary(value) {
+      if (typeof value == 'number') value = value.toString();
       const removeBinaryPrefix = (value) => value.replace(/^0b/, '');
       if (isValidBinary(value)) {
-        updateValueDigits(removeBinaryPrefix(value));
+        updateValueDigits(truncateFromEnd(removeBinaryPrefix(value),settings.numInputs));
       } else {
         throw new Error(
           'La valeur doit être un nombre binaire (composé uniquement de 0 et 1).'
@@ -2668,9 +2545,10 @@ if (typeof jQuery === 'undefined') {
     }
 
     function updateValueHexadecimal(value) {
+      if (typeof value == 'number') value = value.toString();
       const removeHexadecimalPrefix = (value) => value.replace(/^0x/, '');
       if (isValidHexadecimal(value)) {
-        updateValueDigits(removeHexadecimalPrefix(value));
+        updateValueDigits(truncateFromEnd(removeHexadecimalPrefix(value),settings.numInputs));
       } else {
         throw new Error('La valeur doit être un nombre hexadécimal.');
       }
@@ -2734,7 +2612,7 @@ if (typeof jQuery === 'undefined') {
     return this;
   };
 
-  $.fn.codeInputBuilder.version = '0.0.12';
+  $.fn.codeInputBuilder.version = '0.0.13';
   $.fn.codeInputBuilder.title = 'CodeInputBuilder';
   $.fn.codeInputBuilder.description =
     "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";

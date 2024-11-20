@@ -21,7 +21,8 @@ module.exports = function(config) {
             use: {
               loader: 'babel-loader',
               options: {
-                presets: ['@babel/preset-env'] // Pour la compatibilité avec ES6+
+                presets: ['@babel/preset-env'], // Pour la compatibilité avec ES6+
+                plugins: ['istanbul'] // Plugin pour la couverture
               }
             }
           }
@@ -33,7 +34,8 @@ module.exports = function(config) {
     coverageReporter: {
       type: 'lcov',                 // Format du rapport
       dir: 'coverage/',             // Dossier de sortie du rapport
-      subdir: '.'                   // Place le rapport dans 'coverage/lcov.info'
+      subdir: '.',
+      includeAllSources: true,
     },
     singleRun: true,                // Arrêter après une exécution (idéal pour CI/CD)
     plugins: [

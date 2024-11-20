@@ -191,6 +191,7 @@ describe("CodeInputBuilder Plugin Tests avec type Integer", function() {
                 // Simuler un événement `keyup` sur l'input
                 const keyupEvent = new KeyboardEvent('keyup', {
                     key: 'd', // Simule une touche spécifique (par exemple, flèche haut)
+                    keyCode: 68,
                     bubbles: true,
                     cancelable: true,
                 });

@@ -96,7 +96,7 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
 | `autoFocusNextInputDirection`| `string`    |  Détermine la direction du décalage automatique du focus. Valeurs possibles : 'Forward', 'Right', 'Backward', 'Left'. Sensible à la casse.                                | `null`            |
 | `onValueChange`     | `function`   | Fonction déclenchée lorsque la valeur change.                                                    | `null`            |
 | `isDisabled`       | `boolean`        | Permet de désactiver les inputs. Si activé, les champs ne seront pas modifiables par l'utilisateur. Dans le cas d'un CodeInput de type "text" cette option n'est pas utilisable.                                             | `true`            |
-| `allowArrowKeys`       | `boolean`        | Active ou désactive la fonctionnalité de de navigation via les touche `ArrowLeft`,`ArrowRight`,`ArrowUp`,`ArrowDown`.                                             | `false`            |
+| `allowArrowKeys`       | `boolean`        | Active ou désactive la fonctionnalité de navigation via les touches `ArrowLeft`,`ArrowRight`,`ArrowUp`,`ArrowDown`.                                             | `false`            |
 
 ## Exemples
 

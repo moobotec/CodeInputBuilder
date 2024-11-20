@@ -109,6 +109,14 @@ describe("CodeInputBuilder Plugin Test des options dans initCodeInputBuilderOpti
         }).to.throw("Option 'allowSign' doit être un booléen.");
     });
 
+    it("devrait lancer une erreur si 'allowArrowKeys' n'est pas un booléen", function() {
+        expect(() => {
+            $('#element').codeInputBuilder({
+                allowArrowKeys: 'invalid'
+            });
+        }).to.throw("Option 'allowArrowKeys' doit être un booléen.");
+    });
+
     it("devrait lancer une erreur si 'isDisabled' n'est pas un booléen", function() {
         expect(() => {
             $('#element').codeInputBuilder({

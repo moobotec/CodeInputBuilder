@@ -197,6 +197,7 @@ describe("CodeInputBuilder Plugin Test du type Float", function() {
                 // Simuler un événement `keyup` sur l'input
                 const keyupEvent = new KeyboardEvent('keyup', {
                     key: 'd', // Simule une touche spécifique (par exemple, flèche haut)
+                    keyCode: 68,
                     bubbles: true,
                     cancelable: true,
                 });

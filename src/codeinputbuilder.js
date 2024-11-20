@@ -2536,7 +2536,9 @@ if (typeof jQuery === 'undefined') {
       if (typeof value == 'number') value = value.toString();
       const removeBinaryPrefix = (value) => value.replace(/^0b/, '');
       if (isValidBinary(value)) {
-        updateValueDigits(truncateFromEnd(removeBinaryPrefix(value),settings.numInputs));
+        updateValueDigits(
+          truncateFromEnd(removeBinaryPrefix(value), settings.numInputs)
+        );
       } else {
         throw new Error(
           'La valeur doit être un nombre binaire (composé uniquement de 0 et 1).'
@@ -2548,7 +2550,9 @@ if (typeof jQuery === 'undefined') {
       if (typeof value == 'number') value = value.toString();
       const removeHexadecimalPrefix = (value) => value.replace(/^0x/, '');
       if (isValidHexadecimal(value)) {
-        updateValueDigits(truncateFromEnd(removeHexadecimalPrefix(value),settings.numInputs));
+        updateValueDigits(
+          truncateFromEnd(removeHexadecimalPrefix(value), settings.numInputs)
+        );
       } else {
         throw new Error('La valeur doit être un nombre hexadécimal.');
       }

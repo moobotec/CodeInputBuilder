@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.11
+Version: 0.0.12
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -124,6 +124,7 @@ if (typeof jQuery === 'undefined') {
       autoFocusNextInputDirection: null,
       gap: '10px',
       isDisabled: false,
+      allowArrowKeys: false,
     };
 
     const settings = $.extend({}, defaultOptions, options);
@@ -244,6 +245,12 @@ if (typeof jQuery === 'undefined') {
       }
     }
 
+    function validateAllowArrowKeys(allowArrowKeys) {
+      if (typeof allowArrowKeys !== 'boolean') {
+        throw new Error("Option 'allowArrowKeys' doit être un booléen.");
+      }
+    }
+
     function validateIsDisabled(isDisabled) {
       if (typeof isDisabled !== 'boolean') {
         throw new Error("Option 'isDisabled' doit être un booléen.");
@@ -307,6 +314,7 @@ if (typeof jQuery === 'undefined') {
       validateOnValueChange(settings.onValueChange);
       validateAllowScroll(settings.allowScroll);
       validateAllowSign(settings.allowSign);
+      validateAllowArrowKeys(settings.allowArrowKeys);
       validateIsDisabled(settings.isDisabled);
       validateAutoFocusNextInput(settings.autoFocusNextInput);
       validateAutoFocusNextInputDirection(settings.autoFocusNextInputDirection);
@@ -524,6 +532,7 @@ if (typeof jQuery === 'undefined') {
       clamp: (value, min, max, settings) =>
         clampCore(value, min, max, settings),
       isForcedAllowSign: false,
+      isForcedAllowArrowKeys: false,
       isAdjustToBounds: true,
       isGetDigit: true,
       isSetDigit: true,
@@ -542,6 +551,7 @@ if (typeof jQuery === 'undefined') {
       clamp: (value, min, max, settings) =>
         clampCore(value, min, max, settings),
       isForcedAllowSign: false,
+      isForcedAllowArrowKeys: false,
       isAdjustToBounds: true,
       isGetDigit: true,
       isSetDigit: true,
@@ -559,6 +569,7 @@ if (typeof jQuery === 'undefined') {
       clamp: (value, min, max, settings) =>
         clampCore(value, min, max, settings),
       isForcedAllowSign: false,
+      isForcedAllowArrowKeys: false,
       isAdjustToBounds: false,
       isGetDigit: true,
       isSetDigit: true,
@@ -581,6 +592,7 @@ if (typeof jQuery === 'undefined') {
       clamp: (value, min, max, settings) =>
         clampCore(value, min, max, settings),
       isForcedAllowSign: false,
+      isForcedAllowArrowKeys: false,
       isAdjustToBounds: false,
       isGetDigit: true,
       isSetDigit: true,
@@ -599,6 +611,7 @@ if (typeof jQuery === 'undefined') {
       display: (value) => value,
       clamp: () => null,
       isForcedAllowSign: false,
+      isForcedAllowArrowKeys: false,
       isAdjustToBounds: false,
       isGetDigit: false,
       isSetDigit: false,
@@ -616,6 +629,7 @@ if (typeof jQuery === 'undefined') {
           ? convertChar(clampCore(convertLetter(value), min, max))
           : clampCore(value, min, max),
       isForcedAllowSign: false,
+      isForcedAllowArrowKeys: false,
       isAdjustToBounds: false,
       isGetDigit: true,
       isSetDigit: true,
@@ -633,6 +647,7 @@ if (typeof jQuery === 'undefined') {
       display: (value) => value,
       clamp: () => null,
       isForcedAllowSign: false,
+      isForcedAllowArrowKeys: false,
       isAdjustToBounds: false,
       isGetDigit: false,
       isSetDigit: false,
@@ -702,6 +717,12 @@ if (typeof jQuery === 'undefined') {
     const handler = typeHandlers[settings.type];
     // prettier-ignore
     return (handler ? handler.isForcedAllowSign : false) || settings.allowSign;
+  }
+
+  function isAllowArrowKeys(settings) {
+    const handler = typeHandlers[settings.type];
+    // prettier-ignore
+    return (handler ? handler.isForcedAllowArrowKeys : false) || settings.allowArrowKeys;
   }
 
   function isGetDigit(settings) {
@@ -1204,7 +1225,6 @@ if (typeof jQuery === 'undefined') {
           currentValues.limitMax,
           settings
         );
-
         // Met à jour la valeur 'current' dans currentValues
         updateCurrentValues('current', finalValue);
         // Met à jour les digits si la valeur finale a changé
@@ -1440,7 +1460,6 @@ if (typeof jQuery === 'undefined') {
       };
       // Exécute l'action correspondant au `prefix` pour définir `newValue`
       const newValue = actions[prefix] ? actions[prefix]() : '';
-
       updateFinalValue($(inputElement), newValue, type);
 
       // Calcul des informations pour l'affichage périphérique
@@ -1471,8 +1490,24 @@ if (typeof jQuery === 'undefined') {
       );
     }
 
-    function isControlKey(codeTouche) {
-      return [8, 9, 46].includes(codeTouche); // Backspace, Tab, Delete
+    function isControlKey(codeTouche, settings) {
+      // Backspace, Tab, Delete, ArrowUp, ArrowDown,ArrowLeft, ArrowRight
+      return (
+        [8, 9, 46].includes(codeTouche) ||
+        (isAllowArrowKeys(settings) && [37, 38, 39, 40].includes(codeTouche))
+      );
+    }
+
+    function navigateInput(prefix, type, id, direction, settings) {
+      // Ajuster l'id en fonction de la direction
+      if (direction === 'previous') {
+        id = id - 1 === 0 ? settings.numInputs : id - 1;
+      } else if (direction === 'next') {
+        id = id + 1 === settings.numInputs + 1 ? 1 : id + 1;
+      }
+
+      // Appliquer le focus au champ correspondant
+      $(`#${prefix}_${type}_input_${id}`).focus();
     }
 
     function handleBackspace(
@@ -1484,14 +1519,12 @@ if (typeof jQuery === 'undefined') {
       settings
     ) {
       setValueInput(inputElement, valueMin, prefix, type);
-      if (id - 1 === 0) id = settings.numInputs + 1;
-      $('#' + prefix + '_' + type + '_input_' + (id - 1)).focus();
+      navigateInput(prefix, type, id, 'previous', settings);
     }
 
     function handleDelete(inputElement, type, id, prefix, valueMin, settings) {
       setValueInput(inputElement, valueMin, prefix, type);
-      if (id + 1 === settings.numInputs + 1) id = 0;
-      $('#' + prefix + '_' + type + '_input_' + (id + 1)).focus();
+      navigateInput(prefix, type, id, 'next', settings);
     }
 
     function handleDigitEntry(inputElement, event, type, id, prefix, settings) {
@@ -1500,9 +1533,72 @@ if (typeof jQuery === 'undefined') {
         key = convertLetterToHexadecimal(event.key);
       if (settings.type == 'letter') key = convertLetter(event.key);
       setValueInput(inputElement, key, prefix, type);
-      $(
-        '#' + prefix + '_' + type + '_input_' + calculateNextIndex(id, settings)
-      ).focus();
+      navigateInput(
+        prefix,
+        type,
+        calculateNextIndex(id, settings),
+        null,
+        settings
+      );
+    }
+
+    function handleArrowUp(inputElement, type, id, prefix, settings) {
+      // Récupérer la valeur actuelle
+
+      let currentValue = -1;
+
+      if (settings.type == 'hexadecimal')
+        currentValue = convertLetterToHexadecimal($(inputElement).val()) || 0;
+      else if (settings.type == 'letter')
+        currentValue = convertLetter($(inputElement).val()) || 0;
+      else currentValue = convertIntegerBase10($(inputElement).val()) || 0;
+
+      // Incrémenter la valeur
+      currentValue -= 1;
+
+      const { valueMin, valueMax } = getValueInputLimits(
+        getCurrentValueByIndex('current'),
+        inputElement,
+        settings
+      );
+
+      currentValue = adjustLimits(
+        currentValue,
+        valueMin,
+        valueMax
+      ).adjustedValue;
+
+      setValueInput(inputElement, currentValue, prefix, type);
+      navigateInput(prefix, type, id, null, settings);
+    }
+
+    function handleArrowDown(inputElement, type, id, prefix, settings) {
+      // Récupérer la valeur actuelle
+      let currentValue = -1;
+
+      if (settings.type == 'hexadecimal')
+        currentValue = convertLetterToHexadecimal($(inputElement).val()) || 0;
+      else if (settings.type == 'letter')
+        currentValue = convertLetter($(inputElement).val()) || 0;
+      else currentValue = convertIntegerBase10($(inputElement).val()) || 0;
+
+      // Décrémenter la valeur
+      currentValue += 1;
+
+      const { valueMin, valueMax } = getValueInputLimits(
+        getCurrentValueByIndex('current'),
+        inputElement,
+        settings
+      );
+
+      currentValue = adjustLimits(
+        currentValue,
+        valueMin,
+        valueMax
+      ).adjustedValue;
+
+      setValueInput(inputElement, currentValue, prefix, type);
+      navigateInput(prefix, type, id, null, settings);
     }
 
     function processDigitInput({
@@ -1521,6 +1617,20 @@ if (typeof jQuery === 'undefined') {
       } else if (codeTouche === 46) {
         // Handle Delete
         handleDelete(inputElement, type, id, prefix, valueMin, settings);
+      } else if (codeTouche === 9) {
+        // Handle Tab (actuellement vide)
+      } else if (codeTouche === 37) {
+        // Handle ArrowLeft
+        navigateInput(prefix, type, id, 'previous', settings);
+      } else if (codeTouche === 38) {
+        // Handle ArrowUp
+        handleArrowUp(inputElement, type, id, prefix, settings);
+      } else if (codeTouche === 39) {
+        // Handle ArrowRight
+        navigateInput(prefix, type, id, 'next', settings);
+      } else if (codeTouche === 40) {
+        // Handle ArrowDown
+        handleArrowDown(inputElement, type, id, prefix, settings);
       } else {
         handleDigitEntry(inputElement, event, type, id, prefix, settings);
       }
@@ -1541,7 +1651,7 @@ if (typeof jQuery === 'undefined') {
       // Vérifier si la touche est valide pour un chiffre
       if (
         isKeyAllowed(codeTouche, valueMax, settings.type) ||
-        isControlKey(codeTouche)
+        isControlKey(codeTouche, settings)
       ) {
         processDigitInput({
           inputElement,
@@ -2624,7 +2734,7 @@ if (typeof jQuery === 'undefined') {
     return this;
   };
 
-  $.fn.codeInputBuilder.version = '0.0.11';
+  $.fn.codeInputBuilder.version = '0.0.12';
   $.fn.codeInputBuilder.title = 'CodeInputBuilder';
   $.fn.codeInputBuilder.description =
     "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";

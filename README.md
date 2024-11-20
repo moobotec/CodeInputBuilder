@@ -38,8 +38,8 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
 - **Activation et désactivation des champs** : Utilisation de l'option `isDisabled` pour désactiver les champs et empêcher les modifications si nécessaire.
 - **Affichage et mise à jour des valeurs** : Utilisation des méthodes `setCompleteValue` et `getCompleteValue` pour définir et obtenir la valeur totale du champ d'input.
 - **Manipulation fine des valeurs** : Grâce aux méthodes `getDigitAt` et `setDigitAt`, il est possible d’accéder et de modifier chaque chiffre individuel d’une valeur, offrant un contrôle granulaire.
-
-Ces fonctionnalités enrichissent l'expérience utilisateur et offrent une flexibilité avancée pour la saisie numérique dans les applications web, permettant une personnalisation adaptée aux besoins spécifiques des utilisateurs.
+- **Naviguer entre les champs**  : Utilisez `ArrowLeft` (flèche gauche) ou `Shift+Tab` pour passer au champ précédent et `ArrowRight` (flèche droite) ou `Tab` pour passer au champ suivant. 
+- **Incrémenter ou décrémenter les valeurs** : Utilisez `ArrowUp` (flèche haut) pour augmenter une valeur et `ArrowDown` (flèche bas) pour diminuer une valeur.
 
 ## Installation
 
@@ -96,6 +96,7 @@ Ces fonctionnalités enrichissent l'expérience utilisateur et offrent une flexi
 | `autoFocusNextInputDirection`| `string`    |  Détermine la direction du décalage automatique du focus. Valeurs possibles : 'Forward', 'Right', 'Backward', 'Left'. Sensible à la casse.                                | `null`            |
 | `onValueChange`     | `function`   | Fonction déclenchée lorsque la valeur change.                                                    | `null`            |
 | `isDisabled`       | `boolean`        | Permet de désactiver les inputs. Si activé, les champs ne seront pas modifiables par l'utilisateur. Dans le cas d'un CodeInput de type "text" cette option n'est pas utilisable.                                             | `true`            |
+| `allowArrowKeys`       | `boolean`        | Active ou désactive la fonctionnalité de de navigation via les touche `ArrowLeft`,`ArrowRight`,`ArrowUp`,`ArrowDown`.                                             | `false`            |
 
 ## Exemples
 

@@ -54,7 +54,7 @@ jobs:
           sonar-scanner \
             -Dsonar.projectKey=code-input-builder \
             -Dsonar.sources=src \
-            -Dsonar.host.url=http://www.timecaps.io:9000 \
+            -Dsonar.host.url=http://86.209.74.90:9000 \
             -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.sourceEncoding=UTF-8 \
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info

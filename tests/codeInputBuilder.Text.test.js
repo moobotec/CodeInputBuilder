@@ -183,5 +183,37 @@ describe("CodeInputBuilder Plugin Tests avec type Text", function() {
         expect(codeInputTest.getCompleteValue()).to.equal('Eiusmod'); 
     });
 
+    it("devrait déclencher les événements mouseenter et mouseleave", function () {
+
+        codeInputTest.setCompleteValue('Nulla');
+
+        const codeInputs = $('#element').find("input[id^='list_text_']");
+
+        // Vérification du texte de survol au-dessus
+        const topText = $('#element').find(`[id^='list_text_'][id$='_div_top_list']`);
+        const topTextPattern = new RegExp(`^list_text_[a-zA-Z0-9]+_div_top_list`);
+        expect(topText.length).to.equal(1);
+        expect(topText.attr('id')).to.match(topTextPattern);
+        expect(topText.hasClass('cla-hover-text')).to.be.true;
+
+        // Vérification du texte de survol en-dessous
+        const bottomText = $element.find(`[id^='list_text_'][id$='_div_bottom_list']`);
+        const bottomTextPattern = new RegExp(`^list_text_[a-zA-Z0-9]+_div_bottom_list$`);
+        expect(bottomText.length).to.equal(1);
+        expect(bottomText.attr('id')).to.match(bottomTextPattern);
+        expect(bottomText.hasClass('cla-hover-text')).to.be.true;
+              
+        $(codeInputs[0]).trigger('mouseenter');
+
+        expect(topText.css('visibility')).to.equal('visible');
+        expect(bottomText.css('visibility')).to.equal('visible');
+        
+        $(codeInputs[0]).trigger('mouseleave');
+      
+        expect(topText.css('visibility')).to.equal('hidden');
+        expect(bottomText.css('visibility')).to.equal('hidden');
+        
+    });
+
    
 });

@@ -1,6 +1,6 @@
 
 
-describe("CodeInputBuilder Plugin Tests avec type Hexadecimal", function() {
+describe("CodeInputBuilder Plugin Tests avec type Letter", function() {
     let codeInputTest;
     const numInputs = 5;
 
@@ -9,12 +9,12 @@ describe("CodeInputBuilder Plugin Tests avec type Hexadecimal", function() {
 
         // Initialiser le plugin avec le signe autorisé
         codeInputTest = $('#element').codeInputBuilder({
-            type: 'hexadecimal',
+            type: 'letter',
             numInputs: numInputs,
-            values: [0x1d, 0x02, 9, '0xc', 'b'],
+            values: [0x00, 0xcd, 14, '0', 'µ'],
             minValues: [0x00, 0x00, 0x00, 0x00, 0x00],
-            maxValues: ['f', 'f', 'f', 'f', 'f'],
-            scrollSensitivity : 0.1,
+            maxValues: [0xff, 0xff, 0xff, 0xff, 0xff],
+            scrollSensitivity : 0.1
         });
 
         $element = $('#element');
@@ -26,7 +26,7 @@ describe("CodeInputBuilder Plugin Tests avec type Hexadecimal", function() {
 
     it("devrait initialiser les valeurs par défaut correctement", function() {
         const value = codeInputTest.getCompleteValue();
-        expect(value).to.equal('f29cb');
+        expect(value).to.equal('\u0000Í\u000e0µ');
     });
 
     it("devrait contenir les inputs de chiffres avec les attributs corrects", function() {
@@ -36,7 +36,7 @@ describe("CodeInputBuilder Plugin Tests avec type Hexadecimal", function() {
             const digitInput = $element.find(`input.digits-input[name='digits${i}']`);
 
             // Vérification de l'ID sans dépendance au code aléatoire
-            const digitIdPattern = new RegExp(`^digits_hexadecimal_[a-zA-Z0-9]+_input_${i}$`);
+            const digitIdPattern = new RegExp(`^digits_letter_[a-zA-Z0-9]+_input_${i}$`);
             expect(digitInput.length).to.equal(1);
             expect(digitInput.attr('id')).to.match(digitIdPattern);
 
@@ -49,7 +49,7 @@ describe("CodeInputBuilder Plugin Tests avec type Hexadecimal", function() {
             expect(digitInput.attr('maxlength')).to.equal('1');
             expect(digitInput.attr('data-min')).to.exist;
             expect(digitInput.attr('data-max')).to.exist;
-            expect(digitInput.attr('aria-labelledby')).to.match(new RegExp(`^digits_hexadecimal_[a-zA-Z0-9]+_label_${i}$`));
+            expect(digitInput.attr('aria-labelledby')).to.match(new RegExp(`^digits_letter_[a-zA-Z0-9]+_label_${i}$`));
             expect(digitInput.attr('aria-valuemin')).to.equal(digitInput.attr('data-min'));
             expect(digitInput.attr('aria-valuemax')).to.equal(digitInput.attr('data-max'));
             expect(digitInput.attr('aria-valuenow')).to.equal(digitInput.val());
@@ -62,14 +62,14 @@ describe("CodeInputBuilder Plugin Tests avec type Hexadecimal", function() {
 
         for (let i = 1; i <= numInputs; i++) {
             // Sélection du label correspondant sans inclure le code aléatoire
-            const labelPattern = new RegExp(`^digits_hexadecimal_[a-zA-Z0-9]+_label_${i}$`);
-            const label = $element.find(`label[for*='digits_hexadecimal_'][for*='_input_${i}']`);
+            const labelPattern = new RegExp(`^digits_letter_[a-zA-Z0-9]+_label_${i}$`);
+            const label = $element.find(`label[for*='digits_letter_'][for*='_input_${i}']`);
 
             // Vérification de l'ID du label et du texte
             expect(label.length).to.equal(1);
             expect(label.attr('id')).to.match(labelPattern);
             expect(label.hasClass('sr-only')).to.be.true;
-            expect(label.text()).to.equal(`Entrée ${i} pour hexadecimal`);
+            expect(label.text()).to.equal(`Entrée ${i} pour letter`);
         }
 
     });
@@ -78,15 +78,15 @@ describe("CodeInputBuilder Plugin Tests avec type Hexadecimal", function() {
 
         for (let i = 1; i <= numInputs; i++) {
             // Vérification du texte de survol au-dessus
-            const topText = $element.find(`[id^='digits_hexadecimal_'][id$='_div_top_${i}']`);
-            const topTextPattern = new RegExp(`^digits_hexadecimal_[a-zA-Z0-9]+_div_top_${i}$`);
+            const topText = $element.find(`[id^='digits_letter_'][id$='_div_top_${i}']`);
+            const topTextPattern = new RegExp(`^digits_letter_[a-zA-Z0-9]+_div_top_${i}$`);
             expect(topText.length).to.equal(1);
             expect(topText.attr('id')).to.match(topTextPattern);
             expect(topText.hasClass('cla-hover-text')).to.be.true;
 
             // Vérification du texte de survol en-dessous
-            const bottomText = $element.find(`[id^='digits_hexadecimal_'][id$='_div_bottom_${i}']`);
-            const bottomTextPattern = new RegExp(`^digits_hexadecimal_[a-zA-Z0-9]+_div_bottom_${i}$`);
+            const bottomText = $element.find(`[id^='digits_letter_'][id$='_div_bottom_${i}']`);
+            const bottomTextPattern = new RegExp(`^digits_letter_[a-zA-Z0-9]+_div_bottom_${i}$`);
             expect(bottomText.length).to.equal(1);
             expect(bottomText.attr('id')).to.match(bottomTextPattern);
             expect(bottomText.hasClass('cla-hover-text')).to.be.true;
@@ -104,27 +104,22 @@ describe("CodeInputBuilder Plugin Tests avec type Hexadecimal", function() {
         expect(codeInputTest.getCompleteValue()).to.equal('aaaaa');
 
         codeInputTest.setCompleteValue(1);
-        expect(codeInputTest.getCompleteValue()).to.equal('1'); 
+        expect(codeInputTest.getCompleteValue()).to.equal(1); 
 
         codeInputTest.setCompleteValue(0);
-        expect(codeInputTest.getCompleteValue()).to.equal('0'); 
+        expect(codeInputTest.getCompleteValue()).to.equal(0); 
 
-        codeInputTest.setCompleteValue('0x000bcdef');
-        expect(codeInputTest.getCompleteValue()).to.equal('bcdef');
+        codeInputTest.setCompleteValue('-5455');
+        expect(codeInputTest.getCompleteValue()).to.equal('-5455'); 
     });
 
     it("devrait respecter les valeurs minimales et maximales", function() {
-        codeInputTest.setCompleteValue(99999999999);
-        expect(codeInputTest.getCompleteValue()).to.equal('99999');
+        codeInputTest.setCompleteValue('ÿÿÿÿÿ');
+        expect(codeInputTest.getCompleteValue()).to.equal('ÿÿÿÿÿ');
         codeInputTest.setCompleteValue('ffffffffffff');
         expect(codeInputTest.getCompleteValue()).to.equal('fffff'); 
         codeInputTest.setCompleteValue('0000000'); 
         expect(codeInputTest.getCompleteValue()).to.equal('00000'); 
-
-        expect(() => {
-            codeInputTest.setCompleteValue(-111111);
-        }).to.throw("La valeur doit être un nombre hexadécimal.");
-
     });
 
     it("devrait incrémenter toutes les valeurs d'input en utilisant un signal keyup sur les div associées au survol", function () {
@@ -132,7 +127,7 @@ describe("CodeInputBuilder Plugin Tests avec type Hexadecimal", function() {
         codeInputTest.setCompleteValue('00000');
     
         // Sélectionner les inputs et leurs divs associés
-        const codeInputs = $('#element').find("input[id^='digits_hexadecimal_']");
+        const codeInputs = $('#element').find("input[id^='digits_letter_']");
 
         // Parcourir les divs pour simuler le survol et le keyup
         codeInputs.each((index, input) => {
@@ -195,7 +190,7 @@ describe("CodeInputBuilder Plugin Tests avec type Hexadecimal", function() {
     
         });
 
-        expect(codeInputTest.getCompleteValue()).to.equal('00000');
+        expect(codeInputTest.getCompleteValue()).to.equal('\u0000\u0000\u0000\u0000\u0000');
 
         codeInputTest.setCompleteValue('11111');
     
@@ -216,16 +211,16 @@ describe("CodeInputBuilder Plugin Tests avec type Hexadecimal", function() {
             input.dispatchEvent(keyupEvent);
     
         });
-        expect(codeInputTest.getCompleteValue()).to.equal('00000');
+        expect(codeInputTest.getCompleteValue()).to.equal('\u0000\u0000\u0000\u0000\u0000');
     });
 
     it("devrait incrémenter la valeur du premier champ d'input en utilisant le click du haut pour les div au survole ", function() {
 
         codeInputTest.setCompleteValue('89abc');
 
-        const codeInputs = $('#element').find("input[id^='digits_hexadecimal_']");
+        const codeInputs = $('#element').find("input[id^='digits_letter_']");
         
-        const topDivs = $("div[id^='digits_hexadecimal_'][id*='_div_top_']");
+        const topDivs = $("div[id^='digits_letter_'][id*='_div_top_']");
 
         topDivs.each((index, div) => {
 
@@ -236,16 +231,16 @@ describe("CodeInputBuilder Plugin Tests avec type Hexadecimal", function() {
             div.dispatchEvent(event);
 
         });
-        expect(codeInputTest.getCompleteValue()).to.equal('789ab');          
+        expect(codeInputTest.getCompleteValue()).to.equal('78`ab');          
     });
 
     it("devrait incrémenter la valeur du premier champ d'input en utilisant le click du bas pour les div au survole ", function() {
 
         codeInputTest.setCompleteValue('89abc');
 
-        const codeInputs = $('#element').find("input[id^='digits_hexadecimal_']");
+        const codeInputs = $('#element').find("input[id^='digits_letter_']");
         
-        const bottomDivs = $("div[id^='digits_hexadecimal_'][id*='_div_bottom_']");
+        const bottomDivs = $("div[id^='digits_letter_'][id*='_div_bottom_']");
 
         bottomDivs.each((index, div) => {
 
@@ -256,7 +251,7 @@ describe("CodeInputBuilder Plugin Tests avec type Hexadecimal", function() {
             div.dispatchEvent(event);
 
         });
-        expect(codeInputTest.getCompleteValue()).to.equal('9abcd');          
+        expect(codeInputTest.getCompleteValue()).to.equal('9:bcd');          
     });
 
     it("devrait incrémenter la valeur du premier champ d'input en utilisant la molette vers le bas pour les digits ", function() {
@@ -264,7 +259,7 @@ describe("CodeInputBuilder Plugin Tests avec type Hexadecimal", function() {
 
         codeInputTest.setCompleteValue('89abc');
 
-        const codeInputs = $('#element').find("input[id^='digits_hexadecimal_']");
+        const codeInputs = $('#element').find("input[id^='digits_letter_']");
 
         // Simuler l'événement de défilement vers le haut sur chaque input correspondant
         codeInputs.each((index, input) => {
@@ -274,14 +269,14 @@ describe("CodeInputBuilder Plugin Tests avec type Hexadecimal", function() {
             });
         });
 
-        expect(codeInputTest.getCompleteValue()).to.equal('9abcd'); 
+        expect(codeInputTest.getCompleteValue()).to.equal('9:bcd'); 
     });
 
     it("devrait incrémenter la valeur du premier champ d'input en utilisant la molette vers le haut pour les digits ", function() {
         // Définir la valeur initiale du premier input
         codeInputTest.setCompleteValue('89abc');
 
-        const codeInputs = $('#element').find("input[id^='digits_hexadecimal_']");
+        const codeInputs = $('#element').find("input[id^='digits_letter_']");
 
         // Simuler l'événement de défilement vers le haut sur chaque input correspondant
         codeInputs.each((index, input) => {
@@ -291,8 +286,33 @@ describe("CodeInputBuilder Plugin Tests avec type Hexadecimal", function() {
             });
         });
 
-        expect(codeInputTest.getCompleteValue()).to.equal('789ab'); 
+        expect(codeInputTest.getCompleteValue()).to.equal('78`ab'); 
     });
 
+    it("devrait tester tous les caractères de 0x00 à 0xFF pour chaque digit en utilisant la molette vers le haut", function () {
+        // Boucle pour tester chaque combinaison de 5 digits avec des caractères de 0x00 à 0xFF
+        for (let i = 0; i <= 0xFF; i++) {
+            const char = String.fromCharCode(i); // Convertir le code en caractère
+            const initialValue = char.repeat(5); // Générer une valeur initiale avec 5 mêmes caractères
+            codeInputTest.setCompleteValue(initialValue); // Définir la valeur initiale
+    
+            const codeInputs = $('#element').find("input[id^='digits_letter_']");
+    
+            // Simuler l'événement de défilement vers le haut sur chaque input
+            codeInputs.each((index, input) => {
+                $(input).trigger({
+                    type: 'wheel',
+                    originalEvent: { deltaY: +1, preventDefault: function () {} } // Défilement vers le bas
+                });
+            });
+    
+            const nextCharCode = Math.min(i + 1, 0xFF); // S'assurer que la valeur ne dépasse pas 0xFF
+            const nextChar = String.fromCharCode(nextCharCode); // Caractère attendu
+            const expectedValue = nextChar.repeat(5); // Générer la valeur attendue avec 5 mêmes caractères
+    
+            // Vérifier la valeur résultante
+            expect(codeInputTest.getCompleteValue()).to.equal(expectedValue);
+        }
+    });
    
 });

@@ -158,6 +158,11 @@ describe("CodeInputBuilder Plugin Test du type Float", function() {
             expect(codeInputTest.getCompleteValue()).to.equal(-99.999); // Devrait être limité à 0
         });
 
+        it("cas aux limites", function() {
+            expect(() => {
+                codeInputTest.setCompleteValue('dsfdsfksfksfkj');
+            }).to.throw('La valeur doit être un nombre flottant.');
+        });
 
         it("devrait incrémenter toutes les valeurs d'input en utilisant un signal keyup sur les div associées au survol", function () {
             // Initialiser la valeur complète
@@ -379,6 +384,7 @@ describe("CodeInputBuilder Plugin Test du type Float", function() {
         });
 
     });
+
 
     describe("Sans signe autorisé", function() {
 

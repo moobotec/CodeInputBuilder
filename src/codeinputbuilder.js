@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.15
+Version: 0.0.16
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -422,7 +422,7 @@ if (typeof jQuery === 'undefined') {
 
   // Fonction pour échapper un caractère
   function escapeChar(char) {
-    return charEscapeMap[char] || char;
+    return charEscapeMap[char];
   }
 
   // Fonction pour convertir un caractère échappé en caractère normal
@@ -601,8 +601,7 @@ if (typeof jQuery === 'undefined') {
       isValidKey: (codeTouche) =>
         (codeTouche >= 48 && codeTouche <= 57) || // Chiffres (0-9)
         (codeTouche >= 65 && codeTouche <= 70) || // Lettres A-F
-        (codeTouche >= 97 && codeTouche <= 102) || // Lettres a-f
-        (codeTouche >= 96 && codeTouche <= 105), // Pavé numérique (0-9)
+        (codeTouche >= 96 && codeTouche <= 105), // Lettres a-f et // Pavé numérique (0-9)
     },
     letter: {
       convert: (value) => convertLetter(value),
@@ -622,13 +621,11 @@ if (typeof jQuery === 'undefined') {
         if (invalidCodes.includes(codeTouche)) {
           return false;
         }
-        // Vérifie les touches fléchées si `allowArrowKeys` est false
         const arrowKeys = ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'];
-        if (!allowArrowKeys && arrowKeys.includes(key)) {
-          return false;
-        }
-        // Si aucune condition n'est remplie, la touche est valide
-        return true;
+        return (
+          !invalidCodes.includes(codeTouche) &&
+          (!allowArrowKeys || !arrowKeys.includes(key))
+        );
       },
     },
     text: {
@@ -647,96 +644,76 @@ if (typeof jQuery === 'undefined') {
     },
   };
 
-  // Fonction pour vérifier si une touche est autorisée en fonction du type d'input
   function isKeyAllowed(codeTouche, key, valueMax, type, allowArrowKeys) {
-    const handler = typeHandlers[type];
-    if (
-      handler != null &&
-      handler.isValidKey != null &&
-      handler.isValidKey(codeTouche, valueMax, key, allowArrowKeys)
-    ) {
-      return true;
-    }
-    return false;
+    // Utilisation de l'opérateur de chaînage optionnel pour vérifier les propriétés
+    return (
+      typeHandlers[type]?.isValidKey?.(
+        codeTouche,
+        valueMax,
+        key,
+        allowArrowKeys
+      ) || false
+    );
   }
 
   function convertDigitByType(value, type) {
-    const handler = typeHandlers[type];
-    if (handler != null && handler.convert != null) {
-      return handler.convert(value);
-    }
-    return null;
+    return typeHandlers[type]?.convert?.(value) ?? null;
   }
 
   function valueDigitMin(settings) {
-    const handler = typeHandlers[settings.type];
-    // prettier-ignore
-    return handler ? handler.min : null;
+    return typeHandlers[settings.type]?.min ?? null;
   }
 
   function valueDigitMax(settings) {
-    const handler = typeHandlers[settings.type];
-    // prettier-ignore
-    return handler ? handler.max : null;
+    return typeHandlers[settings.type]?.max ?? null;
   }
 
   function determineType(value, settings) {
-    // Parcourt chaque type dans typeHandlers pour trouver le premier type qui valide la valeur
+    // Trouve le premier type qui valide la valeur
     for (const [type, handler] of Object.entries(typeHandlers)) {
-      if (
-        handler != null &&
-        handler.validate != null &&
-        handler.validate(value, settings)
-      ) {
+      if (handler?.validate?.(value, settings)) {
         return type;
       }
     }
-    // Si aucune validation de typeHandlers ne correspond, retourne "letter" par défaut
+    // Retourne "letter" si aucun type valide n'est trouvé
     return 'letter';
   }
 
   function makeValueElement(value, settings) {
-    const handler = typeHandlers[settings.type];
-    if (handler != null && handler.display != null) {
-      return handler.display(value);
-    }
-    return null;
+    return typeHandlers[settings.type]?.display?.(value) ?? null;
   }
 
   function isAdjustToBounds(settings) {
-    const handler = typeHandlers[settings.type];
-    // prettier-ignore
-    return handler ? handler.isAdjustToBounds : false;
+    return typeHandlers[settings.type]?.isAdjustToBounds ?? false;
   }
 
   function isAllowSign(settings) {
-    const handler = typeHandlers[settings.type];
-    // prettier-ignore
-    return (handler ? handler.isForcedAllowSign : false) || settings.allowSign;
+    return (
+      (typeHandlers[settings.type]?.isForcedAllowSign ?? false) ||
+      settings.allowSign
+    );
   }
 
   function isAllowArrowKeys(settings) {
-    const handler = typeHandlers[settings.type];
-    // prettier-ignore
-    return (handler ? handler.isForcedAllowArrowKeys : false) || settings.allowArrowKeys;
+    return (
+      (typeHandlers[settings.type]?.isForcedAllowArrowKeys ?? false) ||
+      settings.allowArrowKeys
+    );
   }
 
   function isGetDigit(settings) {
-    const handler = typeHandlers[settings.type];
-    // prettier-ignore
-    return handler ? handler.isGetDigit : false;
+    return typeHandlers[settings.type]?.isGetDigit ?? false;
   }
 
   function isSetDigit(settings) {
-    const handler = typeHandlers[settings.type];
-    // prettier-ignore
-    return handler ? handler.isSetDigit : false;
+    return typeHandlers[settings.type]?.isSetDigit ?? false;
   }
 
   function isDisabled(settings) {
-    const handler = typeHandlers[settings.type];
-    // prettier-ignore
-    return ( handler ? handler.isForcedDisabled : false) || settings.isDisabled;
+    return (
+      (typeHandlers[settings.type]?.isForcedDisabled ?? false) ||
+      settings.isDisabled
+    );
   }
 
   function defaultSign(settings) {
@@ -777,6 +754,8 @@ if (typeof jQuery === 'undefined') {
       setInputValue(object, val);
     } else if (type === 'div') {
       setDivValue(object, val, settings);
+    } else {
+      throw new Error('Type invalide :', type);
     }
   }
 
@@ -797,7 +776,9 @@ if (typeof jQuery === 'undefined') {
 
   // Gestion des caractères spéciaux pour le type lettre
   function handleSpecialLetters(val) {
-    if (convertLetter(val) === 0) return '\\0x00';
+    if (convertLetter(val) === 0) {
+      return '\\0x00';
+    }
     if (convertLetter(val) === 11) return '\\0x0b';
     return val;
   }
@@ -943,7 +924,7 @@ if (typeof jQuery === 'undefined') {
       }
     }
 
-    function triggerValueChange($input, settings, onchange = true) {
+    function triggerValueChange($input, settings, onchange) {
       if (onchange && typeof settings.onValueChange === 'function') {
         const newValue = getCurrentValueByIndex('current');
         // Mise à jour de la région de notification pour les lecteurs d'écran
@@ -978,19 +959,20 @@ if (typeof jQuery === 'undefined') {
     }
 
     function getCurrentValueByIndex(index) {
+      let value = null;
       if (index === 'sign') {
-        return currentValues.sign;
-        /*} else if (index === 'list') {
-        return currentValues.list;*/
+        value = currentValues.sign;
       } else if (index === 'current') {
-        return currentValues.value;
+        value = currentValues.value;
       } else if (index === 'digits') {
-        return currentValues.digits;
+        value = currentValues.digits;
       } else if (!isNaN(index)) {
         // Si l'index est un nombre, on l'utilise pour mettre à jour le digit
-        return currentValues.digits[index];
+        value = currentValues.digits[index];
+      } else {
+        throw new Error('Index invalide :', index);
       }
-      return null;
+      return value;
     }
 
     function processIntegerParts(value) {
@@ -1187,15 +1169,14 @@ if (typeof jQuery === 'undefined') {
 
       // Récupère le signe (+ ou -) pour le type spécifié
       const signInput = $('input[id^=sign_' + type + '_input]');
-      const sign = signInput.length ? signInput.val() : '+';
-
+      let newvalue = null;
       // Applique le signe en fonction du type de la valeur (chaîne ou nombre)
       if (typeof value === 'string') {
-        return sign === '-' ? '-' + value : value;
-      } else if (typeof value === 'number') {
-        return sign === '-' ? -value : value;
+        newvalue = signInput.val() === '-' ? '-' + value : value;
+      } else {
+        newvalue = signInput.val() === '-' ? -value : value;
       }
-      return value; // Retourne la valeur originale si elle n'est ni chaîne ni nombre
+      return newvalue;
     }
 
     function updateFinalValue($input, newValue, type, onchange = true) {
@@ -1446,9 +1427,8 @@ if (typeof jQuery === 'undefined') {
           return listValue;
         },
       };
-      // Exécute l'action correspondant au `prefix` pour définir `newValue`
-      const newValue = actions[prefix] ? actions[prefix]() : '';
-      updateFinalValue($(inputElement), newValue, type);
+
+      updateFinalValue($(inputElement), actions[prefix](), type);
 
       // Calcul des informations pour l'affichage périphérique
       const displayData = calculatePeripheralDisplay(
@@ -1536,10 +1516,10 @@ if (typeof jQuery === 'undefined') {
       let currentValue = -1;
 
       if (settings.type == 'hexadecimal')
-        currentValue = convertLetterToHexadecimal($(inputElement).val()) || 0;
+        currentValue = convertLetterToHexadecimal($(inputElement).val());
       else if (settings.type == 'letter')
-        currentValue = convertLetter($(inputElement).val()) || 0;
-      else currentValue = convertIntegerBase10($(inputElement).val()) || 0;
+        currentValue = convertLetter($(inputElement).val());
+      else currentValue = convertIntegerBase10($(inputElement).val());
 
       // Incrémenter la valeur
       currentValue -= 1;
@@ -1565,10 +1545,10 @@ if (typeof jQuery === 'undefined') {
       let currentValue = -1;
 
       if (settings.type == 'hexadecimal')
-        currentValue = convertLetterToHexadecimal($(inputElement).val()) || 0;
+        currentValue = convertLetterToHexadecimal($(inputElement).val());
       else if (settings.type == 'letter')
-        currentValue = convertLetter($(inputElement).val()) || 0;
-      else currentValue = convertIntegerBase10($(inputElement).val()) || 0;
+        currentValue = convertLetter($(inputElement).val());
+      else currentValue = convertIntegerBase10($(inputElement).val());
 
       // Décrémenter la valeur
       currentValue += 1;
@@ -1672,7 +1652,7 @@ if (typeof jQuery === 'undefined') {
         // Valeur non valide pour un signe
         setValueInput(inputElement, '+', prefix, type);
         event.preventDefault();
-      }
+      } 
     }
 
     function applyInput(
@@ -1879,19 +1859,9 @@ if (typeof jQuery === 'undefined') {
       }
 
       // Ajuster les valeurs si elles sont en dehors des limites
-      const adjustedValueTop =
-        valueTop !== null ? Math.max(valueTop, valueMin) : null;
-      const adjustedValueBottom =
-        valueBottom !== null ? Math.min(valueBottom, valueMax) : null;
+      const adjustedValueTop = Math.max(valueTop, valueMin);
+      const adjustedValueBottom = Math.min(valueBottom, valueMax);
 
-      // Retourner en fonction des valeurs fournies
-      if (valueTop !== null && valueBottom === null) {
-        return { adjustedValueTop };
-      } else if (valueBottom !== null && valueTop === null) {
-        return { adjustedValueBottom };
-      }
-
-      // Si les deux valeurs sont fournies, renvoyer l'objet complet
       return {
         adjustedValueTop,
         adjustedValueBottom,
@@ -2156,14 +2126,8 @@ if (typeof jQuery === 'undefined') {
 
     function createTextElement(prefix, uniqueTypeShort, id, position, text) {
       return $('<div>', {
-        class:
-          id != null
-            ? `cla-hover-text ${position}-text-${uniqueTypeShort}-${id}`
-            : `cla-hover-text ${position}-text-${uniqueTypeShort}`,
-        id:
-          id != null
-            ? `${prefix}_${uniqueTypeShort}_div_${position}_${id}`
-            : `${prefix}_${uniqueTypeShort}_div_${position}`,
+        class: `cla-hover-text ${position}-text-${uniqueTypeShort}-${id}`,
+        id: `${prefix}_${uniqueTypeShort}_div_${position}_${id}`,
         text: text,
       })
         .hover(
@@ -2184,7 +2148,7 @@ if (typeof jQuery === 'undefined') {
       uniqueTypeShort,
       id,
       value,
-      { min, max, maxLength = '1', isDisabled = false } = {}
+      { min, max, maxLength, isDisabled }
     ) {
       // Créer une étiquette avec un texte descriptif pour chaque champ
       const labelId = `${prefix}_${uniqueTypeShort}_label_${id}`;
@@ -2214,7 +2178,7 @@ if (typeof jQuery === 'undefined') {
         class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
         maxLength: maxLength,
         id: `${prefix}_${uniqueTypeShort}_input_${id}`,
-        name: id != null ? `${prefix}${id}` : `${prefix}`,
+        name: `${prefix}${id}`,
         autocomplete: 'off',
         value:
           settings.type === 'text' ? value : makeValueElement(value, settings),
@@ -2635,7 +2599,7 @@ if (typeof jQuery === 'undefined') {
     return this;
   };
 
-  $.fn.codeInputBuilder.version = '0.0.15';
+  $.fn.codeInputBuilder.version = '0.0.16';
   $.fn.codeInputBuilder.title = 'CodeInputBuilder';
   $.fn.codeInputBuilder.description =
     "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";

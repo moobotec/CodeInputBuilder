@@ -263,6 +263,10 @@ describe("CodeInputBuilder Plugin Tests avec type Letter", function() {
 
         // Simuler l'événement de défilement vers le haut sur chaque input correspondant
         codeInputs.each((index, input) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent);
+
             $(input).trigger({
                 type: 'wheel',
                 originalEvent: { deltaY: +1, preventDefault: function() {} } // Défilement vers le bas
@@ -280,6 +284,10 @@ describe("CodeInputBuilder Plugin Tests avec type Letter", function() {
 
         // Simuler l'événement de défilement vers le haut sur chaque input correspondant
         codeInputs.each((index, input) => {
+            
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
             $(input).trigger({
                 type: 'wheel',
                 originalEvent: { deltaY: -1, preventDefault: function() {} } // Défilement vers le bas
@@ -300,6 +308,10 @@ describe("CodeInputBuilder Plugin Tests avec type Letter", function() {
     
             // Simuler l'événement de défilement vers le haut sur chaque input
             codeInputs.each((index, input) => {
+
+                const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+                input.dispatchEvent(hoverEvent);
+
                 $(input).trigger({
                     type: 'wheel',
                     originalEvent: { deltaY: +1, preventDefault: function () {} } // Défilement vers le bas
@@ -313,6 +325,72 @@ describe("CodeInputBuilder Plugin Tests avec type Letter", function() {
             // Vérifier la valeur résultante
             expect(codeInputTest.getCompleteValue()).to.equal(expectedValue);
         }
+    });
+
+    it("devrait incrémenter la valeur du premier champ d'input en utilisant le click du haut pour les div au survole (cas particulier)", function() {
+
+        codeInputTest.setCompleteValue('!!!!!');
+
+        const codeInputs = $('#element').find("input[id^='digits_letter_']");
+        
+        const topDivs = $("div[id^='digits_letter_'][id*='_div_top_']");
+
+        topDivs.each((index, div) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            codeInputs[index].dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
+            const event = new Event('click');
+            div.dispatchEvent(event);
+
+        });
+        expect(codeInputTest.getCompleteValue()).to.equal('     ');          
+    });
+
+    it("devrait incrémenter la valeur du premier champ d'input en utilisant le click du haut pour les div au survole (cas particulier)", function() {
+
+        codeInputTest.setCompleteValue('00000');
+
+        codeInputTest.setDigitAt(0 , '\u0001');
+
+        const codeInputs = $('#element').find("input[id^='digits_letter_']");
+        
+        const topDivs = $("div[id^='digits_letter_'][id*='_div_top_']");
+
+        topDivs.each((index, div) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            codeInputs[index].dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
+            const event = new Event('click');
+            div.dispatchEvent(event);
+
+        });
+        expect(codeInputTest.getCompleteValue()).to.equal('\u0000////'); 
+        
+    });
+
+    it("devrait incrémenter la valeur du premier champ d'input en utilisant le click du haut pour les div au survole (cas particulier)", function() {
+
+        codeInputTest.setCompleteValue('00000');
+
+        codeInputTest.setDigitAt(0 , '\f');
+
+        const codeInputs = $('#element').find("input[id^='digits_letter_']");
+        
+        const topDivs = $("div[id^='digits_letter_'][id*='_div_top_']");
+
+        topDivs.each((index, div) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            codeInputs[index].dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
+            const event = new Event('click');
+            div.dispatchEvent(event);
+
+        });
+        expect(codeInputTest.getCompleteValue()).to.equal('\u000b////'); 
+        
     });
    
 });

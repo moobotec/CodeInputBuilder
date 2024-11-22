@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.15
+Version: 0.0.16
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -622,13 +622,11 @@ if (typeof jQuery === 'undefined') {
         if (invalidCodes.includes(codeTouche)) {
           return false;
         }
-        // Vérifie les touches fléchées si `allowArrowKeys` est false
         const arrowKeys = ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'];
-        if (!allowArrowKeys && arrowKeys.includes(key)) {
-          return false;
-        }
-        // Si aucune condition n'est remplie, la touche est valide
-        return true;
+        return (
+          !invalidCodes.includes(codeTouche) &&
+          (!allowArrowKeys || !arrowKeys.includes(key))
+        );
       },
     },
     text: {
@@ -647,96 +645,76 @@ if (typeof jQuery === 'undefined') {
     },
   };
 
-  // Fonction pour vérifier si une touche est autorisée en fonction du type d'input
   function isKeyAllowed(codeTouche, key, valueMax, type, allowArrowKeys) {
-    const handler = typeHandlers[type];
-    if (
-      handler != null &&
-      handler.isValidKey != null &&
-      handler.isValidKey(codeTouche, valueMax, key, allowArrowKeys)
-    ) {
-      return true;
-    }
-    return false;
+    // Utilisation de l'opérateur de chaînage optionnel pour vérifier les propriétés
+    return (
+      typeHandlers[type]?.isValidKey?.(
+        codeTouche,
+        valueMax,
+        key,
+        allowArrowKeys
+      ) || false
+    );
   }
 
   function convertDigitByType(value, type) {
-    const handler = typeHandlers[type];
-    if (handler != null && handler.convert != null) {
-      return handler.convert(value);
-    }
-    return null;
+    return typeHandlers[type]?.convert?.(value) ?? null;
   }
 
   function valueDigitMin(settings) {
-    const handler = typeHandlers[settings.type];
-    // prettier-ignore
-    return handler ? handler.min : null;
+    return typeHandlers[settings.type]?.min ?? null;
   }
 
   function valueDigitMax(settings) {
-    const handler = typeHandlers[settings.type];
-    // prettier-ignore
-    return handler ? handler.max : null;
+    return typeHandlers[settings.type]?.max ?? null;
   }
 
   function determineType(value, settings) {
-    // Parcourt chaque type dans typeHandlers pour trouver le premier type qui valide la valeur
+    // Trouve le premier type qui valide la valeur
     for (const [type, handler] of Object.entries(typeHandlers)) {
-      if (
-        handler != null &&
-        handler.validate != null &&
-        handler.validate(value, settings)
-      ) {
+      if (handler?.validate?.(value, settings)) {
         return type;
       }
     }
-    // Si aucune validation de typeHandlers ne correspond, retourne "letter" par défaut
+    // Retourne "letter" si aucun type valide n'est trouvé
     return 'letter';
   }
 
   function makeValueElement(value, settings) {
-    const handler = typeHandlers[settings.type];
-    if (handler != null && handler.display != null) {
-      return handler.display(value);
-    }
-    return null;
+    return typeHandlers[settings.type]?.display?.(value) ?? null;
   }
 
   function isAdjustToBounds(settings) {
-    const handler = typeHandlers[settings.type];
-    // prettier-ignore
-    return handler ? handler.isAdjustToBounds : false;
+    return typeHandlers[settings.type]?.isAdjustToBounds ?? false;
   }
 
   function isAllowSign(settings) {
-    const handler = typeHandlers[settings.type];
-    // prettier-ignore
-    return (handler ? handler.isForcedAllowSign : false) || settings.allowSign;
+    return (
+      (typeHandlers[settings.type]?.isForcedAllowSign ?? false) ||
+      settings.allowSign
+    );
   }
 
   function isAllowArrowKeys(settings) {
-    const handler = typeHandlers[settings.type];
-    // prettier-ignore
-    return (handler ? handler.isForcedAllowArrowKeys : false) || settings.allowArrowKeys;
+    return (
+      (typeHandlers[settings.type]?.isForcedAllowArrowKeys ?? false) ||
+      settings.allowArrowKeys
+    );
   }
 
   function isGetDigit(settings) {
-    const handler = typeHandlers[settings.type];
-    // prettier-ignore
-    return handler ? handler.isGetDigit : false;
+    return typeHandlers[settings.type]?.isGetDigit ?? false;
   }
 
   function isSetDigit(settings) {
-    const handler = typeHandlers[settings.type];
-    // prettier-ignore
-    return handler ? handler.isSetDigit : false;
+    return typeHandlers[settings.type]?.isSetDigit ?? false;
   }
 
   function isDisabled(settings) {
-    const handler = typeHandlers[settings.type];
-    // prettier-ignore
-    return ( handler ? handler.isForcedDisabled : false) || settings.isDisabled;
+    return (
+      (typeHandlers[settings.type]?.isForcedDisabled ?? false) ||
+      settings.isDisabled
+    );
   }
 
   function defaultSign(settings) {
@@ -2635,7 +2613,7 @@ if (typeof jQuery === 'undefined') {
     return this;
   };
 
-  $.fn.codeInputBuilder.version = '0.0.15';
+  $.fn.codeInputBuilder.version = '0.0.16';
   $.fn.codeInputBuilder.title = 'CodeInputBuilder';
   $.fn.codeInputBuilder.description =
     "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";

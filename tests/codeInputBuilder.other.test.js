@@ -626,7 +626,8 @@ describe("CodeInputBuilder Plugin Tests Other Tab", function () {
             values: [0, 0, 0, 0, 0],
             minValues: [0, 0, 0, 0, 0],
             maxValues: [9, 9, 9, 9, 9],
-            scrollSensitivity : 0.1
+            scrollSensitivity : 0.1,
+            allowSign : true
         });
 
         $element = $('#element');
@@ -669,7 +670,81 @@ describe("CodeInputBuilder Plugin Tests Other Tab", function () {
         });
 
         codeInputs[0].dispatchEvent(keyupEvent);
+        //le changement de cas se fait via le navigateur lui meme donc cas normal 0
+        expect(document.activeElement).to.equal(codeInputs[0]);
 
+    });
+
+   it("devrait permettre de permettre le tab donc le changement de focus signe ", function () {
+       
+        codeInputTest.setCompleteValue('00000');
+
+        const codeInputTestSigne = $('#element').find('input');
+
+        // Simuler un événement `mouseover` sur l'input associé
+        const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+        codeInputTestSigne[0].dispatchEvent(hoverEvent);
+
+        // Créer l'événement `click`
+        const clickEvent = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+        });
+
+        // Déclencher l'événement sur l'input
+        codeInputTestSigne[0].dispatchEvent(clickEvent);
+        codeInputTestSigne[0].focus();
+
+        expect(document.activeElement).to.equal(codeInputTestSigne[0]);
+
+        // Simuler un événement `keyup` avec keyCode
+        const keyupEvent = new KeyboardEvent('keyup', {
+            key: 'Tab', // Simule une touche spécifique
+            keyCode: 9,
+            bubbles: true,
+            cancelable: true,
+        });
+
+        codeInputTestSigne[0].dispatchEvent(keyupEvent);
+
+        expect(document.activeElement).to.equal(codeInputTestSigne[0]);
+    });
+
+
+    it("cas particulier de la touce Maj", function () {
+       
+        codeInputTest.setCompleteValue('00000');
+
+        const codeInputs = $('#element').find("input[id^='digits_integer_']");
+
+        // Simuler un événement `mouseover` sur l'input associé
+        const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+        codeInputs[0].dispatchEvent(hoverEvent);
+
+        // Créer l'événement `click`
+        const clickEvent = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+        });
+
+        // Déclencher l'événement sur l'input
+        codeInputs[0].dispatchEvent(clickEvent);
+        codeInputs[0].focus();
+
+        expect(document.activeElement).to.equal(codeInputs[0]);
+
+        // Simuler un événement `keyup` avec keyCode
+        const keyupEvent = new KeyboardEvent('keyup', {
+            key: 'Maj', // Simule une touche spécifique
+            keyCode: 16,
+            bubbles: true,
+            cancelable: true,
+        });
+
+        codeInputs[0].dispatchEvent(keyupEvent);
+        //le changement de cas se fait via le navigateur lui meme donc cas normal 0
         expect(document.activeElement).to.equal(codeInputs[0]);
 
     });
@@ -1348,8 +1423,6 @@ describe("CodeInputBuilder Plugin Tests Other init isKeyRequiredForScroll Meta",
     });
 });
 
-
-
 describe("CodeInputBuilder Plugin Tests Other init calculateDelta", function () {
     let codeInputTest;
     const numInputs = 5;
@@ -1416,3 +1489,143 @@ describe("CodeInputBuilder Plugin Tests Other init calculateDelta", function () 
     });
 });
 
+
+describe("CodeInputBuilder Plugin Tests Other scroll disabled", function () {
+    let codeInputTest;
+    const numInputs = 5;
+
+    beforeEach(function () {
+        // Ajouter le conteneur pour le plugin
+        $('body').append('<div id="element"></div>');
+
+        // Initialiser le plugin avec les options fournies
+        codeInputTest = $('#element').codeInputBuilder({
+            type: 'integer',
+            numInputs: numInputs,
+            values: [0, 0, 0, 0, 0],
+            minValues: [0, 0, 0, 0, 0],
+            maxValues: [9, 9, 9, 9, 9],
+            allowScroll : false,
+        });
+
+        $element = $('#element');
+    });
+
+    afterEach(function () {
+        // Supprimer les conteneurs après chaque test
+        $('#element').remove();
+    });
+
+    
+    it("ne devrait pas incrémenter la valeur du premier champ d'input en utilisant la molette vers le bas pour les digits ", function () {
+        codeInputTest.setCompleteValue('11111');
+        expect(codeInputTest.getCompleteValue()).to.equal(11111);
+   
+        const codeInputs = $('#element').find("input[id^='digits_integer_']");
+
+        // Simuler l'événement de défilement vers le haut sur chaque input correspondant
+        codeInputs.each((index, input) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
+            $(input).trigger({
+                type: 'wheel',
+                originalEvent: { wheelDelta: +1, preventDefault: function() {} } // Défilement vers le bas
+            });
+        });
+
+        expect(codeInputTest.getCompleteValue()).to.equal(11111); 
+
+    });
+});
+
+
+describe("CodeInputBuilder Plugin Tests Other init originalevent vs event ", function () {
+    let codeInputTest;
+    const numInputs = 5;
+
+    beforeEach(function () {
+        // Ajouter le conteneur pour le plugin
+        $('body').append('<div id="element"></div>');
+
+        // Initialiser le plugin avec les options fournies
+        codeInputTest = $('#element').codeInputBuilder({
+            type: 'integer',
+            numInputs: numInputs,
+            values: [0, 0, 0, 0, 0],
+            minValues: [0, 0, 0, 0, 0],
+            maxValues: [9, 9, 9, 9, 9],
+            scrollSensitivity : 0.1,
+        });
+
+        $element = $('#element');
+    });
+
+    afterEach(function () {
+        // Supprimer les conteneurs après chaque test
+        $('#element').remove();
+    });
+
+    
+    it("devrait incrémenter la valeur du premier champ d'input en utilisant la molette vers le bas pour les digits ", function () {
+        codeInputTest.setCompleteValue('11111');
+        expect(codeInputTest.getCompleteValue()).to.equal(11111);
+   
+        const codeInputs = $('#element').find("input[id^='digits_integer_']");
+
+        // Simuler l'événement de défilement vers le haut sur chaque input correspondant
+        codeInputs.each((index, input) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
+            $(input).trigger({
+                type: 'wheel',
+                deltaY: +1, preventDefault: function() {} 
+            });
+        });
+
+        expect(codeInputTest.getCompleteValue()).to.equal(22222); 
+
+    });
+
+    it("cas particulier test event keyup  ", function () {
+        codeInputTest.setCompleteValue('11111');
+        expect(codeInputTest.getCompleteValue()).to.equal(11111);
+   
+        const codeInputs = $('#element').find("input[id^='digits_integer_']");
+        
+        // Simuler l'événement de défilement vers le haut sur chaque input correspondant
+        codeInputs.each((index, input) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
+            $(input).trigger({
+                type: 'keyup',
+                key: 'Tab', // Simule une touche spécifique
+                keyCode: 9,
+                bubbles: true,
+                cancelable: true,
+            });
+        });
+
+        expect(codeInputTest.getCompleteValue()).to.equal(11111); 
+
+        codeInputs.each((index, input) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
+            $(input).trigger({
+                type: 'paste',
+                bubbles: true,
+                cancelable: true,
+                clipboardData: new DataTransfer(), // Fournir des données au presse-papiers
+            });
+        });
+
+    });
+
+});

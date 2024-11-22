@@ -422,7 +422,7 @@ if (typeof jQuery === 'undefined') {
 
   // Fonction pour échapper un caractère
   function escapeChar(char) {
-    return charEscapeMap[char] || char;
+    return charEscapeMap[char];
   }
 
   // Fonction pour convertir un caractère échappé en caractère normal
@@ -776,7 +776,9 @@ if (typeof jQuery === 'undefined') {
 
   // Gestion des caractères spéciaux pour le type lettre
   function handleSpecialLetters(val) {
-    if (convertLetter(val) === 0) return '\\0x00';
+    if (convertLetter(val) === 0) {
+      return '\\0x00';
+    }
     if (convertLetter(val) === 11) return '\\0x0b';
     return val;
   }
@@ -1650,7 +1652,7 @@ if (typeof jQuery === 'undefined') {
         // Valeur non valide pour un signe
         setValueInput(inputElement, '+', prefix, type);
         event.preventDefault();
-      }
+      } 
     }
 
     function applyInput(

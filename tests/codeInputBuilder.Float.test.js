@@ -383,6 +383,44 @@ describe("CodeInputBuilder Plugin Test du type Float", function() {
             expect(codeInputTest.getCompleteValue()).to.equal(31.2); 
         });
 
+
+        //signe
+        it("devrait incrémenter la valeur du premier champ d'input (signe) en utilisant la molette vers le bas pour le signe et changer les valeurs des autre champ", function() {
+            // Définir la valeur initiale du premier input
+
+            codeInputTest.setCompleteValue(42.300);
+
+            const codeInputTestSigne = $('#element').find('input');
+            
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            codeInputTestSigne[0].dispatchEvent(hoverEvent);
+
+            // Simuler l'événement de défilement vers le haut sur le premier input qui est le sign
+            $(codeInputTestSigne[0]).trigger({
+                type: 'wheel',
+                originalEvent: { deltaY: +1 , preventDefault: function() {} } // Défilement vers le bas
+                
+            });
+    
+            const codeInputs = $('#element').find("input[id^='digits_float_']");
+
+            // Simuler l'événement de défilement vers le haut sur chaque input correspondant
+            codeInputs.each((index, input) => {
+
+                const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+                input.dispatchEvent(hoverEvent);
+
+                $(input).trigger({
+                    type: 'wheel',
+                    originalEvent: { deltaY: +1, preventDefault: function() {} } // Défilement vers le bas
+                });
+            });
+    
+            expect(codeInputTest.getCompleteValue()).to.equal(-53.411); 
+        });
+
+
+
     });
 
 

@@ -265,6 +265,10 @@ describe("CodeInputBuilder Plugin Tests avec type Binary", function() {
 
         // Simuler l'événement de défilement vers le haut sur chaque input correspondant
         codeInputs.each((index, input) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
             $(input).trigger({
                 type: 'wheel',
                 originalEvent: { deltaY: +1, preventDefault: function() {} } // Défilement vers le bas
@@ -282,6 +286,10 @@ describe("CodeInputBuilder Plugin Tests avec type Binary", function() {
 
         // Simuler l'événement de défilement vers le haut sur chaque input correspondant
         codeInputs.each((index, input) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
             $(input).trigger({
                 type: 'wheel',
                 originalEvent: { deltaY: -1, preventDefault: function() {} } // Défilement vers le bas

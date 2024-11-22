@@ -601,8 +601,7 @@ if (typeof jQuery === 'undefined') {
       isValidKey: (codeTouche) =>
         (codeTouche >= 48 && codeTouche <= 57) || // Chiffres (0-9)
         (codeTouche >= 65 && codeTouche <= 70) || // Lettres A-F
-        (codeTouche >= 97 && codeTouche <= 102) || // Lettres a-f
-        (codeTouche >= 96 && codeTouche <= 105), // Pavé numérique (0-9)
+        (codeTouche >= 96 && codeTouche <= 105), // Lettres a-f et // Pavé numérique (0-9)
     },
     letter: {
       convert: (value) => convertLetter(value),
@@ -755,6 +754,8 @@ if (typeof jQuery === 'undefined') {
       setInputValue(object, val);
     } else if (type === 'div') {
       setDivValue(object, val, settings);
+    } else {
+      throw new Error('Type invalide :', type);
     }
   }
 
@@ -921,7 +922,7 @@ if (typeof jQuery === 'undefined') {
       }
     }
 
-    function triggerValueChange($input, settings, onchange = true) {
+    function triggerValueChange($input, settings, onchange) {
       if (onchange && typeof settings.onValueChange === 'function') {
         const newValue = getCurrentValueByIndex('current');
         // Mise à jour de la région de notification pour les lecteurs d'écran
@@ -956,19 +957,20 @@ if (typeof jQuery === 'undefined') {
     }
 
     function getCurrentValueByIndex(index) {
+      let value = null;
       if (index === 'sign') {
-        return currentValues.sign;
-        /*} else if (index === 'list') {
-        return currentValues.list;*/
+        value = currentValues.sign;
       } else if (index === 'current') {
-        return currentValues.value;
+        value = currentValues.value;
       } else if (index === 'digits') {
-        return currentValues.digits;
+        value = currentValues.digits;
       } else if (!isNaN(index)) {
         // Si l'index est un nombre, on l'utilise pour mettre à jour le digit
-        return currentValues.digits[index];
+        value = currentValues.digits[index];
+      } else {
+        throw new Error('Index invalide :', index);
       }
-      return null;
+      return value;
     }
 
     function processIntegerParts(value) {
@@ -1165,15 +1167,14 @@ if (typeof jQuery === 'undefined') {
 
       // Récupère le signe (+ ou -) pour le type spécifié
       const signInput = $('input[id^=sign_' + type + '_input]');
-      const sign = signInput.length ? signInput.val() : '+';
-
+      let newvalue = null;
       // Applique le signe en fonction du type de la valeur (chaîne ou nombre)
       if (typeof value === 'string') {
-        return sign === '-' ? '-' + value : value;
-      } else if (typeof value === 'number') {
-        return sign === '-' ? -value : value;
+        newvalue = signInput.val() === '-' ? '-' + value : value;
+      } else {
+        newvalue = signInput.val() === '-' ? -value : value;
       }
-      return value; // Retourne la valeur originale si elle n'est ni chaîne ni nombre
+      return newvalue;
     }
 
     function updateFinalValue($input, newValue, type, onchange = true) {
@@ -1424,9 +1425,8 @@ if (typeof jQuery === 'undefined') {
           return listValue;
         },
       };
-      // Exécute l'action correspondant au `prefix` pour définir `newValue`
-      const newValue = actions[prefix] ? actions[prefix]() : '';
-      updateFinalValue($(inputElement), newValue, type);
+
+      updateFinalValue($(inputElement), actions[prefix](), type);
 
       // Calcul des informations pour l'affichage périphérique
       const displayData = calculatePeripheralDisplay(
@@ -1514,10 +1514,10 @@ if (typeof jQuery === 'undefined') {
       let currentValue = -1;
 
       if (settings.type == 'hexadecimal')
-        currentValue = convertLetterToHexadecimal($(inputElement).val()) || 0;
+        currentValue = convertLetterToHexadecimal($(inputElement).val());
       else if (settings.type == 'letter')
-        currentValue = convertLetter($(inputElement).val()) || 0;
-      else currentValue = convertIntegerBase10($(inputElement).val()) || 0;
+        currentValue = convertLetter($(inputElement).val());
+      else currentValue = convertIntegerBase10($(inputElement).val());
 
       // Incrémenter la valeur
       currentValue -= 1;
@@ -1543,10 +1543,10 @@ if (typeof jQuery === 'undefined') {
       let currentValue = -1;
 
       if (settings.type == 'hexadecimal')
-        currentValue = convertLetterToHexadecimal($(inputElement).val()) || 0;
+        currentValue = convertLetterToHexadecimal($(inputElement).val());
       else if (settings.type == 'letter')
-        currentValue = convertLetter($(inputElement).val()) || 0;
-      else currentValue = convertIntegerBase10($(inputElement).val()) || 0;
+        currentValue = convertLetter($(inputElement).val());
+      else currentValue = convertIntegerBase10($(inputElement).val());
 
       // Décrémenter la valeur
       currentValue += 1;
@@ -1857,19 +1857,9 @@ if (typeof jQuery === 'undefined') {
       }
 
       // Ajuster les valeurs si elles sont en dehors des limites
-      const adjustedValueTop =
-        valueTop !== null ? Math.max(valueTop, valueMin) : null;
-      const adjustedValueBottom =
-        valueBottom !== null ? Math.min(valueBottom, valueMax) : null;
+      const adjustedValueTop = Math.max(valueTop, valueMin);
+      const adjustedValueBottom = Math.min(valueBottom, valueMax);
 
-      // Retourner en fonction des valeurs fournies
-      if (valueTop !== null && valueBottom === null) {
-        return { adjustedValueTop };
-      } else if (valueBottom !== null && valueTop === null) {
-        return { adjustedValueBottom };
-      }
-
-      // Si les deux valeurs sont fournies, renvoyer l'objet complet
       return {
         adjustedValueTop,
         adjustedValueBottom,
@@ -2134,14 +2124,8 @@ if (typeof jQuery === 'undefined') {
 
     function createTextElement(prefix, uniqueTypeShort, id, position, text) {
       return $('<div>', {
-        class:
-          id != null
-            ? `cla-hover-text ${position}-text-${uniqueTypeShort}-${id}`
-            : `cla-hover-text ${position}-text-${uniqueTypeShort}`,
-        id:
-          id != null
-            ? `${prefix}_${uniqueTypeShort}_div_${position}_${id}`
-            : `${prefix}_${uniqueTypeShort}_div_${position}`,
+        class: `cla-hover-text ${position}-text-${uniqueTypeShort}-${id}`,
+        id: `${prefix}_${uniqueTypeShort}_div_${position}_${id}`,
         text: text,
       })
         .hover(
@@ -2162,7 +2146,7 @@ if (typeof jQuery === 'undefined') {
       uniqueTypeShort,
       id,
       value,
-      { min, max, maxLength = '1', isDisabled = false } = {}
+      { min, max, maxLength, isDisabled }
     ) {
       // Créer une étiquette avec un texte descriptif pour chaque champ
       const labelId = `${prefix}_${uniqueTypeShort}_label_${id}`;
@@ -2192,7 +2176,7 @@ if (typeof jQuery === 'undefined') {
         class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
         maxLength: maxLength,
         id: `${prefix}_${uniqueTypeShort}_input_${id}`,
-        name: id != null ? `${prefix}${id}` : `${prefix}`,
+        name: `${prefix}${id}`,
         autocomplete: 'off',
         value:
           settings.type === 'text' ? value : makeValueElement(value, settings),

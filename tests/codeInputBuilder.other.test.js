@@ -58,6 +58,9 @@ describe("CodeInputBuilder Plugin Tests Other", function () {
 
         const codeInputs = $('#element').find("input[id^='digits_letter_']");
 
+        const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+        codeInputs[0].dispatchEvent(hoverEvent);
+
         $(codeInputs[0]).trigger({
             type: 'wheel',
             originalEvent: { deltaY: +1, preventDefault: function() {} } // Défilement vers le bas
@@ -913,6 +916,10 @@ describe("CodeInputBuilder Plugin Tests Other init isDisbled = true et toggleInp
 
         // Simuler l'événement de défilement vers le haut sur chaque input correspondant
         codeInputs.each((index, input) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
             $(input).trigger({
                 type: 'wheel',
                 originalEvent: { deltaY: +1, preventDefault: function() {} } // Défilement vers le bas
@@ -926,6 +933,10 @@ describe("CodeInputBuilder Plugin Tests Other init isDisbled = true et toggleInp
 
          // Simuler l'événement de défilement vers le haut sur chaque input correspondant
          codeInputs.each((index, input) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
             $(input).trigger({
                 type: 'wheel',
                 originalEvent: { deltaY: +1, preventDefault: function() {} } // Défilement vers le bas
@@ -947,6 +958,10 @@ describe("CodeInputBuilder Plugin Tests Other init isDisbled = true et toggleInp
 
         // Simuler l'événement de défilement vers le haut sur chaque input correspondant
         codeInputs.each((index, input) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
             $(input).trigger({
                 type: 'wheel',
                 originalEvent: { deltaY: -1, preventDefault: function() {} } // Défilement vers le bas
@@ -1161,6 +1176,10 @@ describe("CodeInputBuilder Plugin Tests Other init isKeyRequiredForScroll contro
 
         // Simuler l'événement de défilement vers le haut sur chaque input correspondant
         codeInputs.each((index, input) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
             $(input).trigger({
                 type: 'wheel',
                 originalEvent: { deltaY: +1, preventDefault: function() {} } // Défilement vers le bas
@@ -1209,6 +1228,10 @@ describe("CodeInputBuilder Plugin Tests Other init isKeyRequiredForScroll Shift"
 
         // Simuler l'événement de défilement vers le haut sur chaque input correspondant
         codeInputs.each((index, input) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
             $(input).trigger({
                 type: 'wheel',
                 originalEvent: { deltaY: +1, preventDefault: function() {} } // Défilement vers le bas
@@ -1257,6 +1280,10 @@ describe("CodeInputBuilder Plugin Tests Other init isKeyRequiredForScroll Alt", 
 
         // Simuler l'événement de défilement vers le haut sur chaque input correspondant
         codeInputs.each((index, input) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
             $(input).trigger({
                 type: 'wheel',
                 originalEvent: { deltaY: +1, preventDefault: function() {} } // Défilement vers le bas
@@ -1305,6 +1332,10 @@ describe("CodeInputBuilder Plugin Tests Other init isKeyRequiredForScroll Meta",
 
         // Simuler l'événement de défilement vers le haut sur chaque input correspondant
         codeInputs.each((index, input) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
             $(input).trigger({
                 type: 'wheel',
                 originalEvent: { deltaY: +1, preventDefault: function() {} } // Défilement vers le bas
@@ -1354,18 +1385,25 @@ describe("CodeInputBuilder Plugin Tests Other init calculateDelta", function () 
 
         // Simuler l'événement de défilement vers le haut sur chaque input correspondant
         codeInputs.each((index, input) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
             $(input).trigger({
                 type: 'wheel',
                 originalEvent: { wheelDelta: +1, preventDefault: function() {} } // Défilement vers le bas
             });
         });
 
-
         expect(codeInputTest.getCompleteValue()).to.equal(22222); 
 
 
         // Simuler l'événement de défilement vers le haut sur chaque input correspondant
         codeInputs.each((index, input) => {
+
+            const hoverEvent = new Event('mouseover', { bubbles: true, cancelable: true });
+            input.dispatchEvent(hoverEvent); // Déclenche l'événement sur l'input
+
             $(input).trigger({
                 type: 'wheel',
                 originalEvent: {preventDefault: function() {} } // Défilement vers le bas

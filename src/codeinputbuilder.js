@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.16
+Version: 0.0.17
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -1652,7 +1652,7 @@ if (typeof jQuery === 'undefined') {
         // Valeur non valide pour un signe
         setValueInput(inputElement, '+', prefix, type);
         event.preventDefault();
-      } 
+      }
     }
 
     function applyInput(
@@ -2599,7 +2599,54 @@ if (typeof jQuery === 'undefined') {
     return this;
   };
 
-  $.fn.codeInputBuilder.version = '0.0.16';
+  $.fn.codeInputBuilder.destroy = function () {
+    return this.each(function () {
+      const $this = $(this);
+
+      // Supprime tous les événements attachés au plugin
+      $this.off();
+
+      // Identifier le conteneur principal et tous ses enfants
+      const $container = $this.find('.cla-input-container');
+
+      if ($container.length > 0) {
+        // Supprimer tous les événements des éléments enfants
+        $container.find('*').off();
+
+        // Supprimer tous les enfants du conteneur
+        $container.empty();
+
+        // Supprimer le conteneur lui-même
+        $container.remove();
+      }
+
+      // Supprime les éléments DOM ajoutés par le plugin
+      $this
+        .find(
+          '.cla-hover-text, .cla-input-wrapper, [class*="top-text"], [class*="bottom-text"], .cla-input-container, .visually-hidden'
+        )
+        .remove();
+
+      // Supprime les données associées
+      $this.removeData();
+
+      // Supprime les classes ajoutées par le plugin
+      $this.removeClass(
+        'cla-input-wrapper cla-input-container cla-hover-text visually-hidden'
+      );
+
+      // Supprime les références liées au plugin (globales ou locales)
+      if (typeof $this.data('instance') !== 'undefined') {
+        $this.data('instance').destroy();
+        $this.removeData('instance');
+      }
+
+      // Nettoie complètement le contenu si nécessaire
+      $this.empty();
+    });
+  };
+
+  $.fn.codeInputBuilder.version = '0.0.17';
   $.fn.codeInputBuilder.title = 'CodeInputBuilder';
   $.fn.codeInputBuilder.description =
     "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";

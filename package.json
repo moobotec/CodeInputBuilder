@@ -1,6 +1,6 @@
 {
   "name": "code-input-builder",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "description": "Plugin jQuery pour créer des champs d'input configurables",
   "main": "src/codeinputbuilder.js",
   "scripts": {
@@ -9,7 +9,10 @@
     "format": "prettier --write \"src/codeinputbuilder.js\"",
     "check:quality": "npm run lint && npm run format -- --check",
     "minify": "terser src/codeinputbuilder.js -o src/codeinputbuilder.min.js --compress --mangle",
-    "check-licenses": "npx license-checker --onlyAllow 'MIT;ISC;Apache-2.0;Apache License, Version 2.0' --production"
+    "check-licenses": "npx license-checker --onlyAllow 'MIT;ISC;Apache-2.0;Apache License, Version 2.0' --production",
+    "memory-test": "node --expose-gc tests/memory-test.js",
+    "memory-test-rapport": "node tests/memory-test-rapport.js",
+    "analyze-trace": "node tests/analyze-trace.js"
   },
   "keywords": [
     "jquery",
@@ -40,6 +43,7 @@
     "lint-staged": "^11.1.2",
     "mocha": "^9.0.0",
     "prettier": "^2.3.2",
+    "puppeteer": "^23.10.3",
     "sinon": "^19.0.2",
     "terser": "^5.10.0",
     "webpack": "^5.64.0"

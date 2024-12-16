@@ -69,4 +69,7 @@ report-task.txt
 sonar-report.json
 sonar-scanner.log
 
+# memory-test
+trace.json
+
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode

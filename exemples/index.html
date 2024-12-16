@@ -261,6 +261,14 @@
                    </div>
                </div>
            </div>
+
+           <h4 class="mt-3">Masquer l'affichage des entrées comme un mot de passe :</h4>
+
+           <div class="form-check form-switch mb-3">
+               <input class="form-check-input" type="checkbox" id="toggleMaskInput">
+               <label class="form-check-label" for="toggleMaskInput">Masquer/Demasquer les entrées</label>
+           </div>
+           <br>
            <h4 class="mt-3">Valeur de l'input modifié (Letter) :</h4>
            <p id="changeValueDisplayLetter">Aucun changement</p>
            <h4>Valeur complète (Letter) :</h4>
@@ -444,8 +452,6 @@
                 label.text(this.checked ? 'Désactiver les champs Float' : 'Activer les champs Float');
             });
 
-            toggleEnableFloat
-
             // Gestionnaire de clic pour afficher la valeur complète
             $('#getCompleteValueButtonFloat').on('click', function() {
                 const completeCode = codeInputFloat.getCompleteValue();
@@ -601,6 +607,7 @@
                 values: [0x00, 0xcd, 14, '0', 'µ'],
                 minValues: [0x00, 0x00, 0x00, 0x00, 0x00],
                 maxValues: [0xff, 0xff, 0xff, 0xff, 0xff],
+                maskInput: false,
                 onValueChange: function($input, newValue) {
                     // Affichage de la valeur de l'input modifié
                     $('#changeValueDisplayLetter').text(`Input ${$input.attr('id')} a changé de valeur : ${newValue}`);
@@ -609,6 +616,11 @@
                     const completeCode = codeInputLetter.getCompleteValue();
                     $('#completeValueDisplayLetter').text(`Valeur actuelle : ${completeCode}`);
                 }
+            });
+
+            $('#toggleMaskInput').on('change', function () {
+                const isPassword = this.checked; // Vérifie si la case est cochée
+                codeInputLetter.changeMaskInputs(isPassword);
             });
             
             // Gestionnaire de clic pour afficher la valeur complète

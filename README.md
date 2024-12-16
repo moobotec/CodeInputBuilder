@@ -97,6 +97,7 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
 | `onValueChange`     | `function`   | Fonction déclenchée lorsque la valeur change.                                                    | `null`            |
 | `isDisabled`       | `boolean`        | Permet de désactiver les inputs. Si activé, les champs ne seront pas modifiables par l'utilisateur. Dans le cas d'un CodeInput de type "text" cette option n'est pas utilisable.                                             | `true`            |
 | `allowArrowKeys`       | `boolean`        | Active ou désactive la fonctionnalité de navigation via les touches `ArrowLeft`,`ArrowRight`,`ArrowUp`,`ArrowDown`.                                             | `false`            |
+| `maskInput`  | `bool`  | Masque les entrées avec des étoiles (*) comme un mot de passe | `false`           |
 
 ## Exemples
 

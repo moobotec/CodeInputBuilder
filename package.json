@@ -1,6 +1,6 @@
 {
   "name": "code-input-builder",
-  "version": "0.0.17",
+  "version": "8",
   "description": "Plugin jQuery pour créer des champs d'input configurables",
   "main": "src/codeinputbuilder.js",
   "scripts": {

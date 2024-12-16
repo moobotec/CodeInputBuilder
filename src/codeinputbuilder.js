@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.17
+Version: 0.0.18
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -81,6 +81,9 @@ Options disponibles:
     - `allowArrowKeys`: (boolean) Permet d'active la fonctionnalité de navigation via les touches `ArrowLeft`,`ArrowRight`,`ArrowUp`,`ArrowDown`
       * Par défaut : false.
 
+    - `maskInput`: (boolean) Permet de masquer ou afficher les inputs au format password
+      * Par défaut : false.
+
 Usage basique :
     $('#element').codeInputBuilder({
         type: 'float',
@@ -130,6 +133,7 @@ if (typeof jQuery === 'undefined') {
       gap: '10px',
       isDisabled: false,
       allowArrowKeys: false,
+      maskInput: false,
     };
 
     const settings = $.extend({}, defaultOptions, options);
@@ -148,6 +152,12 @@ if (typeof jQuery === 'undefined') {
         throw new Error(
           "Option 'type' invalide. Valeurs autorisées : 'integer', 'float', 'text','binary', 'hexadecimal', 'letter'."
         );
+      }
+    }
+
+    function validateMaskInput(maskInput) {
+      if (typeof maskInput !== 'boolean') {
+        throw new Error("Option 'maskInput' doit être un booléen.");
       }
     }
 
@@ -326,6 +336,7 @@ if (typeof jQuery === 'undefined') {
       validateScrollSensitivity(settings.scrollSensitivity);
       validateRequireKeyForScroll(settings.requireKeyForScroll);
       validateDefaultSign(settings.defaultSign);
+      validateMaskInput(settings.maskInput);
     }
 
     validateOptions();
@@ -1711,7 +1722,11 @@ if (typeof jQuery === 'undefined') {
     /* Gestionnaire de modification de la mollette de la souris */
 
     function adjustOnScroll(inputElement, event, prefix, type) {
-      if (!settings.allowScroll) return;
+
+      if (settings.maskInput === true)
+        return;
+      if (!settings.allowScroll) 
+        return;
       const originalEvent = event.originalEvent || event;
       originalEvent.preventDefault();
 
@@ -1896,6 +1911,10 @@ if (typeof jQuery === 'undefined') {
     }
 
     function hoverMouseEnter(inputElement, prefix, type) {
+
+      if (settings.maskInput === true)
+        return;
+      
       let id = convertIntegerBase10(
         $(inputElement)
           .attr('id')
@@ -2174,7 +2193,7 @@ if (typeof jQuery === 'undefined') {
       $('body').append($liveRegion);
 
       const $input = $('<input>', {
-        type: 'text',
+        type: settings.maskInput === true ? 'password' : 'text',
         class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
         maxLength: maxLength,
         id: `${prefix}_${uniqueTypeShort}_input_${id}`,
@@ -2218,14 +2237,14 @@ if (typeof jQuery === 'undefined') {
           adjustOnScroll($element, event, prefix, uniqueTypeShort);
         })
         .hover(
-          function () {
-            if (settings.type != 'text' && settings.isDisabled) return;
-            hoverMouseEnter(this, prefix, uniqueTypeShort);
-          },
-          function () {
-            if (settings.type != 'text' && settings.isDisabled) return;
-            hoverMouseLeave(this, prefix, uniqueTypeShort);
-          }
+            function () {
+              if (settings.type != 'text' && settings.isDisabled) return;
+              hoverMouseEnter(this, prefix, uniqueTypeShort);
+            },
+            function () {
+              if (settings.type != 'text' && settings.isDisabled) return;
+              hoverMouseLeave(this, prefix, uniqueTypeShort);
+            }
         )
         .on('paste', (event) => {
           const $element = $(event.currentTarget);
@@ -2433,6 +2452,13 @@ if (typeof jQuery === 'undefined') {
           'settings.type non disponible avec la fonction setDigitAt.'
         );
       }
+    };
+
+    this.changeMaskInputs = function (isPassword) {
+      settings.maskInput = isPassword; // Met à jour l'option dans les paramètres
+      this.find('input').each(function () {
+          $(this).attr('type', isPassword ? 'password' : 'text'); // Change le type d'input
+      });
     };
 
     this.toggleInputs = function (disabled) {
@@ -2646,7 +2672,7 @@ if (typeof jQuery === 'undefined') {
     });
   };
 
-  $.fn.codeInputBuilder.version = '0.0.17';
+  $.fn.codeInputBuilder.version = '0.0.18';
   $.fn.codeInputBuilder.title = 'CodeInputBuilder';
   $.fn.codeInputBuilder.description =
     "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";

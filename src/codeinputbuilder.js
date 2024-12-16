@@ -1722,11 +1722,8 @@ if (typeof jQuery === 'undefined') {
     /* Gestionnaire de modification de la mollette de la souris */
 
     function adjustOnScroll(inputElement, event, prefix, type) {
-
-      if (settings.maskInput === true)
-        return;
-      if (!settings.allowScroll) 
-        return;
+      if (settings.maskInput === true) return;
+      if (!settings.allowScroll) return;
       const originalEvent = event.originalEvent || event;
       originalEvent.preventDefault();
 
@@ -1911,10 +1908,8 @@ if (typeof jQuery === 'undefined') {
     }
 
     function hoverMouseEnter(inputElement, prefix, type) {
+      if (settings.maskInput === true) return;
 
-      if (settings.maskInput === true)
-        return;
-      
       let id = convertIntegerBase10(
         $(inputElement)
           .attr('id')
@@ -2237,14 +2232,14 @@ if (typeof jQuery === 'undefined') {
           adjustOnScroll($element, event, prefix, uniqueTypeShort);
         })
         .hover(
-            function () {
-              if (settings.type != 'text' && settings.isDisabled) return;
-              hoverMouseEnter(this, prefix, uniqueTypeShort);
-            },
-            function () {
-              if (settings.type != 'text' && settings.isDisabled) return;
-              hoverMouseLeave(this, prefix, uniqueTypeShort);
-            }
+          function () {
+            if (settings.type != 'text' && settings.isDisabled) return;
+            hoverMouseEnter(this, prefix, uniqueTypeShort);
+          },
+          function () {
+            if (settings.type != 'text' && settings.isDisabled) return;
+            hoverMouseLeave(this, prefix, uniqueTypeShort);
+          }
         )
         .on('paste', (event) => {
           const $element = $(event.currentTarget);
@@ -2457,7 +2452,7 @@ if (typeof jQuery === 'undefined') {
     this.changeMaskInputs = function (isPassword) {
       settings.maskInput = isPassword; // Met à jour l'option dans les paramètres
       this.find('input').each(function () {
-          $(this).attr('type', isPassword ? 'password' : 'text'); // Change le type d'input
+        $(this).attr('type', isPassword ? 'password' : 'text'); // Change le type d'input
       });
     };
 

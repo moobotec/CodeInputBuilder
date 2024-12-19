@@ -21,7 +21,7 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
 
 **CodeInputBuilder** propose une large gamme de fonctionnalités permettant une saisie numérique flexible et personnalisable. Voici les principales fonctionnalités disponibles :
 
-- **Saisie de différents types de données** : Prend en charge `integer`, `float`, `binary`, `hexadecimal`, `letter`, et `text`.
+- **Saisie de différents types de données** : Prend en charge `integer`, `float`, `binary`, `hexadecimal`, `letter`, `text` et `time`.
 - **Configuration des limites min/max** : Chaque champ peut avoir des valeurs minimales et maximales spécifiques.
 - **Option de signe (+/-)** : Permet d’ajouter un signe (positif ou négatif) pour chaque valeur.
 - **Callback `onValueChange`** : Fonction personnalisée déclenchée à chaque changement de valeur.
@@ -40,6 +40,17 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
 - **Manipulation fine des valeurs** : Grâce aux méthodes `getDigitAt` et `setDigitAt`, il est possible d’accéder et de modifier chaque chiffre individuel d’une valeur, offrant un contrôle granulaire.
 - **Naviguer entre les champs**  : Utilisez `ArrowLeft` (flèche gauche) ou `Shift+Tab` pour passer au champ précédent et `ArrowRight` (flèche droite) ou `Tab` pour passer au champ suivant. 
 - **Incrémenter ou décrémenter les valeurs** : Utilisez `ArrowUp` (flèche haut) pour augmenter une valeur et `ArrowDown` (flèche bas) pour diminuer une valeur.
+- **Masquage des champs `maskInput`** : Permet de masquer les champs d'entrée en mode `password` pour garantir la confidentialité des saisies. Cette fonctionnalité peut être activée ou désactivée dynamiquement.
+- **Destruction d'instance `destroy`**: Supprimez proprement une instance du plugin et restaurez l'élément d'origine.
+- **Support des formats dynamiques**: Gère des champs de saisie personnalisés pour les heures, minutes, secondes et millisecondes grâce au type `time`.  
+  Exemple de formats pris en charge :  
+  - `HH:MM:SS`  
+  - `HH:MM:SS.SSS`  
+  - Séparateurs dynamiques (`:`, `.`, `|`, etc.).
+- **Validation automatique dans le cas d'un type `time`**: Les champs sont automatiquement validés en fonction de leurs limites :  
+  - Heures ≤ 23  
+  - Minutes/Secondes ≤ 59  
+  - Millisecondes ≤ 999  
 
 ## Installation
 
@@ -76,12 +87,12 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
 
 | Option              | Type         | Description                                                                                      | Valeur par défaut |
 |---------------------|-------------------|--------------------------------------------------------------------------------------------------|--------------------|
-| `type`              | `string`         | Type de valeur (`integer`, `float`, `binary`, `hexadecimal`, `letter`, `text`).                  | `integer`         |
+| `type`              | `string`         | Type de valeur (`integer`, `float`, `binary`, `hexadecimal`, `letter`, `text`,`time`).           | `integer`         |
 | `numInputs`         | `integer`        | Nombre d'entrées/chiffres.                                                                       | `1`               |
 | `minValues`         | `array`          | Valeurs minimales par position.                                                                  | `[]`              |
 | `maxValues`         | `array`          | Valeurs maximales par position.                                                                  | `[]`              |
 | `values`            | `array`          | Valeurs par défaut par position.                                                                 | `[]`              |
-| `defaultValue`      | `number|string`    | Valeur par défaut des champs.                                                                    | `0`               |
+| `defaultValue`      | `Date|number|string`    | Valeur par défaut des champs. Dans le cas d'un time le format de l'heure à utiliser (par exemple : HH:MM:SS, HH:MM:SS.SSS, etc.) avec des séparateurs dynamiques (: ou ., etc.).                                                                  | `0`               |
 | `gap`               | `string`         | Espace entre les champs d'entrée.                                                                | `'10px'`          |
 | `allowSign`         | `boolean`        | Autorise l'ajout d'un signe (+/-).                                                               | `false`           |
 | `defaultSign`       | `string`         | Signe par défaut (`+` ou `-`).                                                                   | `'+'`             |
@@ -97,7 +108,9 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
 | `onValueChange`     | `function`   | Fonction déclenchée lorsque la valeur change.                                                    | `null`            |
 | `isDisabled`       | `boolean`        | Permet de désactiver les inputs. Si activé, les champs ne seront pas modifiables par l'utilisateur. Dans le cas d'un CodeInput de type "text" cette option n'est pas utilisable.                                             | `true`            |
 | `allowArrowKeys`       | `boolean`        | Active ou désactive la fonctionnalité de navigation via les touches `ArrowLeft`,`ArrowRight`,`ArrowUp`,`ArrowDown`.                                             | `false`            |
-| `maskInput`  | `bool`  | Masque les entrées avec des étoiles (*) comme un mot de passe | `false`           |
+| `maskInput`  | `boolean`  | Permet de masquer la saisie des champs par des * (utilisé comme mode mot de passe). | `false`           |
+
+| `formatTime`  | `string`  | Format de l'heure à utiliser (par exemple : HH:MM:SS, HH:MM:SS.SSS, etc.) avec des séparateurs dynamiques (: ou ., etc.). | `HH:MM:SS`           |
 
 ## Exemples
 
@@ -145,7 +158,7 @@ $('#codeInputFloat').codeInputBuilder({
 
 ### Exemple pour un texte
 
-![Exemple une un texte](img/exemple_input_text.png)
+![Exemple pour un texte](img/exemple_input_text.png)
 
 ```javascript
 $('#codeInputText').codeInputBuilder({
@@ -153,6 +166,43 @@ $('#codeInputText').codeInputBuilder({
     values: ['Lorem', 'Consectetur', 'Eiusmod', 'Nulla', 'Vestibulum', 'Sollicitudin'], 
     defaultValue: 'Lorem',
     onValueChange: function($input, newValue) {
+        console.log(`Valeur complète : ${newValue}`);
+    }
+});
+```
+
+### Exemple pour un time
+
+![Exemple pour un time](img/exemple_input_time.png)
+
+```javascript
+$('#codeInputTime').codeInputBuilder({
+    type: 'time',
+    formatTime: 'HH:MM:SS.SSS', // Format valide
+    defaultValue:new Date(Date.UTC(1970, 0, 1, 1, 34, 55, 20)), // Par défaut, l'heure actuelle
+    gap: '10px', // Espace entre les inputs
+    onValueChange: function($input, newValue) {
+        // Affichage de la valeur modifiée
+        console.log(`Valeur complète : ${newValue}`);
+    }
+});
+```
+
+### Exemple pour un password
+
+![Exemple pour un password](img/exemple_input_password.png)
+
+```javascript
+$('#codeInputTime').codeInputBuilder({
+    type: 'letter',
+    numInputs: 5,
+    values: ['%', 'ù', '+', '/', '½'],
+    minValues: [0x00, 0x00, 0x00, 0x00, 0x00],
+    maxValues: [0xff, 0xff, 0xff, 0xff, 0xff],
+    maskInput: true,
+    gap: '10px', // Espace entre les inputs
+    onValueChange: function($input, newValue) {
+        // Affichage de la valeur modifiée
         console.log(`Valeur complète : ${newValue}`);
     }
 });
@@ -207,6 +257,30 @@ Le plugin `Code Input Builder` offre plusieurs méthodes pour interagir avec et 
     - **Exemple** :
       ```javascript
       $('#element').codeInputBuilder().toggleInputs(true); // Désactive tous les inputs
+      ```
+
+- ### `changeMaskInputs(isPassword)`
+    - **Description** : Permet de basculer dynamiquement entre l'affichage des champs en mode texte ou en mode masqué (type `password`).
+    - **Paramètre** :
+      - `isPassword` (boolean) : Si `true`, les champs sont masqués (type `password`). Si `false`, ils redeviennent des champs texte.
+    - **Exemple** :
+      ```javascript
+      const instance = $('#codeInputTime').codeInputBuilder();
+      instance.destroy(); // Supprime l'instance et restaure l'élément d'origine
+      ```
+
+- ### `destroy()`
+    - **Description** : Supprime l'instance actuelle du plugin et restaure l'élément d'origine.
+    - **Exemple** :
+      ```javascript
+      const instance = $('#codeInputTime').codeInputBuilder({
+        type: 'time',
+        formatTime: 'HH:MM:SS',
+        maskInput: false
+      });
+      // Activer ou désactiver dynamiquement le mode masqué
+      instance.changeMaskInputs(true); // Masquer les champs
+      instance.changeMaskInputs(false); // Afficher les champs
       ```
 
 Ces méthodes permettent de contrôler et manipuler les valeurs des champs d'input générés par le plugin, offrant une grande flexibilité et une intégration aisée dans des applications interactives.

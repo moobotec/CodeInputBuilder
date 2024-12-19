@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.18
+Version: 0.0.19
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -30,7 +30,15 @@ Options disponibles:
     - `values`: (array) Valeurs initiales pour chaque input. Utiliser autant de valeurs que `numInputs`.
         * Par défaut : [].
 
-    - `defaultValue`: (integer ou float) Valeur par défaut à afficher si aucune valeur initiale n’est définie.
+    - `defaultValue`: 
+      (integer ou float) Valeur par défaut à afficher si aucune valeur initiale n’est définie. 
+        * Par défaut : 0.
+
+      (time) Valeur initiale à afficher.
+        * Formats acceptés :
+          Nombre (integer ou float) : Représente des secondes cumulées. Exemple : 86399.999 (23h 59m 59s 999ms).
+          Objet Date : Utilise l'heure actuelle ou une instance spécifique de Date. Exemple : new Date().
+          Chaîne formatée (string) : Respecte un format comme HH:MM:SS ou HH:MM:SS.SSS. Exemple : "01:02:25.250".
         * Par défaut : 0.
 
     - `gap`: (string) Espace entre les inputs, spécifié en pixels (ex. '10px').
@@ -84,6 +92,9 @@ Options disponibles:
     - `maskInput`: (boolean) Permet de masquer ou afficher les inputs au format password
       * Par défaut : false.
 
+    - `formatTime`: (string) Format de temps accepté. Exemples : HH:MM:SS
+      * Par défaut : HH:MM:SS.SSS.
+
 Usage basique :
     $('#element').codeInputBuilder({
         type: 'float',
@@ -117,6 +128,7 @@ if (typeof jQuery === 'undefined') {
       minValues: [],
       maxValues: [],
       values: [],
+      formatTime: 'HH:MM:SS.SSS',
       defaultValue: 0,
       allowSign: false,
       defaultSign: '+',
@@ -147,11 +159,22 @@ if (typeof jQuery === 'undefined') {
           'binary',
           'hexadecimal',
           'letter',
+          'time',
         ].includes(type)
       ) {
         throw new Error(
-          "Option 'type' invalide. Valeurs autorisées : 'integer', 'float', 'text','binary', 'hexadecimal', 'letter'."
+          "Option 'type' invalide. Valeurs autorisées : 'integer', 'float', 'text','binary', 'hexadecimal', 'letter', time."
         );
+      }
+    }
+
+    function validateTimeFormat(type, format) {
+      if (type === 'time' && format) {
+        if (!isValidTimeFormat(format)) {
+          throw new Error(
+            `Le format '${format}' est invalide. Utilisez un format valide comme 'HH:MM:SS.SSS' ou 'HH|MM|SS'.`
+          );
+        }
       }
     }
 
@@ -217,14 +240,45 @@ if (typeof jQuery === 'undefined') {
       }
     }
 
-    function validateDefaultValue(defaultValue) {
-      if (
-        typeof defaultValue !== 'number' &&
-        typeof defaultValue !== 'string'
-      ) {
-        throw new Error(
-          "Option 'defaultValue' doit être un nombre ou une chaîne."
-        );
+    function validateDefaultValue(type, defaultValue) {
+      if (type === 'time') {
+        if (typeof defaultValue === 'number') {
+          // Vérification pour un nombre (secondes)
+          if (isNaN(defaultValue) || defaultValue < 0) {
+            throw new Error(
+              "Option 'defaultValue' : le nombre doit être positif."
+            );
+          }
+        } else if (typeof defaultValue === 'string') {
+          // Vérification pour une chaîne formatée (HH:MM:SS ou HH:MM:SS.SSS)
+          const timeFormatRegex = /^(\d{2}):(\d{2}):(\d{2})(\.\d{1,3})?$/;
+          if (!timeFormatRegex.test(defaultValue)) {
+            throw new Error(
+              "Option 'defaultValue' : la chaîne doit respecter le format 'HH:MM:SS' ou 'HH:MM:SS.SSS' ou être un nombre (secondes) ou un objet Date."
+            );
+          }
+        } else if (defaultValue instanceof Date) {
+          // Vérification pour un objet Date valide
+          if (isNaN(defaultValue.getTime())) {
+            throw new Error(
+              "Option 'defaultValue' : la chaîne doit respecter le format 'HH:MM:SS' ou 'HH:MM:SS.SSS' ou être un nombre (secondes) ou un objet Date."
+            );
+          }
+        } else {
+          // Type non accepté
+          throw new Error(
+            "Option 'defaultValue' doit être un nombre (secondes), une chaîne formatée 'HH:MM:SS' ou un objet Date."
+          );
+        }
+      } else {
+        if (
+          typeof defaultValue !== 'number' &&
+          typeof defaultValue !== 'string'
+        ) {
+          throw new Error(
+            "Option 'defaultValue' doit être un nombre ou une chaîne."
+          );
+        }
       }
     }
 
@@ -323,7 +377,7 @@ if (typeof jQuery === 'undefined') {
       validateMaxValues(settings.type, settings.maxValues, settings.numInputs);
       validateValues(settings.type, settings.values, settings.numInputs);
       validateDecimalPosition(settings.type, settings.decimalPosition);
-      validateDefaultValue(settings.defaultValue);
+      validateDefaultValue(settings.type, settings.defaultValue);
       validateTotalMin(settings.totalMin);
       validateTotalMax(settings.totalMax);
       validateOnValueChange(settings.onValueChange);
@@ -337,11 +391,21 @@ if (typeof jQuery === 'undefined') {
       validateRequireKeyForScroll(settings.requireKeyForScroll);
       validateDefaultSign(settings.defaultSign);
       validateMaskInput(settings.maskInput);
+      validateTimeFormat(settings.type, settings.formatTime);
     }
 
     validateOptions();
 
     return settings;
+  }
+
+  function isValidTimeFormat(format) {
+    // Expression régulière pour accepter HH, MM, SS et SSS avec n'importe quel séparateur
+    const formatRegex =
+      /^HH[^a-zA-Z0-9]MM([^a-zA-Z0-9]SS)?([^a-zA-Z0-9]SSS)?(\s?A)?$/;
+
+    // Validation du format
+    return formatRegex.test(format);
   }
 
   function truncateFromEnd(text, maxLength) {
@@ -652,6 +716,23 @@ if (typeof jQuery === 'undefined') {
       max: null,
       isForcedDisabled: true,
       isValidKey: null,
+    },
+    time: {
+      convert: (value) => convertIntegerBase10(value),
+      validate: (value) =>
+        typeof value === 'number' && !isNaN(value) && validateInteger(value),
+      display: (value) => value,
+      isForcedAllowSign: false,
+      isForcedAllowArrowKeys: false,
+      isAdjustToBounds: false,
+      isGetDigit: true,
+      isSetDigit: true,
+      min: 0x00,
+      max: 0x09,
+      isForcedDisabled: false,
+      isValidKey: (codeTouche, valueMax) =>
+        (codeTouche >= 48 && codeTouche <= 48 + valueMax) || // Chiffres (0-9)
+        (codeTouche >= 96 && codeTouche <= 96 + valueMax), // Pavé numérique (0-9)
     },
   };
 
@@ -1112,6 +1193,7 @@ if (typeof jQuery === 'undefined') {
           currentValues.limitMax,
           settings
         );
+
         numericValue = Math.abs(baseValue).toString();
       }
 
@@ -1132,9 +1214,11 @@ if (typeof jQuery === 'undefined') {
         case 'binary':
         case 'hexadecimal':
         case 'letter':
+        case 'time':
           integerPart = numericValue;
           decimalPart = '';
           break;
+
         default:
           throw new Error('Type non supporté dans la fonction fillDigits.');
       }
@@ -1190,6 +1274,176 @@ if (typeof jQuery === 'undefined') {
       return newvalue;
     }
 
+    function analyzeTimeFormat(format) {
+      // Expression régulière pour extraire chaque partie (HH, MM, SS, SSS) et les séparateurs
+      const regex = /(?:SSS|HH|MM|SS)|([^a-zA-Z0-9])/g;
+
+      let match;
+      const parts = [];
+      const separators = [];
+
+      while ((match = regex.exec(format)) !== null) {
+        if (['SSS', 'HH', 'MM', 'SS'].includes(match[0])) {
+          // Partie de temps
+          const limitMapping = {
+            HH: [2, 9],
+            MM: [5, 9],
+            SS: [5, 9],
+            SSS: Array(3).fill(9),
+          };
+
+          parts.push({
+            part: match[0],
+            limit: limitMapping[match[0]] || [],
+            length: match[0].length,
+          });
+        } else if (match[1]) {
+          // Séparateur
+          separators.push(match[1]);
+        }
+      }
+
+      return {
+        sizes: parts.map((p) => `${p.length}`),
+        parts: parts.map((p) => `${p.part}`),
+        limits: parts.map((p) => `${p.limit}`),
+        separators,
+        totalInputs: parts.reduce((sum, part) => sum + part.length, 0),
+      };
+    }
+
+    function parseDefaultValue(defaultValue, format) {
+      let defaultValueSecond;
+
+      if (defaultValue instanceof Date) {
+        defaultValueSecond = timeStringToSeconds(
+          formatTimeFromDate(defaultValue, format),
+          format
+        );
+      } else if (typeof defaultValue === 'number') {
+        defaultValueSecond = defaultValue;
+      } else if (typeof defaultValue === 'string') {
+        defaultValueSecond = timeStringToSeconds(defaultValue, format);
+      } else {
+        return 0; // Valeur par défaut si rien n'est fourni
+      }
+      // Contraindre la valeur entre 0 et 86399.999
+      return Math.min(Math.max(defaultValueSecond, 0), 86399.999);
+    }
+
+    function timeStringToSeconds(timeString, format) {
+      const { parts, separators } = analyzeTimeFormat(format);
+      // Construction de l'expression régulière pour découper la chaîne
+      const regex = new RegExp(separators.map((s) => `\\${s}`).join('|'));
+      const values = timeString.split(regex).map((v) => parseInt(v || '0', 10));
+
+      // Initialise les valeurs par défaut
+      let [hours, minutes, seconds, milliseconds] = [0, 0, 0, 0];
+
+      // Associe chaque partie aux valeurs
+      parts.forEach((part, i) => {
+        const value = values[i] || 0;
+        switch (part) {
+          case 'HH':
+            hours = Math.max(0, Math.min(value, 23));
+            break;
+          case 'MM':
+            minutes = Math.max(0, Math.min(value, 59));
+            break;
+          case 'SS':
+            seconds = Math.max(0, Math.min(value, 59));
+            break;
+          case 'SSS':
+            milliseconds = Math.max(0, Math.min(value, 999));
+            break;
+        }
+      });
+      // Conversion en secondes
+      return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
+    }
+
+    // Fonction pour extraire, valider et construire les valeurs des segments
+    function processTimeInput(inputValue, format) {
+      const regex = /(SSS|HH|MM|SS)/g;
+      const parts = format.match(regex);
+      const result = {};
+      let index = 0;
+
+      // Extraire et valider chaque segment
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        const length = part.length; // Longueur du segment
+        const value = parseInt(inputValue.substr(index, length), 10) || 0;
+        index += length;
+        // Stocker la valeur validée dans un objet
+        result[part] = value;
+      }
+
+      return { isValid: true, values: result };
+    }
+
+    // Fonction pour construire la date à partir des valeurs extraites
+    function buildDateFromValidatedParts(values) {
+      const hours = Math.min(values.HH || 0, 23);
+      const minutes = Math.min(values.MM || 0, 59);
+      const seconds = Math.min(values.SS || 0, 59);
+      const milliseconds = Math.min(values.SSS || 0, 999);
+
+      const date = new Date(0);
+      date.setUTCHours(hours, minutes, seconds, milliseconds);
+      return date;
+    }
+
+    // Fonction principale pour valider et construire la date
+    function validateAndBuildTime(inputValue, format) {
+      const result = processTimeInput(inputValue, format);
+      const date = buildDateFromValidatedParts(result.values);
+      return date;
+    }
+
+    function getTotalSeconds(date) {
+      const hours = date.getUTCHours(); // Heures (0-23)
+      const minutes = date.getUTCMinutes(); // Minutes (0-59)
+      const seconds = date.getUTCSeconds(); // Secondes (0-59)
+      const milliseconds = date.getUTCMilliseconds(); // Millisecondes (0-999)
+
+      // Calcul des secondes totales avec millisecondes en fractions
+      const totalSeconds =
+        hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
+
+      return totalSeconds;
+    }
+
+    // Fonction pour extraire le temps d'une instance de Date
+    function formatTimeFromDate(date, format) {
+      const hours = String(date.getUTCHours()).padStart(2, '0');
+      const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+      const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+      const milliseconds = String(date.getUTCMilliseconds()).padStart(3, '0');
+
+      // Remplace en fonction du format
+      return format
+        .replace('HH', hours)
+        .replace('MM', minutes)
+        .replace('SS', seconds)
+        .replace('SSS', milliseconds);
+    }
+
+    function formatDateToCustomString(date, format) {
+      return formatTimeFromDate(date, format).replace(/[^a-zA-Z0-9]/g, ''); // Supprime les séparateurs pour obtenir HHMMSSSSS
+    }
+
+    function updateCurrentTimeValues(type, format) {
+      let finalValue = computeValueFromInputs(type);
+      let backValue = finalValue;
+      const date = validateAndBuildTime(finalValue, format);
+      finalValue = formatDateToCustomString(date, format);
+      if (backValue != finalValue) {
+        fillDigits(finalValue, type);
+      }
+      updateCurrentValues('current', getTotalSeconds(date));
+    }
+
     function updateFinalValue($input, newValue, type, onchange = true) {
       // Fonction pour mettre à jour la valeur finale et gérer les limites
       function updateNumericValue() {
@@ -1232,6 +1486,10 @@ if (typeof jQuery === 'undefined') {
 
         case 'text':
           updateCurrentValues('current', newValue);
+          break;
+
+        case 'time':
+          updateCurrentTimeValues(type, settings.formatTime);
           break;
 
         default:
@@ -2326,6 +2584,57 @@ if (typeof jQuery === 'undefined') {
         }
       }
 
+      function addInputTimeElement() {
+        const result = analyzeTimeFormat(settings.formatTime);
+        settings.numInputs = result.totalInputs;
+
+        const defaultValue = parseDefaultValue(
+          settings.defaultValue,
+          settings.formatTime
+        );
+        const date = new Date(0);
+        date.setUTCMilliseconds(Math.round(defaultValue * 1000));
+
+        const stringDefaultValue = formatDateToCustomString(
+          date,
+          settings.formatTime
+        );
+
+        let separatorIndex = 0;
+        let inputIndex = 0;
+
+        result.sizes.forEach((partLength, partIndex) => {
+          const limits = result.limits[partIndex].split(',');
+
+          for (let i = 0; i < partLength; i++) {
+            const value = stringDefaultValue[inputIndex];
+
+            addInputElement(
+              'digits',
+              inputIndex + 1,
+              0,
+              limits[i],
+              value,
+              '1',
+              isDisabled(settings)
+            );
+
+            updateCurrentValues(inputIndex, value);
+            inputIndex++;
+          }
+
+          if (separatorIndex < result.separators.length) {
+            $inputContainer.append(
+              $('<div>', {
+                class: 'col-auto',
+                html: `<div><h2 class="my-5">${result.separators[separatorIndex]}</h2></div>`,
+              })
+            );
+            separatorIndex++;
+          }
+        });
+      }
+
       if (
         ['integer', 'float', 'binary', 'hexadecimal', 'letter'].includes(
           settings.type
@@ -2396,6 +2705,22 @@ if (typeof jQuery === 'undefined') {
         );
         $container.append($inputContainer);
         updateCurrentValues('current', settings.values[settings.defaultValue]);
+      } else if (settings.type === 'time') {
+        const prefix = 'digits';
+        addInputTimeElement();
+
+        $container.append($inputContainer);
+
+        const { value } = getAdjustedValueSettings(
+          settings.numInputs - 1,
+          settings
+        );
+        updateFinalValue(
+          $(`#${prefix}_${uniqueTypeShort}_input_${settings.numInputs}`),
+          value,
+          uniqueTypeShort,
+          false
+        );
       }
     });
 
@@ -2553,6 +2878,21 @@ if (typeof jQuery === 'undefined') {
       }
     }
 
+    function updateValueTime(value) {
+      let askValue = value;
+      if (isValidIntegerOrFloat(value)) askValue = convertFloat(value);
+
+      const defaultValue = parseDefaultValue(askValue, settings.formatTime);
+
+      const date = new Date(0); // Initialise la date à epoch 0
+      const totalMilliseconds = Math.round(defaultValue * 1000); // Convertit les secondes en millisecondes
+      date.setUTCMilliseconds(totalMilliseconds); // Définit les millisecondes
+
+      const newValue = formatDateToCustomString(date, settings.formatTime);
+      fillDigits(newValue, uniqueTypeShort);
+      updateCurrentValues('current', getTotalSeconds(date));
+    }
+
     function updateValue(value) {
       // Fonctions auxiliaires pour supprimer les préfixes
       switch (settings.type) {
@@ -2574,6 +2914,9 @@ if (typeof jQuery === 'undefined') {
         case 'text':
           updateValueText(value);
           break;
+        case 'time':
+          updateValueTime(value);
+          break;
         /* istanbul ignore next */
         default:
           throw new Error(
@@ -2586,6 +2929,47 @@ if (typeof jQuery === 'undefined') {
       validateValue(value);
       updateValue(value);
       triggerValueChange(null, settings, onchange);
+    };
+
+    this.destroy = function () {
+      return this.each(function () {
+        const $this = $(this);
+
+        // Supprime tous les événements attachés au plugin
+        $this.off();
+
+        // Identifier le conteneur principal et tous ses enfants
+        const $container = $this.find('.cla-input-container');
+
+        if ($container.length > 0) {
+          // Supprimer tous les événements des éléments enfants
+          $container.find('*').off();
+
+          // Supprimer tous les enfants du conteneur
+          $container.empty();
+
+          // Supprimer le conteneur lui-même
+          $container.remove();
+        }
+
+        // Supprime les éléments DOM ajoutés par le plugin
+        $this
+          .find(
+            '.cla-hover-text, .cla-input-wrapper, [class*="top-text"], [class*="bottom-text"], .cla-input-container, .visually-hidden'
+          )
+          .remove();
+
+        // Supprime les données associées
+        $this.removeData();
+
+        // Supprime les classes ajoutées par le plugin
+        $this.removeClass(
+          'cla-input-wrapper cla-input-container cla-hover-text visually-hidden'
+        );
+
+        // Nettoie complètement le contenu si nécessaire
+        $this.empty();
+      });
     };
 
     /* istanbul ignore next */
@@ -2620,54 +3004,7 @@ if (typeof jQuery === 'undefined') {
     return this;
   };
 
-  $.fn.codeInputBuilder.destroy = function () {
-    return this.each(function () {
-      const $this = $(this);
-
-      // Supprime tous les événements attachés au plugin
-      $this.off();
-
-      // Identifier le conteneur principal et tous ses enfants
-      const $container = $this.find('.cla-input-container');
-
-      if ($container.length > 0) {
-        // Supprimer tous les événements des éléments enfants
-        $container.find('*').off();
-
-        // Supprimer tous les enfants du conteneur
-        $container.empty();
-
-        // Supprimer le conteneur lui-même
-        $container.remove();
-      }
-
-      // Supprime les éléments DOM ajoutés par le plugin
-      $this
-        .find(
-          '.cla-hover-text, .cla-input-wrapper, [class*="top-text"], [class*="bottom-text"], .cla-input-container, .visually-hidden'
-        )
-        .remove();
-
-      // Supprime les données associées
-      $this.removeData();
-
-      // Supprime les classes ajoutées par le plugin
-      $this.removeClass(
-        'cla-input-wrapper cla-input-container cla-hover-text visually-hidden'
-      );
-
-      // Supprime les références liées au plugin (globales ou locales)
-      if (typeof $this.data('instance') !== 'undefined') {
-        $this.data('instance').destroy();
-        $this.removeData('instance');
-      }
-
-      // Nettoie complètement le contenu si nécessaire
-      $this.empty();
-    });
-  };
-
-  $.fn.codeInputBuilder.version = '0.0.18';
+  $.fn.codeInputBuilder.version = '0.0.19';
   $.fn.codeInputBuilder.title = 'CodeInputBuilder';
   $.fn.codeInputBuilder.description =
     "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";

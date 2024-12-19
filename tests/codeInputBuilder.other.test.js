@@ -1540,7 +1540,6 @@ describe("CodeInputBuilder Plugin Tests Other scroll disabled", function () {
     });
 });
 
-
 describe("CodeInputBuilder Plugin Tests Other init originalevent vs event ", function () {
     let codeInputTest;
     const numInputs = 5;
@@ -1629,3 +1628,117 @@ describe("CodeInputBuilder Plugin Tests Other init originalevent vs event ", fun
     });
 
 });
+
+describe("CodeInputBuilder Plugin Tests Destroy", function () {
+    let codeInputTest;
+    const numInputs = 5;
+    
+    beforeEach(function () {
+        $('body').append('<div id="element"></div>');
+    
+        // Initialiser le plugin
+        codeInputTest = $('#element').codeInputBuilder({
+        type: 'letter',
+        numInputs: numInputs,
+        values: [0x00, 0xcd, 14, '0', 'µ'],
+        minValues: [0x00, 0x00, 0x00, 0x00, 0x00],
+        maxValues: [0xff, 0xff, 0xff, 0xff, 0xff],
+        scrollSensitivity: 0.1,
+        });
+    });
+    
+    afterEach(function () {
+        // Détruire l'instance et nettoyer le DOM
+        if (codeInputTest) codeInputTest.destroy();
+        $('#element').remove();
+        document.body.innerHTML = '';
+      });
+
+    it("should check if the destroy method exists", function () {
+        expect(typeof codeInputTest.destroy).to.not.equal("undefined");
+        expect(typeof codeInputTest.destroy).to.equal("function");
+    });
+    
+    it("devrait détruire l'instance du plugin et supprimer les éléments associés", function () {
+        // Vérifie que des enfants existent avant la destruction
+        expect($('#element').children().length).to.be.greaterThan(0);
+      
+        // Appeler la méthode destroy
+        codeInputTest.destroy();
+      
+        // Vérifie que les enfants ont été supprimés
+        expect($('#element').children().length).to.equal(0);
+      
+        // Vérifie qu'aucun événement n'est attaché
+        $('#element').trigger('click'); // Teste un événement quelconque
+        expect($('#element').data('events')).to.be.undefined;
+      
+        // Vérifie que l'instance du plugin est détruite
+        expect($('#element').data('codeInputBuilder')).to.be.undefined;
+    });
+});
+
+describe("CodeInputBuilder Plugin Tests Password", function () {
+    let codeInputTest;
+    const numInputs = 5;
+
+    beforeEach(function () {
+        $('body').append('<div id="element"></div>');
+
+        // Initialiser le plugin
+        codeInputTest = $('#element').codeInputBuilder({
+            type: 'letter',
+            maskInput: true, // Activer le masquage des entrées
+            numInputs: numInputs,
+            values: [0x00, 0xcd, 14, '0', 'µ'],
+            minValues: [0x00, 0x00, 0x00, 0x00, 0x00],
+            maxValues: [0xff, 0xff, 0xff, 0xff, 0xff],
+            scrollSensitivity: 0.1,
+        });
+    });
+
+    afterEach(function () {
+        // Détruire l'instance et nettoyer le DOM
+        if (codeInputTest) codeInputTest.destroy();
+        $('#element').remove();
+        document.body.innerHTML = '';
+    });
+
+    it("devrait être en mode password", function () {
+        const inputs = $('#element').find('input.digits-input');
+        
+        // Vérifier que tous les inputs sont masqués (type="password")
+        inputs.each((index, input) => {
+            expect($(input).attr('type')).to.equal('password');
+        });
+    });
+
+    it("devrait afficher les inputs en mode texte après l'appel à changeMaskInputs", function () {
+        // Utiliser changeMaskInputs pour désactiver le masquage
+        codeInputTest.changeMaskInputs(false);
+
+        const inputs = $('#element').find('input.digits-input');
+        
+        // Vérifier que tous les inputs sont maintenant en mode texte (type="text")
+        inputs.each((index, input) => {
+            expect($(input).attr('type')).to.equal('text');
+        });
+    });
+
+    it("devrait revenir en mode password après réactivation du masquage", function () {
+        // Désactiver le masquage
+        codeInputTest.changeMaskInputs(false);
+
+        // Réactiver le masquage
+        codeInputTest.changeMaskInputs(true);
+
+        const inputs = $('#element').find('input.digits-input');
+        
+        // Vérifier que tous les inputs sont de nouveau en mode password
+        inputs.each((index, input) => {
+            expect($(input).attr('type')).to.equal('password');
+        });
+    });
+});
+
+

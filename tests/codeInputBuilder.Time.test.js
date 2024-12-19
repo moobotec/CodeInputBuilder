@@ -136,13 +136,12 @@ describe("CodeInputBuilder Plugin Tests avec type Time (avec millisecondes)", fu
 
     });
 
-    it("devrait cha,nger la valeur correctement ", function () {
+    it("devrait changer la valeur correctement ", function () {
         // Initialiser la valeur complète
-        codeInputTest.setCompleteValue(new Date(0,0,0,1,34,55,0));
+        codeInputTest.setCompleteValue(new Date(Date.UTC(1970, 0, 1, 1, 34, 55, 20)));
         // Vérification de la valeur finale
-        expect(codeInputTest.getCompleteValue()).to.equal(5134);
+        expect(codeInputTest.getCompleteValue()).to.equal(5695.02);
     });
-
 
     it("devrait incrémenter les valeurs avec la molette de la souris et test au limite du time ", function () {
         

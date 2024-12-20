@@ -2814,27 +2814,46 @@ if (typeof jQuery === 'undefined') {
         return separatorIndex;
       }
 
+      function getLimits(result, partIndex) {
+        return result.limits[partIndex].split(',');
+      }
+
+      function processPartValues(
+        partLength,
+        limits,
+        stringDefaultValue,
+        inputIndex
+      ) {
+        for (let i = 0; i < partLength; i++) {
+          const value = stringDefaultValue[inputIndex];
+          addInputElement(
+            'digits',
+            inputIndex + 1,
+            0,
+            limits[i],
+            value,
+            '1',
+            isDisabled(settings)
+          );
+
+          updateCurrentValues(inputIndex, value);
+          inputIndex++;
+        }
+        return inputIndex;
+      }
+
       function processParts(result, stringDefaultValue) {
         let separatorIndex = 0;
         let inputIndex = 0;
 
         result.sizes.forEach((partLength, partIndex) => {
-          const limits = result.limits[partIndex].split(',');
-          for (let i = 0; i < partLength; i++) {
-            const value = stringDefaultValue[inputIndex];
-            addInputElement(
-              'digits',
-              inputIndex + 1,
-              0,
-              limits[i],
-              value,
-              '1',
-              isDisabled(settings)
-            );
-
-            updateCurrentValues(inputIndex, value);
-            inputIndex++;
-          }
+          const limits = getLimits(result, partIndex);
+          inputIndex = processPartValues(
+            partLength,
+            limits,
+            stringDefaultValue,
+            inputIndex
+          );
           separatorIndex = processSeparators(separatorIndex, result);
         });
       }

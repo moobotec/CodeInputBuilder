@@ -2814,31 +2814,29 @@ if (typeof jQuery === 'undefined') {
         return separatorIndex;
       }
 
-      function processParts(
-        index,
-        partIndex,
-        partLength,
-        result,
-        stringDefaultValue
-      ) {
-        let inputIndex = index;
-        const limits = result.limits[partIndex].split(',');
-        for (let i = 0; i < partLength; i++) {
-          const value = stringDefaultValue[inputIndex];
-          addInputElement(
-            'digits',
-            inputIndex + 1,
-            0,
-            limits[i],
-            value,
-            '1',
-            isDisabled(settings)
-          );
+      function processParts(result, stringDefaultValue) {
+        let separatorIndex = 0;
+        let inputIndex = 0;
 
-          updateCurrentValues(inputIndex, value);
-          inputIndex++;
-        }
-        return inputIndex;
+        result.sizes.forEach((partLength, partIndex) => {
+          const limits = result.limits[partIndex].split(',');
+          for (let i = 0; i < partLength; i++) {
+            const value = stringDefaultValue[inputIndex];
+            addInputElement(
+              'digits',
+              inputIndex + 1,
+              0,
+              limits[i],
+              value,
+              '1',
+              isDisabled(settings)
+            );
+
+            updateCurrentValues(inputIndex, value);
+            inputIndex++;
+          }
+          separatorIndex = processSeparators(separatorIndex, result);
+        });
       }
 
       function addInputTimeElement() {
@@ -2857,27 +2855,12 @@ if (typeof jQuery === 'undefined') {
           settings.formatTime
         );
 
-        let separatorIndex = 0;
-        let inputIndex = 0;
-
-        result.sizes.forEach((partLength, partIndex) => {
-          inputIndex = processParts(
-            inputIndex,
-            partIndex,
-            partLength,
-            result,
-            stringDefaultValue
-          );
-          separatorIndex = processSeparators(separatorIndex, result);
-        });
+        processParts(result, stringDefaultValue);
       }
 
       function addInputDateElement() {
         const result = analyzeDateFormat(settings.formatDate);
         settings.numInputs = result.totalInputs;
-
-        let separatorIndex = 0;
-        let inputIndex = 0;
 
         const defaultValueSecond = parseDefaultDateValue(
           settings.defaultValue,
@@ -2892,16 +2875,7 @@ if (typeof jQuery === 'undefined') {
           settings.formatDate
         );
 
-        result.sizes.forEach((partLength, partIndex) => {
-          inputIndex = processParts(
-            inputIndex,
-            partIndex,
-            partLength,
-            result,
-            stringDefaultValue
-          );
-          separatorIndex = processSeparators(separatorIndex, result);
-        });
+        processParts(result, stringDefaultValue);
       }
 
       if (

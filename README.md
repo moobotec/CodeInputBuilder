@@ -42,15 +42,25 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
 - **Incrémenter ou décrémenter les valeurs** : Utilisez `ArrowUp` (flèche haut) pour augmenter une valeur et `ArrowDown` (flèche bas) pour diminuer une valeur.
 - **Masquage des champs `maskInput`** : Permet de masquer les champs d'entrée en mode `password` pour garantir la confidentialité des saisies. Cette fonctionnalité peut être activée ou désactivée dynamiquement.
 - **Destruction d'instance `destroy`**: Supprimez proprement une instance du plugin et restaurez l'élément d'origine.
-- **Support des formats dynamiques**: Gère des champs de saisie personnalisés pour les heures, minutes, secondes et millisecondes grâce au type `time`.  
+- **Support des formats dynamiques**: Gère des champs de saisie personnalisés pour les heures, minutes, secondes et millisecondes grâce au type `time` et gère des champs de saisie personnalisés pour l'année, le mois, et le jour grâce au type `date`.  
   Exemple de formats pris en charge :  
   - `HH:MM:SS`  
   - `HH:MM:SS.SSS`  
   - Séparateurs dynamiques (`:`, `.`, `|`, etc.).
+  Exemple de formats pris en charge :  
+  - `DD/MM/YYYY`  
+  - `DD-MM`  
+  - Séparateurs dynamiques (`/`, `-`, `|`, etc.).
+
 - **Validation automatique dans le cas d'un type `time`**: Les champs sont automatiquement validés en fonction de leurs limites :  
   - Heures ≤ 23  
   - Minutes/Secondes ≤ 59  
   - Millisecondes ≤ 999  
+
+- **Validation automatique dans le cas d'un type `date`**: Les champs sont automatiquement validés en fonction de leurs limites :  
+  - 1 ≤ Jours ≤ [31,30,29,28] en fonction de l'année et du mois  
+  - 1 ≤ Mois ≤ 12  
+  - 1970 ≤ Année ≤ 9999  
 
 ## Installation
 
@@ -87,12 +97,12 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
 
 | Option              | Type         | Description                                                                                      | Valeur par défaut |
 |---------------------|-------------------|--------------------------------------------------------------------------------------------------|--------------------|
-| `type`              | `string`         | Type de valeur (`integer`, `float`, `binary`, `hexadecimal`, `letter`, `text`,`time`).           | `integer`         |
+| `type`              | `string`         | Type de valeur (`integer`, `float`, `binary`, `hexadecimal`, `letter`, `text`,`time`,`date`).           | `integer`         |
 | `numInputs`         | `integer`        | Nombre d'entrées/chiffres.                                                                       | `1`               |
 | `minValues`         | `array`          | Valeurs minimales par position.                                                                  | `[]`              |
 | `maxValues`         | `array`          | Valeurs maximales par position.                                                                  | `[]`              |
 | `values`            | `array`          | Valeurs par défaut par position.                                                                 | `[]`              |
-| `defaultValue`      | `Date|number|string`    | Valeur par défaut des champs. Dans le cas d'un time le format de l'heure à utiliser (par exemple : HH:MM:SS, HH:MM:SS.SSS, etc.) avec des séparateurs dynamiques (: ou ., etc.).                                                                  | `0`               |
+| `defaultValue`      | `Date|number|string`    | Valeur par défaut des champs. Dans le cas d'un time le format de l'heure à utiliser (par exemple : HH:MM:SS, HH:MM:SS.SSS, etc.) avec des séparateurs dynamiques (: ou ., etc.),Dans le cas d'un date le format de la date à utiliser (par exemple : DD/MM/YYYY, MM-DD-YYYY, etc.) avec des séparateurs dynamiques (/ ou -, etc.).                                                                  | `0`               |
 | `gap`               | `string`         | Espace entre les champs d'entrée.                                                                | `'10px'`          |
 | `allowSign`         | `boolean`        | Autorise l'ajout d'un signe (+/-).                                                               | `false`           |
 | `defaultSign`       | `string`         | Signe par défaut (`+` ou `-`).                                                                   | `'+'`             |
@@ -109,8 +119,9 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
 | `isDisabled`       | `boolean`        | Permet de désactiver les inputs. Si activé, les champs ne seront pas modifiables par l'utilisateur. Dans le cas d'un CodeInput de type "text" cette option n'est pas utilisable.                                             | `true`            |
 | `allowArrowKeys`       | `boolean`        | Active ou désactive la fonctionnalité de navigation via les touches `ArrowLeft`,`ArrowRight`,`ArrowUp`,`ArrowDown`.                                             | `false`            |
 | `maskInput`  | `boolean`  | Permet de masquer la saisie des champs par des * (utilisé comme mode mot de passe). | `false`           |
-
 | `formatTime`  | `string`  | Format de l'heure à utiliser (par exemple : HH:MM:SS, HH:MM:SS.SSS, etc.) avec des séparateurs dynamiques (: ou ., etc.). | `HH:MM:SS`           |
+| `formatDate` | `string` | Format de la date à utiliser (par exemple : DD/MM/YYYY, MM-DD-YYYY, etc.) avec des séparateurs dynamiques (/ ou -, etc.). | `DD/MM/YYYY` |
+
 
 ## Exemples
 
@@ -171,15 +182,32 @@ $('#codeInputText').codeInputBuilder({
 });
 ```
 
-### Exemple pour un time
+### Exemple pour une heure
 
-![Exemple pour un time](img/exemple_input_time.png)
+![Exemple pour une heure](img/exemple_input_time.png)
 
 ```javascript
 $('#codeInputTime').codeInputBuilder({
     type: 'time',
     formatTime: 'HH:MM:SS.SSS', // Format valide
     defaultValue:new Date(Date.UTC(1970, 0, 1, 1, 34, 55, 20)), // Par défaut, l'heure actuelle
+    gap: '10px', // Espace entre les inputs
+    onValueChange: function($input, newValue) {
+        // Affichage de la valeur modifiée
+        console.log(`Valeur complète : ${newValue}`);
+    }
+});
+```
+
+### Exemple pour une date
+
+![Exemple pour une date](img/exemple_input_date.png)
+
+```javascript
+$('#codeInputTime').codeInputBuilder({
+    type: 'date',
+    formatDate: 'DD/MM/YYYY', // Format valide
+    defaultValue:new Date(Date.UTC(2024, 11, 20, 0, 0, 0, 0)), // Par défaut, l'heure actuelle
     gap: '10px', // Espace entre les inputs
     onValueChange: function($input, newValue) {
         // Affichage de la valeur modifiée

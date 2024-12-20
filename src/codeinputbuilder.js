@@ -2739,11 +2739,76 @@ if (typeof jQuery === 'undefined') {
         .append($input);
     }
 
+    let $container = null;
+    let $inputContainer = null;
+
+    function processSeparators(index, result) {
+      let separatorIndex = index;
+
+      if (separatorIndex < result.separators.length) {
+        $inputContainer.append(
+          $('<div>', {
+            class: 'col-auto',
+            html: `<div><h2 class="my-5">${result.separators[separatorIndex]}</h2></div>`,
+          })
+        );
+        separatorIndex++;
+      }
+
+      return separatorIndex;
+    }
+
+    function getLimits(result, partIndex) {
+      return result.limits[partIndex].split(',');
+    }
+
+    function processPartValues(
+      funcAddInputElement,
+      partLength,
+      limits,
+      stringDefaultValue,
+      inputIndex
+    ) {
+      for (let i = 0; i < partLength; i++) {
+        const value = stringDefaultValue[inputIndex];
+        funcAddInputElement(
+          'digits',
+          inputIndex + 1,
+          0,
+          limits[i],
+          value,
+          '1',
+          isDisabled(settings)
+        );
+
+        updateCurrentValues(inputIndex, value);
+        inputIndex++;
+      }
+      return inputIndex;
+    }
+
+    function processParts(funcAddInputElement, result, stringDefaultValue) {
+      let separatorIndex = 0;
+      let inputIndex = 0;
+
+      result.sizes.forEach((partLength, partIndex) => {
+        const limits = getLimits(result, partIndex);
+        inputIndex = processPartValues(
+          funcAddInputElement,
+          partLength,
+          limits,
+          stringDefaultValue,
+          inputIndex
+        );
+        separatorIndex = processSeparators(separatorIndex, result);
+      });
+    }
+
     this.each(function () {
-      const $container = $(this);
+      $container = $(this);
 
       // Création d'un div parent avec la classe `cla-input-container` pour appliquer le `gap`
-      const $inputContainer = $('<div>', {
+      $inputContainer = $('<div>', {
         class: 'cla-input-container',
         css: {
           display: 'flex',
@@ -2798,66 +2863,6 @@ if (typeof jQuery === 'undefined') {
         }
       }
 
-      function processSeparators(index, result) {
-        let separatorIndex = index;
-
-        if (separatorIndex < result.separators.length) {
-          $inputContainer.append(
-            $('<div>', {
-              class: 'col-auto',
-              html: `<div><h2 class="my-5">${result.separators[separatorIndex]}</h2></div>`,
-            })
-          );
-          separatorIndex++;
-        }
-
-        return separatorIndex;
-      }
-
-      function getLimits(result, partIndex) {
-        return result.limits[partIndex].split(',');
-      }
-
-      function processPartValues(
-        partLength,
-        limits,
-        stringDefaultValue,
-        inputIndex
-      ) {
-        for (let i = 0; i < partLength; i++) {
-          const value = stringDefaultValue[inputIndex];
-          addInputElement(
-            'digits',
-            inputIndex + 1,
-            0,
-            limits[i],
-            value,
-            '1',
-            isDisabled(settings)
-          );
-
-          updateCurrentValues(inputIndex, value);
-          inputIndex++;
-        }
-        return inputIndex;
-      }
-
-      function processParts(result, stringDefaultValue) {
-        let separatorIndex = 0;
-        let inputIndex = 0;
-
-        result.sizes.forEach((partLength, partIndex) => {
-          const limits = getLimits(result, partIndex);
-          inputIndex = processPartValues(
-            partLength,
-            limits,
-            stringDefaultValue,
-            inputIndex
-          );
-          separatorIndex = processSeparators(separatorIndex, result);
-        });
-      }
-
       function addInputTimeElement() {
         const result = analyzeTimeFormat(settings.formatTime);
         settings.numInputs = result.totalInputs;
@@ -2874,7 +2879,7 @@ if (typeof jQuery === 'undefined') {
           settings.formatTime
         );
 
-        processParts(result, stringDefaultValue);
+        processParts(addInputElement, result, stringDefaultValue);
       }
 
       function addInputDateElement() {
@@ -2894,7 +2899,7 @@ if (typeof jQuery === 'undefined') {
           settings.formatDate
         );
 
-        processParts(result, stringDefaultValue);
+        processParts(addInputElement, result, stringDefaultValue);
       }
 
       if (

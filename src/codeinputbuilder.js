@@ -1492,9 +1492,7 @@ if (typeof jQuery === 'undefined') {
       const result = {};
       let index = 0;
 
-      // Extraire et valider chaque segment
-      for (let i = 0; i < parts.length; i++) {
-        const part = parts[i];
+      for (const part of parts) {
         const length = part.length; // Longueur du segment
         const value = parseInt(inputValue.substr(index, length), 10) || 0;
         index += length;
@@ -1521,12 +1519,10 @@ if (typeof jQuery === 'undefined') {
       const result = {};
       let index = 0;
 
-      // Extraire et valider chaque segment
-      for (let i = 0; i < parts.length; i++) {
-        const part = parts[i];
+      for (const part of parts) {
         const length = part.length; // Longueur du segment
         const value = parseInt(inputValue.substr(index, length), 10) || 0;
-        index += length; // +1 pour inclure le séparateur dans l'index
+        index += length;
         // Stocker la valeur validée dans un objet
         result[part] = value;
       }
@@ -2802,6 +2798,49 @@ if (typeof jQuery === 'undefined') {
         }
       }
 
+      function processSeparators(index, result) {
+        let separatorIndex = index;
+
+        if (separatorIndex < result.separators.length) {
+          $inputContainer.append(
+            $('<div>', {
+              class: 'col-auto',
+              html: `<div><h2 class="my-5">${result.separators[separatorIndex]}</h2></div>`,
+            })
+          );
+          separatorIndex++;
+        }
+
+        return separatorIndex;
+      }
+
+      function processParts(
+        index,
+        partIndex,
+        partLength,
+        result,
+        stringDefaultValue
+      ) {
+        let inputIndex = index;
+        const limits = result.limits[partIndex].split(',');
+        for (let i = 0; i < partLength; i++) {
+          const value = stringDefaultValue[inputIndex];
+          addInputElement(
+            'digits',
+            inputIndex + 1,
+            0,
+            limits[i],
+            value,
+            '1',
+            isDisabled(settings)
+          );
+
+          updateCurrentValues(inputIndex, value);
+          inputIndex++;
+        }
+        return inputIndex;
+      }
+
       function addInputTimeElement() {
         const result = analyzeTimeFormat(settings.formatTime);
         settings.numInputs = result.totalInputs;
@@ -2822,34 +2861,14 @@ if (typeof jQuery === 'undefined') {
         let inputIndex = 0;
 
         result.sizes.forEach((partLength, partIndex) => {
-          const limits = result.limits[partIndex].split(',');
-
-          for (let i = 0; i < partLength; i++) {
-            const value = stringDefaultValue[inputIndex];
-
-            addInputElement(
-              'digits',
-              inputIndex + 1,
-              0,
-              limits[i],
-              value,
-              '1',
-              isDisabled(settings)
-            );
-
-            updateCurrentValues(inputIndex, value);
-            inputIndex++;
-          }
-
-          if (separatorIndex < result.separators.length) {
-            $inputContainer.append(
-              $('<div>', {
-                class: 'col-auto',
-                html: `<div><h2 class="my-5">${result.separators[separatorIndex]}</h2></div>`,
-              })
-            );
-            separatorIndex++;
-          }
+          inputIndex = processParts(
+            inputIndex,
+            partIndex,
+            partLength,
+            result,
+            stringDefaultValue
+          );
+          separatorIndex = processSeparators(separatorIndex, result);
         });
       }
 
@@ -2874,34 +2893,14 @@ if (typeof jQuery === 'undefined') {
         );
 
         result.sizes.forEach((partLength, partIndex) => {
-          const limits = result.limits[partIndex].split(',');
-
-          for (let i = 0; i < partLength; i++) {
-            const value = stringDefaultValue[inputIndex];
-
-            addInputElement(
-              'digits',
-              inputIndex + 1,
-              0,
-              limits[i],
-              value,
-              '1',
-              isDisabled(settings)
-            );
-
-            updateCurrentValues(inputIndex, value);
-            inputIndex++;
-          }
-
-          if (separatorIndex < result.separators.length) {
-            $inputContainer.append(
-              $('<div>', {
-                class: 'col-auto',
-                html: `<div><h2 class="my-5">${result.separators[separatorIndex]}</h2></div>`,
-              })
-            );
-            separatorIndex++;
-          }
+          inputIndex = processParts(
+            inputIndex,
+            partIndex,
+            partLength,
+            result,
+            stringDefaultValue
+          );
+          separatorIndex = processSeparators(separatorIndex, result);
         });
       }
 

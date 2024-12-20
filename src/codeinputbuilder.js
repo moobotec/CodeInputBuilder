@@ -129,6 +129,7 @@ if (typeof jQuery === 'undefined') {
       maxValues: [],
       values: [],
       formatTime: 'HH:MM:SS.SSS',
+      formatDate: 'DD/MM/YYYY',
       defaultValue: 0,
       allowSign: false,
       defaultSign: '+',
@@ -160,11 +161,22 @@ if (typeof jQuery === 'undefined') {
           'hexadecimal',
           'letter',
           'time',
+          'date',
         ].includes(type)
       ) {
         throw new Error(
-          "Option 'type' invalide. Valeurs autorisées : 'integer', 'float', 'text','binary', 'hexadecimal', 'letter', time."
+          "Option 'type' invalide. Valeurs autorisées : 'integer', 'float', 'text','binary', 'hexadecimal', 'letter', time, date."
         );
+      }
+    }
+
+    function validateDateFormat(type, format) {
+      if (type === 'date' && format) {
+        if (!isValidDateFormat(format)) {
+          throw new Error(
+            `Le format '${format}' est invalide. Utilisez un format valide comme 'DD/MM/YYYY' ou 'DD|MM|YYYY'.`
+          );
+        }
       }
     }
 
@@ -241,44 +253,42 @@ if (typeof jQuery === 'undefined') {
     }
 
     function validateDefaultValue(type, defaultValue) {
-      if (type === 'time') {
-        if (typeof defaultValue === 'number') {
-          // Vérification pour un nombre (secondes)
-          if (isNaN(defaultValue) || defaultValue < 0) {
-            throw new Error(
-              "Option 'defaultValue' : le nombre doit être positif."
-            );
-          }
-        } else if (typeof defaultValue === 'string') {
-          // Vérification pour une chaîne formatée (HH:MM:SS ou HH:MM:SS.SSS)
-          const timeFormatRegex = /^(\d{2}):(\d{2}):(\d{2})(\.\d{1,3})?$/;
-          if (!timeFormatRegex.test(defaultValue)) {
-            throw new Error(
-              "Option 'defaultValue' : la chaîne doit respecter le format 'HH:MM:SS' ou 'HH:MM:SS.SSS' ou être un nombre (secondes) ou un objet Date."
-            );
-          }
-        } else if (defaultValue instanceof Date) {
-          // Vérification pour un objet Date valide
-          if (isNaN(defaultValue.getTime())) {
-            throw new Error(
-              "Option 'defaultValue' : la chaîne doit respecter le format 'HH:MM:SS' ou 'HH:MM:SS.SSS' ou être un nombre (secondes) ou un objet Date."
-            );
-          }
-        } else {
-          // Type non accepté
-          throw new Error(
-            "Option 'defaultValue' doit être un nombre (secondes), une chaîne formatée 'HH:MM:SS' ou un objet Date."
-          );
-        }
-      } else {
+      const isPositiveNumber = (value) =>
+        typeof value === 'number' && !isNaN(value) && value >= 0;
+      const isValidDate = (value) =>
+        value instanceof Date && !isNaN(value.getTime());
+
+      const formatRegex = {
+        time: /^(\d{2}):(\d{2}):(\d{2})(\.\d{1,3})?$/,
+        date: /^(\d{2})\/(\d{2})\/(\d{4})$/,
+      };
+
+      const errorMessages = {
+        time: "Option 'defaultValue' : doit être un nombre (secondes), une chaîne formatée 'HH:MM:SS' ou un objet Date.",
+        date: "Option 'defaultValue' : doit être un nombre (secondes), une chaîne formatée 'DD/MM/YYYY' ou un objet Date.",
+        generic: "Option 'defaultValue' doit être un nombre ou une chaîne.",
+      };
+
+      if (['time', 'date'].includes(type)) {
+        if (isPositiveNumber(defaultValue)) return;
+
         if (
-          typeof defaultValue !== 'number' &&
-          typeof defaultValue !== 'string'
-        ) {
-          throw new Error(
-            "Option 'defaultValue' doit être un nombre ou une chaîne."
-          );
-        }
+          typeof defaultValue === 'string' &&
+          formatRegex[type].test(defaultValue)
+        )
+          return;
+
+        if (isValidDate(defaultValue)) return;
+
+        throw new Error(errorMessages[type]);
+      }
+
+      // Validation générique pour les autres types
+      if (
+        typeof defaultValue !== 'number' &&
+        typeof defaultValue !== 'string'
+      ) {
+        throw new Error(errorMessages.generic);
       }
     }
 
@@ -392,11 +402,20 @@ if (typeof jQuery === 'undefined') {
       validateDefaultSign(settings.defaultSign);
       validateMaskInput(settings.maskInput);
       validateTimeFormat(settings.type, settings.formatTime);
+      validateDateFormat(settings.type, settings.formatDate);
     }
 
     validateOptions();
 
     return settings;
+  }
+
+  function isValidDateFormat(format) {
+    // Expression régulière pour accepter toutes les combinaisons de DD, MM, YYYY avec ou sans séparateurs
+    const formatRegex = /^(DD|MM|YYYY)([^a-zA-Z0-9](DD|MM|YYYY)){0,2}$/;
+
+    // Validation du format
+    return formatRegex.test(format);
   }
 
   function isValidTimeFormat(format) {
@@ -718,6 +737,23 @@ if (typeof jQuery === 'undefined') {
       isValidKey: null,
     },
     time: {
+      convert: (value) => convertIntegerBase10(value),
+      validate: (value) =>
+        typeof value === 'number' && !isNaN(value) && validateInteger(value),
+      display: (value) => value,
+      isForcedAllowSign: false,
+      isForcedAllowArrowKeys: false,
+      isAdjustToBounds: false,
+      isGetDigit: true,
+      isSetDigit: true,
+      min: 0x00,
+      max: 0x09,
+      isForcedDisabled: false,
+      isValidKey: (codeTouche, valueMax) =>
+        (codeTouche >= 48 && codeTouche <= 48 + valueMax) || // Chiffres (0-9)
+        (codeTouche >= 96 && codeTouche <= 96 + valueMax), // Pavé numérique (0-9)
+    },
+    date: {
       convert: (value) => convertIntegerBase10(value),
       validate: (value) =>
         typeof value === 'number' && !isNaN(value) && validateInteger(value),
@@ -1215,6 +1251,7 @@ if (typeof jQuery === 'undefined') {
         case 'hexadecimal':
         case 'letter':
         case 'time':
+        case 'date':
           integerPart = numericValue;
           decimalPart = '';
           break;
@@ -1274,6 +1311,43 @@ if (typeof jQuery === 'undefined') {
       return newvalue;
     }
 
+    function analyzeDateFormat(format) {
+      // Expression régulière pour extraire chaque partie (DD, MM, YYYY) et les séparateurs
+      const regex = /(?:DD|MM|YYYY)|([^a-zA-Z0-9])/g;
+
+      let match;
+      const parts = [];
+      const separators = [];
+
+      while ((match = regex.exec(format)) !== null) {
+        if (['DD', 'MM', 'YYYY'].includes(match[0])) {
+          // Partie de la date
+          const limitMapping = {
+            DD: [3, 9],
+            MM: [1, 9],
+            YYYY: [9, 9, 9, 9],
+          };
+
+          parts.push({
+            part: match[0],
+            limit: limitMapping[match[0]] || [],
+            length: match[0].length,
+          });
+        } else if (match[1]) {
+          // Séparateur
+          separators.push(match[1]);
+        }
+      }
+
+      return {
+        sizes: parts.map((p) => `${p.length}`),
+        parts: parts.map((p) => `${p.part}`),
+        limits: parts.map((p) => `${p.limit}`),
+        separators,
+        totalInputs: parts.reduce((sum, part) => sum + part.length, 0),
+      };
+    }
+
     function analyzeTimeFormat(format) {
       // Expression régulière pour extraire chaque partie (HH, MM, SS, SSS) et les séparateurs
       const regex = /(?:SSS|HH|MM|SS)|([^a-zA-Z0-9])/g;
@@ -1312,7 +1386,7 @@ if (typeof jQuery === 'undefined') {
       };
     }
 
-    function parseDefaultValue(defaultValue, format) {
+    function parseDefaultTimeValue(defaultValue, format) {
       let defaultValueSecond;
 
       if (defaultValue instanceof Date) {
@@ -1327,8 +1401,24 @@ if (typeof jQuery === 'undefined') {
       } else {
         return 0; // Valeur par défaut si rien n'est fourni
       }
-      // Contraindre la valeur entre 0 et 86399.999
+      // Contraindre la valeur entre 0 et 86399.999 - 23:59:29.999
       return Math.min(Math.max(defaultValueSecond, 0), 86399.999);
+    }
+
+    function parseDefaultDateValue(defaultValue, format) {
+      let defaultValueSecond = 0;
+      if (defaultValue instanceof Date) {
+        const newValue = formatDateFromDate(defaultValue, format);
+        defaultValueSecond = dateStringToTimestamp(newValue, format);
+      } else if (typeof defaultValue === 'number') {
+        defaultValueSecond = defaultValue;
+      } else if (typeof defaultValue === 'string') {
+        defaultValueSecond = dateStringToTimestamp(defaultValue, format);
+      } else {
+        return 0; // Valeur par défaut si rien n'est fourni
+      }
+      // Contraindre la valeur entre 0 et 253402214400 - 31/12/9999
+      return Math.min(Math.max(defaultValueSecond, 0), 253402214400);
     }
 
     function timeStringToSeconds(timeString, format) {
@@ -1362,6 +1452,39 @@ if (typeof jQuery === 'undefined') {
       return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
     }
 
+    function dateStringToTimestamp(dateString, format) {
+      const { parts, separators } = analyzeDateFormat(format);
+
+      // Construction de l'expression régulière pour découper la chaîne
+      const regex = new RegExp(separators.map((s) => `\\${s}`).join('|'));
+      const values = dateString.split(regex).map((v) => parseInt(v || '0', 10));
+
+      // Initialise les valeurs par défaut
+      let [day, month, year] = [1, 1, 1970];
+
+      // Associe chaque partie aux valeurs
+      parts.forEach((part, i) => {
+        const value = values[i] || 0;
+        switch (part) {
+          case 'DD':
+            day = Math.max(1, Math.min(value, 31));
+            break;
+          case 'MM':
+            month = Math.max(1, Math.min(value, 12));
+            break;
+          case 'YYYY':
+            year = value; // Année valide sans limite imposée
+            break;
+        }
+      });
+
+      // Création de la date en UTC
+      const date = new Date(Date.UTC(year, month - 1, day));
+
+      // Retourne le timestamp en secondes
+      return date.getTime() / 1000;
+    }
+
     // Fonction pour extraire, valider et construire les valeurs des segments
     function processTimeInput(inputValue, format) {
       const regex = /(SSS|HH|MM|SS)/g;
@@ -1379,11 +1502,49 @@ if (typeof jQuery === 'undefined') {
         result[part] = value;
       }
 
-      return { isValid: true, values: result };
+      const isValid =
+        result.HH >= 0 &&
+        result.HH <= 23 &&
+        result.MM >= 0 &&
+        result.MM <= 59 &&
+        result.SS >= 0 &&
+        result.SS <= 59 &&
+        result.SSS >= 0 &&
+        result.SSS <= 999;
+
+      return { isValid, values: result };
+    }
+
+    function processDateInput(inputValue, format) {
+      const regex = /(DD|MM|YYYY)/g;
+      const parts = format.match(regex);
+      const result = {};
+      let index = 0;
+
+      // Extraire et valider chaque segment
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        const length = part.length; // Longueur du segment
+        const value = parseInt(inputValue.substr(index, length), 10) || 0;
+        index += length; // +1 pour inclure le séparateur dans l'index
+        // Stocker la valeur validée dans un objet
+        result[part] = value;
+      }
+
+      // Validation des segments extraits
+      const isValid =
+        result.DD >= 1 &&
+        result.DD <= 31 &&
+        result.MM >= 1 &&
+        result.MM <= 12 &&
+        result.YYYY >= 1970 &&
+        result.YYYY <= 9999;
+
+      return { isValid, values: result };
     }
 
     // Fonction pour construire la date à partir des valeurs extraites
-    function buildDateFromValidatedParts(values) {
+    function buildTimeFromValidatedParts(values) {
       const hours = Math.min(values.HH || 0, 23);
       const minutes = Math.min(values.MM || 0, 59);
       const seconds = Math.min(values.SS || 0, 59);
@@ -1394,14 +1555,34 @@ if (typeof jQuery === 'undefined') {
       return date;
     }
 
+    function buildDateFromValidatedParts(values) {
+      const year = Math.min(Math.max(values.YYYY || 1970, 1970), 9999); // Année par défaut : 1970
+      const month = Math.min(Math.max(values.MM || 1, 1), 12) - 1; // Mois entre 0 et 11 (JavaScript)
+
+      // Calculer le nombre maximal de jours pour le mois et l'année donnés
+      const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate(); // Dernier jour du mois
+      const day = Math.min(Math.max(values.DD || 1, 1), daysInMonth); // Jour entre 1 et le maximum du mois
+
+      // Création de la date en UTC
+      const date = new Date(Date.UTC(year, month, day));
+      return date;
+    }
+
     // Fonction principale pour valider et construire la date
     function validateAndBuildTime(inputValue, format) {
       const result = processTimeInput(inputValue, format);
+      const time = buildTimeFromValidatedParts(result.values);
+      return time;
+    }
+
+    // Fonction principale pour valider et construire la date
+    function validateAndBuildDate(inputValue, format) {
+      const result = processDateInput(inputValue, format);
       const date = buildDateFromValidatedParts(result.values);
       return date;
     }
 
-    function getTotalSeconds(date) {
+    function getTotalTimeSeconds(date) {
       const hours = date.getUTCHours(); // Heures (0-23)
       const minutes = date.getUTCMinutes(); // Minutes (0-59)
       const seconds = date.getUTCSeconds(); // Secondes (0-59)
@@ -1412,6 +1593,14 @@ if (typeof jQuery === 'undefined') {
         hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
 
       return totalSeconds;
+    }
+
+    function getTotalDateSeconds(date) {
+      const day = String(date.getUTCDate()).padStart(2, '0'); // Jour du mois (1-31)
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Mois (0-11, donc +1)
+      const year = String(date.getUTCFullYear()); // Année complète (ex: 2024)
+      const totalSeconds = new Date(Date.UTC(year, month - 1, day));
+      return totalSeconds.getTime() / 1000;
     }
 
     // Fonction pour extraire le temps d'une instance de Date
@@ -1429,19 +1618,44 @@ if (typeof jQuery === 'undefined') {
         .replace('SSS', milliseconds);
     }
 
-    function formatDateToCustomString(date, format) {
+    function formatDateFromDate(date, format) {
+      const jours = String(date.getUTCDate()).padStart(2, '0'); // Jour du mois (1-31)
+      const mois = String(date.getUTCMonth() + 1).padStart(2, '0'); // Mois (0-11, donc +1)
+      const année = String(date.getUTCFullYear()); // Année complète (ex: 2024)
+      return format
+        .replace('DD', jours)
+        .replace('MM', mois)
+        .replace('YYYY', année);
+    }
+
+    function formatTimeToCustomString(date, format) {
       return formatTimeFromDate(date, format).replace(/[^a-zA-Z0-9]/g, ''); // Supprime les séparateurs pour obtenir HHMMSSSSS
+    }
+
+    function formatDateToCustomString(date, format) {
+      return formatDateFromDate(date, format).replace(/[^a-zA-Z0-9]/g, ''); // Supprime les séparateurs pour obtenir DDMMYYYY
     }
 
     function updateCurrentTimeValues(type, format) {
       let finalValue = computeValueFromInputs(type);
       let backValue = finalValue;
-      const date = validateAndBuildTime(finalValue, format);
+      const time = validateAndBuildTime(finalValue, format);
+      finalValue = formatTimeToCustomString(time, format);
+      if (backValue != finalValue) {
+        fillDigits(finalValue, type);
+      }
+      updateCurrentValues('current', getTotalTimeSeconds(time));
+    }
+
+    function updateCurrentDateValues(type, format) {
+      let finalValue = computeValueFromInputs(type);
+      let backValue = finalValue;
+      const date = validateAndBuildDate(finalValue, format);
       finalValue = formatDateToCustomString(date, format);
       if (backValue != finalValue) {
         fillDigits(finalValue, type);
       }
-      updateCurrentValues('current', getTotalSeconds(date));
+      updateCurrentValues('current', getTotalDateSeconds(date));
     }
 
     function updateFinalValue($input, newValue, type, onchange = true) {
@@ -1490,6 +1704,10 @@ if (typeof jQuery === 'undefined') {
 
         case 'time':
           updateCurrentTimeValues(type, settings.formatTime);
+          break;
+
+        case 'date':
+          updateCurrentDateValues(type, settings.formatDate);
           break;
 
         default:
@@ -2588,20 +2806,72 @@ if (typeof jQuery === 'undefined') {
         const result = analyzeTimeFormat(settings.formatTime);
         settings.numInputs = result.totalInputs;
 
-        const defaultValue = parseDefaultValue(
+        const defaultValue = parseDefaultTimeValue(
           settings.defaultValue,
           settings.formatTime
         );
         const date = new Date(0);
         date.setUTCMilliseconds(Math.round(defaultValue * 1000));
 
-        const stringDefaultValue = formatDateToCustomString(
+        const stringDefaultValue = formatTimeToCustomString(
           date,
           settings.formatTime
         );
 
         let separatorIndex = 0;
         let inputIndex = 0;
+
+        result.sizes.forEach((partLength, partIndex) => {
+          const limits = result.limits[partIndex].split(',');
+
+          for (let i = 0; i < partLength; i++) {
+            const value = stringDefaultValue[inputIndex];
+
+            addInputElement(
+              'digits',
+              inputIndex + 1,
+              0,
+              limits[i],
+              value,
+              '1',
+              isDisabled(settings)
+            );
+
+            updateCurrentValues(inputIndex, value);
+            inputIndex++;
+          }
+
+          if (separatorIndex < result.separators.length) {
+            $inputContainer.append(
+              $('<div>', {
+                class: 'col-auto',
+                html: `<div><h2 class="my-5">${result.separators[separatorIndex]}</h2></div>`,
+              })
+            );
+            separatorIndex++;
+          }
+        });
+      }
+
+      function addInputDateElement() {
+        const result = analyzeDateFormat(settings.formatDate);
+        settings.numInputs = result.totalInputs;
+
+        let separatorIndex = 0;
+        let inputIndex = 0;
+
+        const defaultValueSecond = parseDefaultDateValue(
+          settings.defaultValue,
+          settings.formatDate
+        );
+
+        const date = new Date(0);
+        date.setUTCMilliseconds(Math.round(defaultValueSecond * 1000));
+
+        const stringDefaultValue = formatDateToCustomString(
+          date,
+          settings.formatDate
+        );
 
         result.sizes.forEach((partLength, partIndex) => {
           const limits = result.limits[partIndex].split(',');
@@ -2708,6 +2978,22 @@ if (typeof jQuery === 'undefined') {
       } else if (settings.type === 'time') {
         const prefix = 'digits';
         addInputTimeElement();
+
+        $container.append($inputContainer);
+
+        const { value } = getAdjustedValueSettings(
+          settings.numInputs - 1,
+          settings
+        );
+        updateFinalValue(
+          $(`#${prefix}_${uniqueTypeShort}_input_${settings.numInputs}`),
+          value,
+          uniqueTypeShort,
+          false
+        );
+      } else if (settings.type === 'date') {
+        const prefix = 'digits';
+        addInputDateElement();
 
         $container.append($inputContainer);
 
@@ -2882,15 +3168,28 @@ if (typeof jQuery === 'undefined') {
       let askValue = value;
       if (isValidIntegerOrFloat(value)) askValue = convertFloat(value);
 
-      const defaultValue = parseDefaultValue(askValue, settings.formatTime);
-
-      const date = new Date(0); // Initialise la date à epoch 0
+      const defaultValue = parseDefaultTimeValue(askValue, settings.formatTime);
+      const time = new Date(0); // Initialise la date à epoch 0
       const totalMilliseconds = Math.round(defaultValue * 1000); // Convertit les secondes en millisecondes
-      date.setUTCMilliseconds(totalMilliseconds); // Définit les millisecondes
+      time.setUTCMilliseconds(totalMilliseconds); // Définit les millisecondes
 
-      const newValue = formatDateToCustomString(date, settings.formatTime);
+      const newValue = formatTimeToCustomString(time, settings.formatTime);
       fillDigits(newValue, uniqueTypeShort);
-      updateCurrentValues('current', getTotalSeconds(date));
+      updateCurrentValues('current', getTotalTimeSeconds(time));
+    }
+
+    function updateValueDate(value) {
+      let askValue = value;
+      if (isValidIntegerOrFloat(value)) askValue = convertFloat(value);
+
+      const defaultValue = parseDefaultDateValue(askValue, settings.formatDate);
+      const date = new Date(0);
+      const totalMilliseconds = Math.round(defaultValue * 1000); // Convertit les secondes en millisecondes
+      date.setUTCMilliseconds(totalMilliseconds);
+
+      const newValue = formatDateToCustomString(date, settings.formatDate);
+      fillDigits(newValue, uniqueTypeShort);
+      updateCurrentValues('current', getTotalDateSeconds(date));
     }
 
     function updateValue(value) {
@@ -2916,6 +3215,9 @@ if (typeof jQuery === 'undefined') {
           break;
         case 'time':
           updateValueTime(value);
+          break;
+        case 'date':
+          updateValueDate(value);
           break;
         /* istanbul ignore next */
         default:
@@ -3004,7 +3306,7 @@ if (typeof jQuery === 'undefined') {
     return this;
   };
 
-  $.fn.codeInputBuilder.version = '0.0.19';
+  $.fn.codeInputBuilder.version = '0.0.20';
   $.fn.codeInputBuilder.title = 'CodeInputBuilder';
   $.fn.codeInputBuilder.description =
     "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";

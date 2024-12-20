@@ -14,7 +14,7 @@ describe("CodeInputBuilder Plugin Test des options dans initCodeInputBuilderOpti
             $('#element').codeInputBuilder({
                 type: 'invalidType'
             });
-        }).to.throw("Option 'type' invalide. Valeurs autorisées : 'integer', 'float', 'text','binary', 'hexadecimal', 'letter', time.");
+        }).to.throw("Option 'type' invalide. Valeurs autorisées : 'integer', 'float', 'text','binary', 'hexadecimal', 'letter', time, date.");
     });
 
     it("devrait lancer une erreur si 'numInputs' est négatif ou nul", function() {
@@ -70,6 +70,15 @@ describe("CodeInputBuilder Plugin Test des options dans initCodeInputBuilderOpti
         }).to.throw("Le format 'kllk:lkfkfkf:lflfjff:flfkfkfk' est invalide. Utilisez un format valide comme 'HH:MM:SS.SSS' ou 'HH|MM|SS'.");
     });
 
+    it("devrait lancer une erreur si 'formatDate' est invalide pour le type 'date'", function() {
+        expect(() => {
+            $('#element').codeInputBuilder({
+                type: 'date',
+                formatDate : 'kllk:lkfkfkf:lflfjff:flfkfkfk',
+            });
+        }).to.throw("Le format 'kllk:lkfkfkf:lflfjff:flfkfkfk' est invalide. Utilisez un format valide comme 'DD/MM/YYYY' ou 'DD|MM|YYYY'.");
+    });
+
     it("devrait lancer une erreur si 'defaultValue' n'est ni un nombre ni une chaîne", function() {
         expect(() => {
             $('#element').codeInputBuilder({
@@ -78,31 +87,58 @@ describe("CodeInputBuilder Plugin Test des options dans initCodeInputBuilderOpti
         }).to.throw("Option 'defaultValue' doit être un nombre ou une chaîne.");
     });
 
-    it("devrait lancer une erreur si 'defaultValue' n'est ni un nombre ni une chaîne", function() {
+    it("devrait lancer une erreur si 'defaultValue' n'est ni un nombre ni une chaîne (type time)", function() {
         expect(() => {
             $('#element').codeInputBuilder({
                 type: 'time',
                 defaultValue: 'xxcvxv'
             });
-        }).to.throw("Option 'defaultValue' : la chaîne doit respecter le format 'HH:MM:SS' ou 'HH:MM:SS.SSS' ou être un nombre (secondes) ou un objet Date.");
+        }).to.throw("Option 'defaultValue' : doit être un nombre (secondes), une chaîne formatée 'HH:MM:SS' ou un objet Date.");
     });
 
-    it("devrait lancer une erreur si 'defaultValue' n'est ni un nombre ni une chaîne", function() {
+    it("devrait lancer une erreur si 'defaultValue' n'est ni un nombre ni une chaîne (type time)", function() {
         expect(() => {
             $('#element').codeInputBuilder({
                 type: 'time',
                 defaultValue: -10
             });
-        }).to.throw("defaultValue' : le nombre doit être positif.");
+        }).to.throw("Option 'defaultValue' : doit être un nombre (secondes), une chaîne formatée 'HH:MM:SS' ou un objet Date.");
     });
 
-    it("devrait lancer une erreur si 'defaultValue' n'est ni un nombre ni une chaîne", function() {
+    it("devrait lancer une erreur si 'defaultValue' n'est ni un nombre ni une chaîne (type time)", function() {
         expect(() => {
             $('#element').codeInputBuilder({
                 type: 'time',
                 defaultValue: new Date('invalid-date-string')
             });
-        }).to.throw("Option 'defaultValue' : la chaîne doit respecter le format 'HH:MM:SS' ou 'HH:MM:SS.SSS' ou être un nombre (secondes) ou un objet Date.");
+        }).to.throw("Option 'defaultValue' : doit être un nombre (secondes), une chaîne formatée 'HH:MM:SS' ou un objet Date.");
+    });
+
+    it("devrait lancer une erreur si 'defaultValue' n'est ni un nombre ni une chaîne (type date)", function() {
+        expect(() => {
+            $('#element').codeInputBuilder({
+                type: 'date',
+                defaultValue: 'xxcvxv'
+            });
+        }).to.throw("Option 'defaultValue' : doit être un nombre (secondes), une chaîne formatée 'DD/MM/YYYY' ou un objet Date.");
+    });
+
+    it("devrait lancer une erreur si 'defaultValue' n'est ni un nombre ni une chaîne (type date)", function() {
+        expect(() => {
+            $('#element').codeInputBuilder({
+                type: 'date',
+                defaultValue: -10
+            });
+        }).to.throw("Option 'defaultValue' : doit être un nombre (secondes), une chaîne formatée 'DD/MM/YYYY' ou un objet Date.");
+    });
+
+    it("devrait lancer une erreur si 'defaultValue' n'est ni un nombre ni une chaîne (type date)", function() {
+        expect(() => {
+            $('#element').codeInputBuilder({
+                type: 'date',
+                defaultValue: new Date('invalid-date-string')
+            });
+        }).to.throw("Option 'defaultValue' : doit être un nombre (secondes), une chaîne formatée 'DD/MM/YYYY' ou un objet Date.");
     });
 
     it("devrait lancer une erreur si 'totalMin' n'est pas un nombre ou null", function() {

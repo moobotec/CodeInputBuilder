@@ -170,23 +170,23 @@ if (typeof jQuery === 'undefined') {
       }
     }
 
-    function validateDateFormat(type, format) {
-      if (type === 'date' && format) {
-        if (!isValidDateFormat(format)) {
-          throw new Error(
-            `Le format '${format}' est invalide. Utilisez un format valide comme 'DD/MM/YYYY' ou 'DD|MM|YYYY'.`
-          );
-        }
-      }
-    }
+    function validateDateTimeFormat(type) {
+      const formatValidators = {
+        date: {
+          format: settings.formatDate,
+          isValid: isValidDateFormat,
+          errorMessage: `Le format '${settings.formatDate}' est invalide. Utilisez un format valide comme 'DD/MM/YYYY' ou 'DD|MM|YYYY'.`,
+        },
+        time: {
+          format: settings.formatTime,
+          isValid: isValidTimeFormat,
+          errorMessage: `Le format '${settings.formatTime}' est invalide. Utilisez un format valide comme 'HH:MM:SS.SSS' ou 'HH|MM|SS'.`,
+        },
+      };
 
-    function validateTimeFormat(type, format) {
-      if (type === 'time' && format) {
-        if (!isValidTimeFormat(format)) {
-          throw new Error(
-            `Le format '${format}' est invalide. Utilisez un format valide comme 'HH:MM:SS.SSS' ou 'HH|MM|SS'.`
-          );
-        }
+      const validator = formatValidators[type];
+      if (validator && !validator.isValid(validator.format)) {
+        throw new Error(validator.errorMessage);
       }
     }
 
@@ -401,8 +401,7 @@ if (typeof jQuery === 'undefined') {
       validateRequireKeyForScroll(settings.requireKeyForScroll);
       validateDefaultSign(settings.defaultSign);
       validateMaskInput(settings.maskInput);
-      validateTimeFormat(settings.type, settings.formatTime);
-      validateDateFormat(settings.type, settings.formatDate);
+      validateDateTimeFormat(settings.type);
     }
 
     validateOptions();
@@ -625,6 +624,24 @@ if (typeof jQuery === 'undefined') {
   const isValidHexadecimal = (val) =>
     /^0x[0-9a-fA-F]+$/.test(val) || /^[0-9a-fA-F]+$/.test(val);
 
+  const dateTimeSettings = {
+    convert: (value) => convertIntegerBase10(value),
+    validate: (value) =>
+      typeof value === 'number' && !isNaN(value) && validateInteger(value),
+    display: (value) => value,
+    isForcedAllowSign: false,
+    isForcedAllowArrowKeys: false,
+    isAdjustToBounds: false,
+    isGetDigit: true,
+    isSetDigit: true,
+    min: 0x00,
+    max: 0x09,
+    isForcedDisabled: false,
+    isValidKey: (codeTouche, valueMax) =>
+      (codeTouche >= 48 && codeTouche <= 48 + valueMax) || // Chiffres (0-9)
+      (codeTouche >= 96 && codeTouche <= 96 + valueMax), // Pavé numérique (0-9)
+  };
+
   const typeHandlers = {
     integer: {
       convert: (value) => convertIntegerBase10(value),
@@ -736,40 +753,8 @@ if (typeof jQuery === 'undefined') {
       isForcedDisabled: true,
       isValidKey: null,
     },
-    time: {
-      convert: (value) => convertIntegerBase10(value),
-      validate: (value) =>
-        typeof value === 'number' && !isNaN(value) && validateInteger(value),
-      display: (value) => value,
-      isForcedAllowSign: false,
-      isForcedAllowArrowKeys: false,
-      isAdjustToBounds: false,
-      isGetDigit: true,
-      isSetDigit: true,
-      min: 0x00,
-      max: 0x09,
-      isForcedDisabled: false,
-      isValidKey: (codeTouche, valueMax) =>
-        (codeTouche >= 48 && codeTouche <= 48 + valueMax) || // Chiffres (0-9)
-        (codeTouche >= 96 && codeTouche <= 96 + valueMax), // Pavé numérique (0-9)
-    },
-    date: {
-      convert: (value) => convertIntegerBase10(value),
-      validate: (value) =>
-        typeof value === 'number' && !isNaN(value) && validateInteger(value),
-      display: (value) => value,
-      isForcedAllowSign: false,
-      isForcedAllowArrowKeys: false,
-      isAdjustToBounds: false,
-      isGetDigit: true,
-      isSetDigit: true,
-      min: 0x00,
-      max: 0x09,
-      isForcedDisabled: false,
-      isValidKey: (codeTouche, valueMax) =>
-        (codeTouche >= 48 && codeTouche <= 48 + valueMax) || // Chiffres (0-9)
-        (codeTouche >= 96 && codeTouche <= 96 + valueMax), // Pavé numérique (0-9)
-    },
+    time: dateTimeSettings,
+    date: dateTimeSettings,
   };
 
   function isKeyAllowed(codeTouche, key, valueMax, type, allowArrowKeys) {
@@ -1311,22 +1296,14 @@ if (typeof jQuery === 'undefined') {
       return newvalue;
     }
 
-    function analyzeDateFormat(format) {
-      // Expression régulière pour extraire chaque partie (DD, MM, YYYY) et les séparateurs
-      const regex = /(?:DD|MM|YYYY)|([^a-zA-Z0-9])/g;
-
+    function analyzeFormat(format, regex, matchs, limitMapping) {
       let match;
       const parts = [];
       const separators = [];
 
       while ((match = regex.exec(format)) !== null) {
-        if (['DD', 'MM', 'YYYY'].includes(match[0])) {
+        if (matchs.includes(match[0])) {
           // Partie de la date
-          const limitMapping = {
-            DD: [3, 9],
-            MM: [1, 9],
-            YYYY: [9, 9, 9, 9],
-          };
 
           parts.push({
             part: match[0],
@@ -1348,42 +1325,35 @@ if (typeof jQuery === 'undefined') {
       };
     }
 
+    function analyzeDateFormat(format) {
+      // Expression régulière pour extraire chaque partie (DD, MM, YYYY) et les séparateurs
+      const regex = /(?:DD|MM|YYYY)|([^a-zA-Z0-9])/g;
+
+      const limitMapping = {
+        DD: [3, 9],
+        MM: [1, 9],
+        YYYY: [9, 9, 9, 9],
+      };
+
+      const matchs = ['DD', 'MM', 'YYYY'];
+
+      return analyzeFormat(format, regex, matchs, limitMapping);
+    }
+
     function analyzeTimeFormat(format) {
       // Expression régulière pour extraire chaque partie (HH, MM, SS, SSS) et les séparateurs
       const regex = /(?:SSS|HH|MM|SS)|([^a-zA-Z0-9])/g;
 
-      let match;
-      const parts = [];
-      const separators = [];
-
-      while ((match = regex.exec(format)) !== null) {
-        if (['SSS', 'HH', 'MM', 'SS'].includes(match[0])) {
-          // Partie de temps
-          const limitMapping = {
-            HH: [2, 9],
-            MM: [5, 9],
-            SS: [5, 9],
-            SSS: Array(3).fill(9),
-          };
-
-          parts.push({
-            part: match[0],
-            limit: limitMapping[match[0]] || [],
-            length: match[0].length,
-          });
-        } else if (match[1]) {
-          // Séparateur
-          separators.push(match[1]);
-        }
-      }
-
-      return {
-        sizes: parts.map((p) => `${p.length}`),
-        parts: parts.map((p) => `${p.part}`),
-        limits: parts.map((p) => `${p.limit}`),
-        separators,
-        totalInputs: parts.reduce((sum, part) => sum + part.length, 0),
+      const limitMapping = {
+        HH: [2, 9],
+        MM: [5, 9],
+        SS: [5, 9],
+        SSS: Array(3).fill(9),
       };
+
+      const matchs = ['SSS', 'HH', 'MM', 'SS'];
+
+      return analyzeFormat(format, regex, matchs, limitMapping);
     }
 
     function parseDefaultTimeValue(defaultValue, format) {
@@ -1485,13 +1455,10 @@ if (typeof jQuery === 'undefined') {
       return date.getTime() / 1000;
     }
 
-    // Fonction pour extraire, valider et construire les valeurs des segments
-    function processTimeInput(inputValue, format) {
-      const regex = /(SSS|HH|MM|SS)/g;
+    function processInput(inputValue, format, regex) {
       const parts = format.match(regex);
       const result = {};
       let index = 0;
-
       for (const part of parts) {
         const length = part.length; // Longueur du segment
         const value = parseInt(inputValue.substr(index, length), 10) || 0;
@@ -1499,6 +1466,14 @@ if (typeof jQuery === 'undefined') {
         // Stocker la valeur validée dans un objet
         result[part] = value;
       }
+      return result;
+    }
+
+    // Fonction pour extraire, valider et construire les valeurs des segments
+    function processTimeInput(inputValue, format) {
+      const regex = /(SSS|HH|MM|SS)/g;
+
+      const result = processInput(inputValue, format, regex);
 
       const isValid =
         result.HH >= 0 &&
@@ -1515,17 +1490,8 @@ if (typeof jQuery === 'undefined') {
 
     function processDateInput(inputValue, format) {
       const regex = /(DD|MM|YYYY)/g;
-      const parts = format.match(regex);
-      const result = {};
-      let index = 0;
 
-      for (const part of parts) {
-        const length = part.length; // Longueur du segment
-        const value = parseInt(inputValue.substr(index, length), 10) || 0;
-        index += length;
-        // Stocker la valeur validée dans un objet
-        result[part] = value;
-      }
+      const result = processInput(inputValue, format, regex);
 
       // Validation des segments extraits
       const isValid =
@@ -3161,32 +3127,42 @@ if (typeof jQuery === 'undefined') {
       }
     }
 
-    function updateValueTime(value) {
-      let askValue = value;
-      if (isValidIntegerOrFloat(value)) askValue = convertFloat(value);
+    function updateValueDateTime(type, value) {
+      let askValue = isValidIntegerOrFloat(value) ? convertFloat(value) : value;
 
-      const defaultValue = parseDefaultTimeValue(askValue, settings.formatTime);
-      const time = new Date(0); // Initialise la date à epoch 0
-      const totalMilliseconds = Math.round(defaultValue * 1000); // Convertit les secondes en millisecondes
-      time.setUTCMilliseconds(totalMilliseconds); // Définit les millisecondes
+      const settingsMap = {
+        time: {
+          parse: parseDefaultTimeValue,
+          format: formatTimeToCustomString,
+          total: getTotalTimeSeconds,
+          formatSetting: settings.formatTime,
+        },
+        date: {
+          parse: parseDefaultDateValue,
+          format: formatDateToCustomString,
+          total: getTotalDateSeconds,
+          formatSetting: settings.formatDate,
+        },
+      };
 
-      const newValue = formatTimeToCustomString(time, settings.formatTime);
+      const setting = settingsMap[type];
+      if (!setting) {
+        throw new Error(`Unsupported type: ${type}`);
+      }
+
+      const defaultValue = setting.parse(askValue, setting.formatSetting);
+
+      const date = new Date(0); // Initialise la date à epoch 0
+      date.setUTCMilliseconds(Math.round(defaultValue * 1000)); // Convertit les secondes en millisecondes
+
+      const newValue = setting.format(date, setting.formatSetting);
+
       fillDigits(newValue, uniqueTypeShort);
-      updateCurrentValues('current', getTotalTimeSeconds(time));
-    }
 
-    function updateValueDate(value) {
-      let askValue = value;
-      if (isValidIntegerOrFloat(value)) askValue = convertFloat(value);
-
-      const defaultValue = parseDefaultDateValue(askValue, settings.formatDate);
-      const date = new Date(0);
-      const totalMilliseconds = Math.round(defaultValue * 1000); // Convertit les secondes en millisecondes
-      date.setUTCMilliseconds(totalMilliseconds);
-
-      const newValue = formatDateToCustomString(date, settings.formatDate);
-      fillDigits(newValue, uniqueTypeShort);
-      updateCurrentValues('current', getTotalDateSeconds(date));
+      updateCurrentValues(
+        'current',
+        setting.total ? setting.total(date) : null
+      );
     }
 
     function updateValue(value) {
@@ -3211,10 +3187,8 @@ if (typeof jQuery === 'undefined') {
           updateValueText(value);
           break;
         case 'time':
-          updateValueTime(value);
-          break;
         case 'date':
-          updateValueDate(value);
+          updateValueDateTime(settings.type, value);
           break;
         /* istanbul ignore next */
         default:

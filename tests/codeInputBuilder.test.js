@@ -76,7 +76,7 @@ describe("CodeInputBuilder Plugin Test des options dans initCodeInputBuilderOpti
                 type: 'date',
                 formatDate : 'kllk:lkfkfkf:lflfjff:flfkfkfk',
             });
-        }).to.throw("Le format 'kllk:lkfkfkf:lflfjff:flfkfkfk' est invalide. Utilisez un format valide comme 'DD/MM/YYYY' ou 'DD|MM|YYYY'.");
+        }).to.throw("Le format 'kllk:lkfkfkf:lflfjff:flfkfkfk' est invalide. Utilisez un format valide comme 'DD/MM/YYYY' ou 'DD|MM|YYYY' ou 'DD|MH|YYYY' ou 'DD/MH.");
     });
 
     it("devrait lancer une erreur si 'defaultValue' n'est ni un nombre ni une chaîne", function() {
@@ -243,6 +243,22 @@ describe("CodeInputBuilder Plugin Test des options dans initCodeInputBuilderOpti
                 maskInput: 'invalid'
             });
         }).to.throw("Option 'maskInput' doit être un booléen.");
+    });
+
+    it("devrait lancer une erreur si 'defaulLanguage' n'est pas un string", function() {
+        expect(() => {
+            $('#element').codeInputBuilder({
+                defaultLanguage: 10
+            });
+        }).to.throw("L'option 'defaultLanguage' doit être une chaîne de caractères.");
+    });
+
+    it("devrait lancer une erreur si 'defaulLanguage' est une chaine de caractères compatible avec Intl.DateTimeFormat", function() {
+        expect(() => {
+            $('#element').codeInputBuilder({
+                defaultLanguage: 'abcd'
+            });
+        }).to.throw("Incorrect locale information provided");
     });
 
     it("devrait accepter des options valides sans lancer d'erreur", function() {

@@ -30,7 +30,8 @@
                 <li><a href="#test-letter"> <i class="fas fa-keyboard text-primary"></i> 7. Saisissez un caractère avec le type Letter</a></li>
                 <li><a href="#test-text"><i class="fas fa-font text-primary"></i> 8. Sélectionnez un texte avec le champ de type Text</a></li>
                 <li><a href="#test-time"><i class="fas fa-clock text-primary"></i> 9. Sélectionnez une heure avec le champ de type Time</a></li>
-                <li><a href="#test-date"><i class="fas fa-calendar text-primary"></i> 10. Sélectionnez une date avec le champ de type Date</a></li>
+                <li><a href="#test-date-a"><i class="fas fa-calendar text-primary"></i> 10a. Sélectionnez une date avec le champ de type Date</a></li>
+                <li><a href="#test-date-b"><i class="fas fa-calendar text-primary"></i> 10b. Sélectionnez une date avec le champ de type Date (mois en lettre)</a></li>
             </ul>
         </nav>
         <hr>
@@ -363,27 +364,27 @@
         </div>
         <hr>
 
-        <!-- Section Date -->
+        <!-- Section Date a -->
         <div class="mt-4">
             <div class="row text-center">
                 <div class="d-flex justify-content-around w-100">
                     <div class = "w-100">
-                        <h3 id="test-date"><i class="fas fa-calendar text-primary"></i> 10. Sélectionnez une date avec le champ de type Date</h3>
+                        <h3 id="test-date-a"><i class="fas fa-calendar text-primary"></i> 10a. Sélectionnez une date avec le champ de type Date</h3>
                         <code> { type: 'date', <br>
                 format: 'DD/MM/YYYY', <br>
                 defaultValue : 0, <br>
                 gap: '10px', // Espace entre les inputs <br>
                 }</code>
-                        <div id="codeInputDate"></div>
+                        <div id="codeInputDateA"></div>
                     </div>
                 </div>
             </div>
 
             <div class="row">
                 <div class="col-4">
-                <label for="datepicker" class="form-label">Sélectionnez une date :</label>
+                <label for="datepickerA" class="form-label">Sélectionnez une date :</label>
                 <div class="input-group mb-3">
-                    <input type="text" class="form-control" id="datepicker" placeholder="Choisissez une date">
+                    <input type="text" class="form-control" id="datepickerA" placeholder="Choisissez une date">
                     <span class="input-group-text">
                     <i class="fas fa-calendar"></i> <!-- Icône Font Awesome -->
                     </span>
@@ -392,17 +393,62 @@
             </div>
 
             <h4 class="mt-3">Valeur de l'input modifié (Date) :</h4>
-            <p id="changeValueDisplayDate">Aucun changement</p>
+            <p id="changeValueDisplayDateA">Aucun changement</p>
             <h4>Valeur complète (Date) :</h4>
-            <p id="completeValueDisplayDate">Aucune valeur</p>
+            <p id="completeValueDisplayDateA">Aucune valeur</p>
             
             <div class="form-group">
-                <label for="valueInputDate">Entrez une valeur :</label>
-                <input type="text" id="valueInputDate" class="form-control" placeholder="10/02/2025">
+                <label for="valueInputDateA">Entrez une valeur :</label>
+                <input type="text" id="valueInputDateA" class="form-control" placeholder="10/02/2025">
             </div>
             <div class="d-flex justify-content-center">
-                <button id="setCompleteValueButtonDate" class="btn btn-sm btn-primary mt-3 mx-1">Définir la valeur complète (Date)</button>
-                <button id="getCompleteValueButtonDate" class="btn btn-sm btn-primary mt-3 mx-1">Afficher la valeur complète (Date)</button>
+                <button id="setCompleteValueButtonDateA" class="btn btn-sm btn-primary mt-3 mx-1">Définir la valeur complète (Date)</button>
+                <button id="getCompleteValueButtonDateA" class="btn btn-sm btn-primary mt-3 mx-1">Afficher la valeur complète (Date)</button>
+            </div>
+        </div>
+        <hr>
+
+         <!-- Section Date b -->
+         <div class="mt-4">
+            <div class="row text-center">
+                <div class="d-flex justify-content-around w-100">
+                    <div class = "w-100">
+                        <h3 id="test-date-b"><i class="fas fa-calendar text-primary"></i> 10b. Sélectionnez une date avec le champ de type Date (mois en lettre)</h3>
+                        <code> { type: 'date', <br>
+                format: 'DD/MH/YYYY', <br>
+                defaultLanguage : 'en', <br>
+                defaultValue : 0, <br>
+                gap: '10px', // Espace entre les inputs <br>
+                }</code>
+                        <div id="codeInputDateB"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-4">
+                <label for="datepickerB" class="form-label">Sélectionnez une date :</label>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="datepickerB" placeholder="Choisissez une date">
+                    <span class="input-group-text">
+                    <i class="fas fa-calendar"></i> <!-- Icône Font Awesome -->
+                    </span>
+                </div>
+                </div>
+            </div>
+
+            <h4 class="mt-3">Valeur de l'input modifié (Date) :</h4>
+            <p id="changeValueDisplayDateB">Aucun changement</p>
+            <h4>Valeur complète (Date) :</h4>
+            <p id="completeValueDisplayDateB">Aucune valeur</p>
+            
+            <div class="form-group">
+                <label for="valueInputDateB">Entrez une valeur :</label>
+                <input type="text" id="valueInputDateB" class="form-control" placeholder="10/02/2025">
+            </div>
+            <div class="d-flex justify-content-center">
+                <button id="setCompleteValueButtonDateB" class="btn btn-sm btn-primary mt-3 mx-1">Définir la valeur complète (Date)</button>
+                <button id="getCompleteValueButtonDateB" class="btn btn-sm btn-primary mt-3 mx-1">Afficher la valeur complète (Date)</button>
             </div>
         </div>
         <hr>
@@ -816,22 +862,22 @@
                 codeInputTime.setCompleteValue(completeValue);
             });
             
-            let codeInputDate = $('#codeInputDate').codeInputBuilder({ 
-                type: 'date', 
+            let codeInputDateA = $('#codeInputDateA').codeInputBuilder({ 
+                type: 'date',
                 formatDate: 'DD/MM/YYYY', // Format valide
                 defaultValue : 0, //new Date(Date.now()) - '10/12/2025' - 1739145600
                 gap: '10px', // Espace entre les inputs
                 onValueChange: function($input, newValue) {
                     // Affichage de la valeur de l'input modifié
-                    $('#changeValueDisplayDate').text(`Input ${$input.attr('id')} a changé de valeur : ${newValue}`);
+                    $('#changeValueDisplayDateA').text(`Input ${$input.attr('id')} a changé de valeur : ${newValue}`);
                     
                     // Met à jour l'affichage de la valeur complète
-                    const completeDate = codeInputDate.getCompleteValue();
-                    $('#completeValueDisplayDate').text(`Valeur actuelle : ${completeDate}`);
+                    const completeDate = codeInputDateA.getCompleteValue();
+                    $('#completeValueDisplayDateA').text(`Valeur actuelle : ${completeDate}`);
                 }
             });
 
-            const datePicker = new tempusDominus.TempusDominus(document.getElementById('datepicker'), {
+            const datePickerA = new tempusDominus.TempusDominus(document.getElementById('datepickerA'), {
                 localization: {
                     format: 'DD/MM/YYYY', // Format pour afficher la date (jour/mois/année)
                 },
@@ -847,22 +893,72 @@
                 },
             });
 
-            $('#datepicker').on('change.td', function (e) {
+            $('#datepickerA').on('change.td', function (e) {
                 // Récupère la valeur au format HH:mm:ss
                 const newDate = $(this).val(); // Récupère la valeur actuelle de l'input
-                codeInputDate.setCompleteValue(newDate);
+                codeInputDateA.setCompleteValue(newDate);
             });
 
             // Gestionnaire de clic pour afficher la valeur complète
-            $('#getCompleteValueButtonDate').on('click', function() {
-                const completeDate = codeInputDate.getCompleteValue();
-                $('#completeValueDisplayDate').text(`Valeur courante : ${completeDate}`);
+            $('#getCompleteValueButtonDateA').on('click', function() {
+                const completeDate = codeInputDateA.getCompleteValue();
+                $('#completeValueDisplayDateA').text(`Valeur courante : ${completeDate}`);
             });
             
             // Gestionnaire de clic pour afficher la valeur complète
-            $('#setCompleteValueButtonDate').on('click', function() {
-                const completeValue = $('#valueInputDate').val();
-                codeInputDate.setCompleteValue(completeValue);
+            $('#setCompleteValueButtonDateA').on('click', function() {
+                const completeValue = $('#valueInputDateA').val();
+                codeInputDateA.setCompleteValue(completeValue);
+            });
+
+            let codeInputDateB = $('#codeInputDateB').codeInputBuilder({ 
+                type: 'date',
+                formatDate: 'DD/MH/YYYY', // Format valide
+                defaultValue : 0, //new Date(Date.now()) - '10/12/2025' - 1739145600
+                defaultLanguage : 'en',
+                gap: '10px', // Espace entre les inputs
+                onValueChange: function($input, newValue) {
+                    // Affichage de la valeur de l'input modifié
+                    $('#changeValueDisplayDateB').text(`Input ${$input.attr('id')} a changé de valeur : ${newValue}`);
+                    
+                    // Met à jour l'affichage de la valeur complète
+                    const completeDate = codeInputDateB.getCompleteValue();
+                    $('#completeValueDisplayDateB').text(`Valeur actuelle : ${completeDate}`);
+                }
+            });
+
+            const datePickerB = new tempusDominus.TempusDominus(document.getElementById('datepickerB'), {
+                localization: {
+                    format: 'DD/MM/YYYY', // Format pour afficher la date (jour/mois/année)
+                },
+                display: {
+                    viewMode: 'calendar', // Vue principale en mode calendrier
+                    components: {
+                        clock: false, // Désactive la sélection de l'horloge (heures, minutes, secondes)
+                    },
+                    icons: {
+                        previous: 'fa fa-chevron-left',  // Icône pour "mois précédent"
+                        next: 'fa fa-chevron-right',    // Icône pour "mois suivant"
+                    },
+                },
+            });
+
+            $('#datepickerB').on('change.td', function (e) {
+                // Récupère la valeur au format HH:mm:ss
+                const newDate = $(this).val(); // Récupère la valeur actuelle de l'input
+                codeInputDateB.setCompleteValue(newDate);
+            });
+
+            // Gestionnaire de clic pour afficher la valeur complète
+            $('#getCompleteValueButtonDateB').on('click', function() {
+                const completeDate = codeInputDateB.getCompleteValue();
+                $('#completeValueDisplayDateB').text(`Valeur courante : ${completeDate}`);
+            });
+            
+            // Gestionnaire de clic pour afficher la valeur complète
+            $('#setCompleteValueButtonDateB').on('click', function() {
+                const completeValue = $('#valueInputDateB').val();
+                codeInputDateB.setCompleteValue(completeValue);
             });
 
         });

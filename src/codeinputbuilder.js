@@ -41,6 +41,13 @@ Options disponibles:
           Chaîne formatée (string) : Respecte un format comme HH:MM:SS ou HH:MM:SS.SSS. Exemple : "01:02:25.250".
         * Par défaut : 0.
 
+      (date) Valeur initiale à afficher.
+        * Formats acceptés :
+          Nombre (integer ou float) : Représente des secondes cumulées.
+          Objet Date : Utilise l'heure actuelle ou une instance spécifique de Date. Exemple : new Date().
+          Chaîne formatée (string) : Respecte un format comme DD/MM/YYYY.
+        * Par défaut : 0.
+
     - `gap`: (string) Espace entre les inputs, spécifié en pixels (ex. '10px').
         * Par défaut : '10px'.
 
@@ -94,7 +101,23 @@ Options disponibles:
 
     - `formatTime`: (string) Format de temps accepté. Exemples : HH:MM:SS
       * Par défaut : HH:MM:SS.SSS.
+      * Formats acceptés :
+        - `HH`: Heure.
+        - `MM`: Minutes.
+        - `SS`: Seconde.
+        - `SSS`: Milliseconde.
 
+    - `formatDate`: (string) Format de date accepté. Exemples : DD/MM/YYYY
+      * Par défaut : DD/MM/YYYY.
+      * Formats acceptés :
+        - `DD`: Jour.
+        - `MM`: Mois (numérique, 1 à 12).
+        - `MH`: Mois (en caractères, Jan à Dec).
+        - `YYYY`: Année complète.
+
+    - `defaultLanguage`: (string) Pangue par défaut utilisée pour les noms des mois ou toute autre fonctionnalité nécessitant une localisation. Elle est compatible avec les locales supportées par l'API `Intl.DateTimeFormat` de JavaScript.
+      * Par défaut : 'fr' (français)
+   
 Usage basique :
     $('#element').codeInputBuilder({
         type: 'float',
@@ -120,8 +143,24 @@ if (typeof jQuery === 'undefined') {
 }
 
 (function ($) {
+  function getMonthMapByLocale(locale = 'fr') {
+    const formatter = new Intl.DateTimeFormat(locale, { month: 'long' });
+    const monthMap = new Map();
+
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(2000, i, 1); // Année arbitraire
+      const monthName = formatter.format(date); // Nom du mois dans la langue choisie
+      const formattedNumber = String(i + 1).padStart(2, '0'); // Formatage en deux chiffres
+      monthMap.set(monthName, formattedNumber); // Ajoute le mois et le numéro formaté
+    }
+
+    return monthMap;
+  }
+
   // Fonction de validation des options
   function initCodeInputBuilderOptions(options) {
+    const monthMap = getMonthMapByLocale();
+
     const defaultOptions = {
       type: 'integer',
       numInputs: 1,
@@ -130,6 +169,7 @@ if (typeof jQuery === 'undefined') {
       values: [],
       formatTime: 'HH:MM:SS.SSS',
       formatDate: 'DD/MM/YYYY',
+      defaultLanguage: 'fr',
       defaultValue: 0,
       allowSign: false,
       defaultSign: '+',
@@ -147,6 +187,8 @@ if (typeof jQuery === 'undefined') {
       isDisabled: false,
       allowArrowKeys: false,
       maskInput: false,
+      months: Array.from(monthMap.keys()),
+      monthMap: monthMap,
     };
 
     const settings = $.extend({}, defaultOptions, options);
@@ -175,7 +217,7 @@ if (typeof jQuery === 'undefined') {
         date: {
           format: settings.formatDate,
           isValid: isValidDateFormat,
-          errorMessage: `Le format '${settings.formatDate}' est invalide. Utilisez un format valide comme 'DD/MM/YYYY' ou 'DD|MM|YYYY'.`,
+          errorMessage: `Le format '${settings.formatDate}' est invalide. Utilisez un format valide comme 'DD/MM/YYYY' ou 'DD|MM|YYYY' ou 'DD|MH|YYYY' ou 'DD/MH.`,
         },
         time: {
           format: settings.formatTime,
@@ -261,15 +303,19 @@ if (typeof jQuery === 'undefined') {
       const formatRegex = {
         time: /^(\d{2}):(\d{2}):(\d{2})(\.\d{1,3})?$/,
         date: /^(\d{2})\/(\d{2})\/(\d{4})$/,
+        dateMonth:
+          /^(\d{2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{4})$/, // Nouveau format DD-MH-YYYY
       };
 
       const errorMessages = {
         time: "Option 'defaultValue' : doit être un nombre (secondes), une chaîne formatée 'HH:MM:SS' ou un objet Date.",
         date: "Option 'defaultValue' : doit être un nombre (secondes), une chaîne formatée 'DD/MM/YYYY' ou un objet Date.",
+        dateMonth:
+          "Option 'defaultValue' : doit être une chaîne formatée 'DD-MH-YYYY', une chaîne 'DD/MH/YYYY', ou un objet Date.",
         generic: "Option 'defaultValue' doit être un nombre ou une chaîne.",
       };
 
-      if (['time', 'date'].includes(type)) {
+      if (['time', 'date', 'dateMonth'].includes(type)) {
         if (isPositiveNumber(defaultValue)) return;
 
         if (
@@ -380,6 +426,21 @@ if (typeof jQuery === 'undefined') {
       }
     }
 
+    function validateDefaultLanguage(defaultLanguage) {
+      // Vérifie si la langue est une chaîne de caractères
+      if (typeof defaultLanguage !== 'string') {
+        throw new Error(
+          "L'option 'defaultLanguage' doit être une chaîne de caractères."
+        );
+      }
+
+      // Vérifie si la langue est prise en charge par Intl.DateTimeFormat
+      Intl.DateTimeFormat.supportedLocalesOf([
+        defaultLanguage,
+      ]);
+
+    }
+
     function validateOptions() {
       validateType(settings.type);
       validateNumInputs(settings.numInputs);
@@ -402,6 +463,7 @@ if (typeof jQuery === 'undefined') {
       validateDefaultSign(settings.defaultSign);
       validateMaskInput(settings.maskInput);
       validateDateTimeFormat(settings.type);
+      validateDefaultLanguage(settings.defaultLanguage);
     }
 
     validateOptions();
@@ -410,8 +472,8 @@ if (typeof jQuery === 'undefined') {
   }
 
   function isValidDateFormat(format) {
-    // Expression régulière pour accepter toutes les combinaisons de DD, MM, YYYY avec ou sans séparateurs
-    const formatRegex = /^(DD|MM|YYYY)([^a-zA-Z0-9](DD|MM|YYYY)){0,2}$/;
+    // Expression régulière pour accepter toutes les combinaisons de DD, MM, MH, YYYY avec ou sans séparateurs
+    const formatRegex = /^(DD|MM|MH|YYYY)([^a-zA-Z0-9](DD|MM|MH|YYYY)){0,2}$/;
 
     // Validation du format
     return formatRegex.test(format);
@@ -899,6 +961,8 @@ if (typeof jQuery === 'undefined') {
   function getElement(type, object, settings) {
     let value = type === 'input' ? $(object).val() : $(object).html();
     if (settings.type === 'letter') value = convertFromEscapedChar(value);
+    if (settings.type === 'date' && $(object).attr('id').includes('month'))
+      value = settings.monthMap.get(value);
     return convertDigitByType(value, settings.type);
   }
 
@@ -949,6 +1013,9 @@ if (typeof jQuery === 'undefined') {
   $.fn.codeInputBuilder = function (options) {
     // Options par défaut
     const settings = initCodeInputBuilderOptions(options);
+
+    settings.monthMap = getMonthMapByLocale(settings.defaultLanguage);
+    settings.months = Array.from(settings.monthMap.keys());
 
     let gIdHover = null;
 
@@ -1107,21 +1174,61 @@ if (typeof jQuery === 'undefined') {
     }
 
     function populateDigitInputs(digitString, type, settings) {
-      const digitInputs = $(`[id^="digits_${type}_input_"]`).get();
+      const digitInputs = $(
+        `input[id^=digits_${type}_input], input[id^=month_${type}_input]`
+      )
+        .toArray() // Convertit en tableau natif pour trier
+        .sort((a, b) => {
+          // Extraction du numéro final de l'ID
+          const numA = parseInt(
+            $(a)
+              .attr('id')
+              .match(/_(\d+)$/)[1],
+            10
+          );
+          const numB = parseInt(
+            $(b)
+              .attr('id')
+              .match(/_(\d+)$/)[1],
+            10
+          );
+
+          // Comparaison des numéros
+          return numA - numB;
+        });
+
       let index = digitInputs.length - 1;
 
       // Réinitialise les valeurs des inputs à zéro
-      digitInputs.forEach((input) => setElement('input', input, 0, settings));
+      digitInputs.forEach((input) => {
+        if (!$(input).attr('id').includes('month')) {
+          setElement('input', input, 0, settings);
+        }
+      });
 
       // Parcourt les chiffres et les assigne aux inputs
-      for (let digit of digitString.split('').reverse()) {
-        const { value } = getAdjustedValueSettings(
-          index,
-          settings,
-          convertDigitByType(digit, settings.type)
-        );
-        setElement('input', digitInputs[index], value, settings);
-        updateCurrentValues(index, value);
+      //for (let digit of digitString.split('').reverse()) {
+      for (var i = digitString.length - 1; i >= 0; i--) {
+        if (!$(digitInputs[index]).attr('id').includes('month')) {
+          const { value } = getAdjustedValueSettings(
+            index,
+            settings,
+            convertDigitByType(digitString[i], settings.type)
+          );
+          setElement('input', digitInputs[index], value, settings);
+          updateCurrentValues(index, value);
+        } else {
+          const value = parseInt(digitString[i - 1] + digitString[i], 10);
+          setElement(
+            'input',
+            digitInputs[index],
+            settings.months[value - 1],
+            settings
+          );
+          updateCurrentValues(index, settings.months[value - 1]);
+          i--;
+        }
+
         index--;
         if (index < 0) break;
       }
@@ -1260,25 +1367,64 @@ if (typeof jQuery === 'undefined') {
 
     function computeDigitToValue(type) {
       let numberString = '';
-      // Récupération des digits pour les types 'float' et 'integer'
-      $('input[id^=digits_' + type + '_input]').each(function (index) {
-        if (
-          settings.type === 'float' ||
-          settings.type === 'integer' ||
-          settings.type === 'binary'
-        ) {
-          // Ajouter un point décimal si le type est 'float' et on atteint la position décimale
-          if (settings.type === 'float' && index === settings.decimalPosition) {
-            numberString += '.';
+
+      // Sélection des éléments et tri en fonction du numéro final dans l'ID
+      $(`input[id^=digits_${type}_input], input[id^=month_${type}_input]`)
+        .toArray() // Convertit en tableau natif pour trier
+        .sort((a, b) => {
+          // Extraction du numéro final de l'ID
+          const numA = parseInt(
+            $(a)
+              .attr('id')
+              .match(/_(\d+)$/)[1],
+            10
+          );
+          const numB = parseInt(
+            $(b)
+              .attr('id')
+              .match(/_(\d+)$/)[1],
+            10
+          );
+
+          // Comparaison des numéros
+          return numA - numB;
+        })
+        .forEach((element, index) => {
+          const $element = $(element); // Convertit l'élément DOM en objet jQuery
+          // Construction de la valeur selon le type
+          if (
+            settings.type === 'float' ||
+            settings.type === 'integer' ||
+            settings.type === 'binary'
+          ) {
+            // Ajouter un point décimal pour le type 'float'
+            if (
+              settings.type === 'float' &&
+              index === settings.decimalPosition
+            ) {
+              numberString += '.';
+            }
+            // Ajoute la valeur extraite de l'élément
+            numberString += getElement('input', $element, settings);
+          } else {
+            let value = 0;
+
+            if ($element.attr('id').includes('month')) {
+              value = settings.monthMap.get($element.val()); // Récupère la valeur de l'élément
+            } else {
+              value = $element.val(); // Récupère la valeur de l'élément
+            }
+
+            if (settings.type === 'letter') {
+              value = convertFromEscapedChar(value); // Conversion spécifique pour les lettres
+            }
+
+            // Ajoute la valeur à la chaîne finale
+            numberString += value;
           }
-          numberString += getElement('input', $(this), settings);
-        } else {
-          let value = $(this).val();
-          if (settings.type == 'letter') value = convertFromEscapedChar(value);
-          numberString += value;
-        }
-      });
-      return numberString;
+        });
+
+      return numberString; // Retourne la chaîne résultante
     }
 
     function addSignToValue(value, type) {
@@ -1296,7 +1442,13 @@ if (typeof jQuery === 'undefined') {
       return newvalue;
     }
 
-    function analyzeFormat(format, regex, matchs, limitMapping) {
+    function analyzeFormat(
+      format,
+      regex,
+      matchs,
+      maxlimitMapping,
+      minlimitMapping
+    ) {
       let match;
       const parts = [];
       const separators = [];
@@ -1304,10 +1456,10 @@ if (typeof jQuery === 'undefined') {
       while ((match = regex.exec(format)) !== null) {
         if (matchs.includes(match[0])) {
           // Partie de la date
-
           parts.push({
             part: match[0],
-            limit: limitMapping[match[0]] || [],
+            maxlimit: maxlimitMapping[match[0]] || [],
+            minlimit: minlimitMapping[match[0]] || [],
             length: match[0].length,
           });
         } else if (match[1]) {
@@ -1317,43 +1469,70 @@ if (typeof jQuery === 'undefined') {
       }
 
       return {
-        sizes: parts.map((p) => `${p.length}`),
+        sizes: parts.map((p) => `${p.part != 'MH' ? p.length : 1}`),
         parts: parts.map((p) => `${p.part}`),
-        limits: parts.map((p) => `${p.limit}`),
+        maxlimits: parts.map((p) => `${p.maxlimit}`),
+        minlimits: parts.map((p) => `${p.minlimit}`),
         separators,
-        totalInputs: parts.reduce((sum, part) => sum + part.length, 0),
       };
     }
 
     function analyzeDateFormat(format) {
       // Expression régulière pour extraire chaque partie (DD, MM, YYYY) et les séparateurs
-      const regex = /(?:DD|MM|YYYY)|([^a-zA-Z0-9])/g;
+      const regex = /(?:DD|MM|MH|YYYY)|([^a-zA-Z0-9])/g;
 
-      const limitMapping = {
+      const maxlimitMapping = {
         DD: [3, 9],
         MM: [1, 9],
-        YYYY: [9, 9, 9, 9],
+        MH: [12],
+        YYYY: Array(4).fill(9),
       };
 
-      const matchs = ['DD', 'MM', 'YYYY'];
+      const minlimitMapping = {
+        DD: [0, 0],
+        MM: [0, 0],
+        MH: [1],
+        YYYY: [1, 0, 0, 0],
+      };
 
-      return analyzeFormat(format, regex, matchs, limitMapping);
+      const matchs = ['DD', 'MM', 'MH', 'YYYY'];
+
+      return analyzeFormat(
+        format,
+        regex,
+        matchs,
+        maxlimitMapping,
+        minlimitMapping
+      );
     }
 
     function analyzeTimeFormat(format) {
       // Expression régulière pour extraire chaque partie (HH, MM, SS, SSS) et les séparateurs
       const regex = /(?:SSS|HH|MM|SS)|([^a-zA-Z0-9])/g;
 
-      const limitMapping = {
+      const maxlimitMapping = {
         HH: [2, 9],
         MM: [5, 9],
         SS: [5, 9],
         SSS: Array(3).fill(9),
       };
 
+      const minlimitMapping = {
+        HH: [0, 0],
+        MM: [0, 0],
+        SS: [0, 0],
+        SSS: Array(3).fill(0),
+      };
+
       const matchs = ['SSS', 'HH', 'MM', 'SS'];
 
-      return analyzeFormat(format, regex, matchs, limitMapping);
+      return analyzeFormat(
+        format,
+        regex,
+        matchs,
+        maxlimitMapping,
+        minlimitMapping
+      );
     }
 
     function parseDefaultTimeValue(defaultValue, format) {
@@ -1442,6 +1621,9 @@ if (typeof jQuery === 'undefined') {
           case 'MM':
             month = Math.max(1, Math.min(value, 12));
             break;
+          case 'MH':
+            month = Math.max(1, Math.min(value, 12));
+            break;
           case 'YYYY':
             year = value; // Année valide sans limite imposée
             break;
@@ -1489,18 +1671,30 @@ if (typeof jQuery === 'undefined') {
     }
 
     function processDateInput(inputValue, format) {
-      const regex = /(DD|MM|YYYY)/g;
+      const regex = /(DD|MM|MH|YYYY)/g;
 
       const result = processInput(inputValue, format, regex);
 
       // Validation des segments extraits
-      const isValid =
-        result.DD >= 1 &&
-        result.DD <= 31 &&
-        result.MM >= 1 &&
-        result.MM <= 12 &&
-        result.YYYY >= 1970 &&
-        result.YYYY <= 9999;
+      let isValid = false;
+
+      if (result.MM != null) {
+        isValid =
+          result.DD >= 1 &&
+          result.DD <= 31 &&
+          result.MM >= 1 &&
+          result.MM <= 12 && // Format MM
+          result.YYYY >= 1970 &&
+          result.YYYY <= 9999;
+      } else if (result.MH != null) {
+        isValid =
+          result.DD >= 1 &&
+          result.DD <= 31 &&
+          result.MH >= 1 &&
+          result.MH <= 12 && // Format MH
+          result.YYYY >= 1970 &&
+          result.YYYY <= 9999;
+      }
 
       return { isValid, values: result };
     }
@@ -1519,7 +1713,14 @@ if (typeof jQuery === 'undefined') {
 
     function buildDateFromValidatedParts(values) {
       const year = Math.min(Math.max(values.YYYY || 1970, 1970), 9999); // Année par défaut : 1970
-      const month = Math.min(Math.max(values.MM || 1, 1), 12) - 1; // Mois entre 0 et 11 (JavaScript)
+
+      let month = 1;
+
+      if (values.MM != null) {
+        month = Math.min(Math.max(values.MM || 1, 1), 12) - 1; // Mois entre 0 et 11 (JavaScript)
+      } else if (values.MH != null) {
+        month = Math.min(Math.max(values.MH || 1, 1), 12) - 1; // Mois entre 0 et 11 (JavaScript)
+      }
 
       // Calculer le nombre maximal de jours pour le mois et l'année donnés
       const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate(); // Dernier jour du mois
@@ -1582,11 +1783,12 @@ if (typeof jQuery === 'undefined') {
 
     function formatDateFromDate(date, format) {
       const jours = String(date.getUTCDate()).padStart(2, '0'); // Jour du mois (1-31)
-      const mois = String(date.getUTCMonth() + 1).padStart(2, '0'); // Mois (0-11, donc +1)
+      const mois = String(date.getUTCMonth() + 1).padStart(2, '0'); // Mois de l'année (1-12)
       const année = String(date.getUTCFullYear()); // Année complète (ex: 2024)
       return format
         .replace('DD', jours)
         .replace('MM', mois)
+        .replace('MH', mois)
         .replace('YYYY', année);
     }
 
@@ -1817,6 +2019,22 @@ if (typeof jQuery === 'undefined') {
             adjustedValueBottom: valueLimits.valueBottom,
           };
         },
+        month: () => {
+          const valueLimits = calculateValueLimits(
+            inputElement,
+            id,
+            getCurrentValueByIndex('current'),
+            currentValues.limitDigitMin,
+            currentValues.limitDigitMax
+          );
+          return {
+            index: id,
+            showTop: valueLimits.showTop,
+            showBottom: valueLimits.showBottom,
+            adjustedValueTop: valueLimits.valueTop,
+            adjustedValueBottom: valueLimits.valueBottom,
+          };
+        },
         sign: () => {
           return {
             index: prefix,
@@ -1852,13 +2070,24 @@ if (typeof jQuery === 'undefined') {
     function setValueInput(inputElement, value, prefix, type) {
       // Déterminer l'ID pour les types `digit` et `list`
       const id =
-        prefix === 'digits'
+        prefix === 'digits' || prefix === 'month'
           ? $(inputElement).attr('id').replace(`${prefix}_${type}_input_`, '')
           : prefix;
-      const hover = type + (prefix === 'digits' ? id : prefix);
+      const hover =
+        type + (prefix === 'digits' || prefix === 'month' ? id : prefix);
 
       // Dictionnaire des actions pour définir `newValue` et mettre à jour `currentValues`
       const actions = {
+        month: () => {
+          updateCurrentValues(id - 1, settings.months[value - 1]);
+          setElement(
+            'input',
+            $(inputElement),
+            settings.months[value - 1],
+            settings
+          );
+          return settings.months[value - 1];
+        },
         digits: () => {
           updateCurrentValues(id - 1, value);
           setElement('input', $(inputElement), value, settings);
@@ -1894,8 +2123,12 @@ if (typeof jQuery === 'undefined') {
         displayData.index,
         displayData.showTop,
         displayData.showBottom,
-        displayData.adjustedValueTop,
-        displayData.adjustedValueBottom
+        prefix == 'month'
+          ? settings.months[parseInt(displayData.adjustedValueTop) - 1]
+          : displayData.adjustedValueTop,
+        prefix == 'month'
+          ? settings.months[parseInt(displayData.adjustedValueBottom) - 1]
+          : displayData.adjustedValueBottom
       );
     }
 
@@ -2193,6 +2426,9 @@ if (typeof jQuery === 'undefined') {
 
     function handlePrefixScroll(prefix, inputElement, delta, type) {
       switch (prefix) {
+        case 'month':
+          handleMonthScroll(inputElement, delta, type);
+          break;
         case 'digits':
           handleDigitsScroll(inputElement, delta, type);
           break;
@@ -2203,6 +2439,29 @@ if (typeof jQuery === 'undefined') {
           handleListScroll(inputElement, delta, type);
           break;
       }
+    }
+
+    function handleMonthScroll(inputElement, delta, type) {
+      let currentValue = parseInt(
+        settings.monthMap.get($(inputElement).val()),
+        10
+      ); // Récupère la valeur de l'élément
+      if (currentValue != -1) {
+        currentValue += delta < 0 ? -1 : 1;
+        const { valueMin, valueMax } = getValueInputLimits(
+          getCurrentValueByIndex('current'),
+          inputElement,
+          settings
+        );
+
+        currentValue = adjustLimits(
+          currentValue,
+          valueMin,
+          valueMax
+        ).adjustedValue;
+      }
+
+      setValueInput(inputElement, currentValue, 'month', type);
     }
 
     function handleDigitsScroll(inputElement, delta, type) {
@@ -2353,7 +2612,8 @@ if (typeof jQuery === 'undefined') {
           .attr('id')
           .replace(prefix + '_' + type + '_input_', '')
       );
-      if (prefix == 'digits') {
+
+      if (prefix == 'digits' || prefix == 'month') {
         gIdHover = type + id;
 
         let valueLimites = calculateValueLimits(
@@ -2369,8 +2629,12 @@ if (typeof jQuery === 'undefined') {
           id,
           valueLimites.showTop,
           valueLimites.showBottom,
-          valueLimites.valueTop,
-          valueLimites.valueBottom
+          prefix == 'month'
+            ? settings.months[parseInt(valueLimites.valueTop) - 1]
+            : valueLimites.valueTop,
+          prefix == 'month'
+            ? settings.months[parseInt(valueLimites.valueBottom) - 1]
+            : valueLimites.valueBottom
         );
       } else if (prefix == 'sign') {
         gIdHover = type + prefix;
@@ -2403,7 +2667,7 @@ if (typeof jQuery === 'undefined') {
     }
 
     function hoverMouseLeave(inputElement, prefix, type) {
-      if (prefix == 'digits') {
+      if (prefix == 'digits' || prefix == 'month') {
         let id = $(inputElement)
           .attr('id')
           .replace(prefix + '_' + type + '_input_', '');
@@ -2435,6 +2699,8 @@ if (typeof jQuery === 'undefined') {
 
       if (prefix === 'digits') {
         handleDigitsClick(element, suffix, prefix, type);
+      } else if (prefix === 'month') {
+        handleMonthClick(element, suffix, prefix, type);
       } else if (prefix === 'sign') {
         handleSignClick(element, prefix, type);
       } else if (prefix === 'list') {
@@ -2442,10 +2708,52 @@ if (typeof jQuery === 'undefined') {
       }
     }
 
+    function handleMonthClick(element, suffix, prefix, type) {
+      const id = suffix.replace(/(top_|bottom_)/, '');
+      const value = getElement('div', $(element), settings);
+
+      if (!isValidValue(value) || isNaN(value)) return;
+
+      setElement(
+        'input',
+        $(`#${prefix}_${type}_input_${id}`),
+        settings.months[value - 1],
+        settings
+      );
+      updateFinalValue(
+        $(`#${prefix}_${type}_input_${id}`),
+        settings.months[value - 1],
+        type
+      );
+      gIdHover = `${type}${id}`;
+
+      const isTop = suffix.includes('top');
+
+      const valueLimits = calculateValueLimits(
+        $(`#${prefix}_${type}_input_${id}`),
+        id,
+        getCurrentValueByIndex('current'),
+        currentValues.limitDigitMin,
+        currentValues.limitDigitMax
+      );
+
+      updatePeripheralDigit(
+        type,
+        id,
+        isTop ? valueLimits.showTop : false,
+        isTop ? false : valueLimits.showBottom,
+        isTop ? settings.months[parseInt(valueLimits.valueTop) - 1] : 0,
+        isTop ? 0 : settings.months[parseInt(valueLimits.valueBottom) - 1]
+      );
+
+      gIdHover = null;
+    }
+
     // Gestion du préfixe 'digits'
     function handleDigitsClick(element, suffix, prefix, type) {
       const id = suffix.replace(/(top_|bottom_)/, '');
       const value = getElement('div', $(element), settings);
+
       if (!isValidValue(value) || isNaN(value)) return;
 
       setElement('input', $(`#${prefix}_${type}_input_${id}`), value, settings);
@@ -2627,7 +2935,7 @@ if (typeof jQuery === 'undefined') {
 
       const $input = $('<input>', {
         type: settings.maskInput === true ? 'password' : 'text',
-        class: `form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
+        class: `truncate-${prefix} form-control form-control-lg text-center cla-h2-like ${prefix}-input`,
         maxLength: maxLength,
         id: `${prefix}_${uniqueTypeShort}_input_${id}`,
         name: `${prefix}${id}`,
@@ -2724,30 +3032,38 @@ if (typeof jQuery === 'undefined') {
       return separatorIndex;
     }
 
-    function getLimits(result, partIndex) {
-      return result.limits[partIndex].split(',');
+    function getMaxLimits(result, partIndex) {
+      return result.maxlimits[partIndex].split(',');
+    }
+
+    function getMinLimits(result, partIndex) {
+      return result.minlimits[partIndex].split(',');
     }
 
     function processPartValues(
       funcAddInputElement,
+      part,
       partLength,
-      limits,
+      minlimits,
+      maxlimits,
       stringDefaultValue,
       inputIndex
     ) {
       for (let i = 0; i < partLength; i++) {
         const value = stringDefaultValue[inputIndex];
         funcAddInputElement(
-          'digits',
+          part == 'MH' ? 'month' : 'digits',
           inputIndex + 1,
-          0,
-          limits[i],
-          value,
-          '1',
-          isDisabled(settings)
+          minlimits[i],
+          maxlimits[i],
+          part == 'MH' ? settings.months[value] : value,
+          part == 'MH' ? '30' : '1',
+          part == 'MH' ? true : isDisabled(settings)
         );
-
-        updateCurrentValues(inputIndex, value);
+        updateCurrentValues(
+          inputIndex,
+          part == 'MH' ? settings.months[value] : value
+        );
         inputIndex++;
       }
       return inputIndex;
@@ -2758,11 +3074,15 @@ if (typeof jQuery === 'undefined') {
       let inputIndex = 0;
 
       result.sizes.forEach((partLength, partIndex) => {
-        const limits = getLimits(result, partIndex);
+        const minlimits = getMinLimits(result, partIndex);
+        const maxlimits = getMaxLimits(result, partIndex);
+
         inputIndex = processPartValues(
           funcAddInputElement,
+          result.parts[partIndex],
           partLength,
-          limits,
+          minlimits,
+          maxlimits,
           stringDefaultValue,
           inputIndex
         );
@@ -2831,7 +3151,11 @@ if (typeof jQuery === 'undefined') {
 
       function addInputTimeElement() {
         const result = analyzeTimeFormat(settings.formatTime);
-        settings.numInputs = result.totalInputs;
+
+        settings.numInputs = result.sizes.reduce(
+          (sum, size) => sum + parseInt(size, 10),
+          0
+        );
 
         const defaultValue = parseDefaultTimeValue(
           settings.defaultValue,
@@ -2850,7 +3174,11 @@ if (typeof jQuery === 'undefined') {
 
       function addInputDateElement() {
         const result = analyzeDateFormat(settings.formatDate);
-        settings.numInputs = result.totalInputs;
+
+        settings.numInputs = result.sizes.reduce(
+          (sum, size) => sum + parseInt(size, 10),
+          0
+        );
 
         const defaultValueSecond = parseDefaultDateValue(
           settings.defaultValue,
@@ -2902,7 +3230,7 @@ if (typeof jQuery === 'undefined') {
           // Récupère les paramètres pour chaque input et ajoute l'élément
           const { min, max, value } = getAdjustedValueSettings(i - 1, settings);
           addInputElement(
-            'digits',
+            prefix,
             i,
             min,
             max,
@@ -3277,7 +3605,7 @@ if (typeof jQuery === 'undefined') {
     return this;
   };
 
-  $.fn.codeInputBuilder.version = '0.0.20';
+  $.fn.codeInputBuilder.version = '0.0.21';
   $.fn.codeInputBuilder.title = 'CodeInputBuilder';
   $.fn.codeInputBuilder.description =
     "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";

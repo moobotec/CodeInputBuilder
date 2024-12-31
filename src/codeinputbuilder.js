@@ -117,6 +117,9 @@ Options disponibles:
 
     - `defaultLanguage`: (string) Pangue par défaut utilisée pour les noms des mois ou toute autre fonctionnalité nécessitant une localisation. Elle est compatible avec les locales supportées par l'API `Intl.DateTimeFormat` de JavaScript.
       * Par défaut : 'fr' (français)
+
+    - `hourCycle`: (string) Définit le système horaire à utiliser, soit le format 24 heures (par défaut) ou 12 heures avec gestion AM/PM.
+      * Par défaut : '24h'.
    
 Usage basique :
     $('#element').codeInputBuilder({
@@ -169,6 +172,7 @@ if (typeof jQuery === 'undefined') {
       values: [],
       formatTime: 'HH:MM:SS.SSS',
       formatDate: 'DD/MM/YYYY',
+      hourCycle: '24h',
       defaultLanguage: 'fr',
       defaultValue: 0,
       allowSign: false,
@@ -303,19 +307,15 @@ if (typeof jQuery === 'undefined') {
       const formatRegex = {
         time: /^(\d{2}):(\d{2}):(\d{2})(\.\d{1,3})?$/,
         date: /^(\d{2})\/(\d{2})\/(\d{4})$/,
-        dateMonth:
-          /^(\d{2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{4})$/, // Nouveau format DD-MH-YYYY
       };
 
       const errorMessages = {
         time: "Option 'defaultValue' : doit être un nombre (secondes), une chaîne formatée 'HH:MM:SS' ou un objet Date.",
         date: "Option 'defaultValue' : doit être un nombre (secondes), une chaîne formatée 'DD/MM/YYYY' ou un objet Date.",
-        dateMonth:
-          "Option 'defaultValue' : doit être une chaîne formatée 'DD-MH-YYYY', une chaîne 'DD/MH/YYYY', ou un objet Date.",
         generic: "Option 'defaultValue' doit être un nombre ou une chaîne.",
       };
 
-      if (['time', 'date', 'dateMonth'].includes(type)) {
+      if (['time', 'date'].includes(type)) {
         if (isPositiveNumber(defaultValue)) return;
 
         if (
@@ -438,6 +438,40 @@ if (typeof jQuery === 'undefined') {
       Intl.DateTimeFormat.supportedLocalesOf([defaultLanguage]);
     }
 
+    function validateHourCycle(type, hourCycle) {
+      const validOptions = ['24h', '12h']; // Les valeurs possibles pour hourCycle
+
+      if (type !== 'time') {
+        return; // Pas de validation nécessaire pour d'autres types
+      }
+
+      // Si aucune valeur n'est fournie, retourner la valeur par défaut
+      if (!hourCycle) {
+        throw new Error(
+          "L'option 'hourCycle' n'est pas définie. Valeur par défaut utilisée : '24h'."
+        );
+      }
+
+      // Vérifie si la valeur est une chaîne valide
+      if (typeof hourCycle !== 'string') {
+        throw new Error(
+          "L'option 'hourCycle' doit être une chaîne de caractères ('24h' ou '12h')."
+        );
+      }
+
+      // Vérifie si la valeur est valide
+      if (!validOptions.includes(hourCycle)) {
+        throw new Error(
+          `L'option 'hourCycle' doit être une des valeurs suivantes : ${validOptions.join(
+            ', '
+          )}.`
+        );
+      }
+
+      // Si tout est valide, retourner la valeur
+      return hourCycle;
+    }
+
     function validateOptions() {
       validateType(settings.type);
       validateNumInputs(settings.numInputs);
@@ -461,6 +495,7 @@ if (typeof jQuery === 'undefined') {
       validateMaskInput(settings.maskInput);
       validateDateTimeFormat(settings.type);
       validateDefaultLanguage(settings.defaultLanguage);
+      validateHourCycle(settings.type, settings.hourCycle);
     }
 
     validateOptions();
@@ -1020,6 +1055,7 @@ if (typeof jQuery === 'undefined') {
       value: '',
       digits: new Array(settings.numInputs).fill(0), // Tableau pour n digits
       sign: defaultSign(settings), // Valeur pour sign
+      systime: 'AM',
       list: '',
       limitDigitMin: null,
       limitDigitMax: null,
@@ -1119,7 +1155,9 @@ if (typeof jQuery === 'undefined') {
 
     // Fonction pour mettre à jour les valeurs en fonction de l'index
     function updateCurrentValues(index, value) {
-      if (index === 'sign') {
+      if (index === 'systime') {
+        currentValues.systime = value;
+      } else if (index === 'sign') {
         currentValues.sign = value;
       } else if (index === 'list') {
         currentValues.list = value;
@@ -1137,7 +1175,10 @@ if (typeof jQuery === 'undefined') {
 
     function getCurrentValueByIndex(index) {
       let value = null;
-      if (index === 'sign') {
+
+      if (index === 'systime') {
+        value = currentValues.systime;
+      } else if (index === 'sign') {
         value = currentValues.sign;
       } else if (index === 'current') {
         value = currentValues.value;
@@ -1296,6 +1337,57 @@ if (typeof jQuery === 'undefined') {
       });
 
       return adjustedPart;
+    }
+
+    function fillSysTime(askValue, type) {
+      if (type === 'time' && settings.hourCycle === '12h') {
+        const period = determinePeriod(askValue); // Déterminer AM/PM
+
+        if (period) {
+          updateSystemTimeInput(period); // Mettre à jour l'input
+        }
+      }
+    }
+
+    // Détermine si la période est AM ou PM
+    function determinePeriod(value) {
+      if (value instanceof Date) {
+        return getPeriodFromDate(value);
+      } else if (typeof value === 'string') {
+        return getPeriodFromString(value);
+      } else if (typeof value === 'number') {
+        return getPeriodFromNumber(value);
+      }
+      return ''; // Aucun résultat valide
+    }
+
+    // Retourne AM ou PM pour une Date
+    function getPeriodFromDate(date) {
+      const hours = date.getUTCHours();
+      return hours >= 12 ? 'PM' : 'AM';
+    }
+
+    // Retourne AM ou PM pour une chaîne
+    function getPeriodFromString(value) {
+      const valueUpper = value.toUpperCase();
+      if (valueUpper.includes('AM')) return 'AM';
+      if (valueUpper.includes('PM')) return 'PM';
+
+      // Conversion de la chaîne en secondes si AM/PM n'est pas explicite
+      const seconds = timeStringToSeconds(value, settings.formatTime, '24h');
+      const hours = Math.floor(seconds / 3600);
+      return hours >= 12 ? 'PM' : 'AM';
+    }
+
+    // Retourne AM ou PM pour un nombre (secondes)
+    function getPeriodFromNumber(seconds) {
+      const hours = Math.floor(seconds / 3600);
+      return hours >= 12 ? 'PM' : 'AM';
+    }
+
+    // Met à jour l'input avec la période calculée
+    function updateSystemTimeInput(period) {
+      $('input[id^=systime_' + uniqueTypeShort + '_input]').val(period);
     }
 
     function fillDigits(number, type) {
@@ -1512,7 +1604,7 @@ if (typeof jQuery === 'undefined') {
       const regex = /(?:SSS|HH|MM|SS)|([^a-zA-Z0-9])/g;
 
       const maxlimitMapping = {
-        HH: [2, 9],
+        HH: settings.hourCycle === '24h' ? [2, 9] : [1, 9],
         MM: [5, 9],
         SS: [5, 9],
         SSS: Array(3).fill(9),
@@ -1541,13 +1633,17 @@ if (typeof jQuery === 'undefined') {
 
       if (defaultValue instanceof Date) {
         defaultValueSecond = timeStringToSeconds(
-          formatTimeFromDate(defaultValue, format),
+          formatTimeFromDate(defaultValue, format, settings.hourCycle),
           format
         );
       } else if (typeof defaultValue === 'number') {
         defaultValueSecond = defaultValue;
       } else if (typeof defaultValue === 'string') {
-        defaultValueSecond = timeStringToSeconds(defaultValue, format);
+        defaultValueSecond = timeStringToSeconds(
+          defaultValue,
+          format,
+          settings.hourCycle
+        );
       } else {
         return 0; // Valeur par défaut si rien n'est fourni
       }
@@ -1571,7 +1667,35 @@ if (typeof jQuery === 'undefined') {
       return Math.min(Math.max(defaultValueSecond, 0), 253402214400);
     }
 
-    function timeStringToSeconds(timeString, format) {
+    function adjustHoursByTimeCycle(hours, timeString, hourCycle) {
+      // Normaliser la chaîne de temps pour ignorer la casse
+      const timeStringNormalized = timeString.toUpperCase();
+
+      // Conversion en fonction du cycle horaire
+      if (timeStringNormalized.includes('AM')) {
+        if (hourCycle === '24h' && hours === 12) {
+          hours = 0; // Minuit pour 12 AM
+        }
+      } else if (timeStringNormalized.includes('PM')) {
+        if (hourCycle === '24h' && hours < 12) {
+          hours += 12; // Ajouter 12 heures pour PM
+        }
+      } else if (hourCycle === '12h') {
+        // Si aucun AM/PM spécifié et le cycle est 12h, ajuster les heures
+        hours = hours % 12 || 12; // Convertit 0 en 12
+      }
+
+      // Validation des heures en fonction du cycle horaire
+      if (hourCycle === '24h') {
+        hours = Math.max(0, Math.min(hours, 23)); // Limite à 0-23
+      } else {
+        hours = Math.max(0, Math.min(hours, 12)); // Limite à 0-12
+      }
+
+      return hours;
+    }
+
+    function timeStringToSeconds(timeString, format, hourCycle) {
       const { parts, separators } = analyzeTimeFormat(format);
       // Construction de l'expression régulière pour découper la chaîne
       const regex = new RegExp(separators.map((s) => `\\${s}`).join('|'));
@@ -1585,7 +1709,7 @@ if (typeof jQuery === 'undefined') {
         const value = values[i] || 0;
         switch (part) {
           case 'HH':
-            hours = Math.max(0, Math.min(value, 23));
+            hours = adjustHoursByTimeCycle(value, timeString, hourCycle);
             break;
           case 'MM':
             minutes = Math.max(0, Math.min(value, 59));
@@ -1658,9 +1782,11 @@ if (typeof jQuery === 'undefined') {
 
       const result = processInput(inputValue, format, regex);
 
+      const hourCycle = settings.hourCycle == '24h' ? 23 : 12;
+
       const isValid =
         result.HH >= 0 &&
-        result.HH <= 23 &&
+        result.HH <= hourCycle &&
         result.MM >= 0 &&
         result.MM <= 59 &&
         result.SS >= 0 &&
@@ -1702,7 +1828,9 @@ if (typeof jQuery === 'undefined') {
 
     // Fonction pour construire la date à partir des valeurs extraites
     function buildTimeFromValidatedParts(values) {
-      const hours = Math.min(values.HH || 0, 23);
+      const hourCycle = settings.hourCycle == '24h' ? 23 : 12;
+
+      let hours = Math.min(values.HH || 0, hourCycle);
       const minutes = Math.min(values.MM || 0, 59);
       const seconds = Math.min(values.SS || 0, 59);
       const milliseconds = Math.min(values.SSS || 0, 999);
@@ -1747,10 +1875,23 @@ if (typeof jQuery === 'undefined') {
     }
 
     function getTotalTimeSeconds(date) {
-      const hours = date.getUTCHours(); // Heures (0-23)
+      let hours = date.getUTCHours(); // Heures (0-23)
       const minutes = date.getUTCMinutes(); // Minutes (0-59)
       const seconds = date.getUTCSeconds(); // Secondes (0-59)
       const milliseconds = date.getUTCMilliseconds(); // Millisecondes (0-999)
+
+      if (settings.hourCycle === '12h') {
+        const AMPM = $(
+          'input[id^=systime_' + uniqueTypeShort + '_input]'
+        ).val();
+        const isPM = AMPM.toUpperCase() === 'PM';
+        // Convertir les heures au format 24h
+        if (isPM && hours < 12) {
+          hours += 12; // Ajouter 12 heures pour PM
+        } else if (!isPM && hours === 12) {
+          hours = 0; // Minuit pour AM
+        }
+      }
 
       // Calcul des secondes totales avec millisecondes en fractions
       const totalSeconds =
@@ -1768,8 +1909,23 @@ if (typeof jQuery === 'undefined') {
     }
 
     // Fonction pour extraire le temps d'une instance de Date
-    function formatTimeFromDate(date, format) {
-      const hours = String(date.getUTCHours()).padStart(2, '0');
+    function formatTimeFromDate(date, format, hourCycle) {
+      function convertTo12HourFormat(hours) {
+        const amOrPm = hours >= 12 ? 'PM' : 'AM';
+        const hours12 = hours % 12 || 12; // Convertit 0 en 12 pour minuit
+        return { hours12, amOrPm };
+      }
+
+      let hours;
+
+      if (hourCycle === '12h') {
+        hours = convertTo12HourFormat(date.getUTCHours())
+          .hours12.toString()
+          .padStart(2, '0');
+      } else {
+        hours = String(date.getUTCHours()).padStart(2, '0');
+      }
+
       const minutes = String(date.getUTCMinutes()).padStart(2, '0');
       const seconds = String(date.getUTCSeconds()).padStart(2, '0');
       const milliseconds = String(date.getUTCMilliseconds()).padStart(3, '0');
@@ -1794,7 +1950,10 @@ if (typeof jQuery === 'undefined') {
     }
 
     function formatTimeToCustomString(date, format) {
-      return formatTimeFromDate(date, format).replace(/[^a-zA-Z0-9]/g, ''); // Supprime les séparateurs pour obtenir HHMMSSSSS
+      return formatTimeFromDate(date, format, settings.hourCycle).replace(
+        /[^a-zA-Z0-9]/g,
+        ''
+      ); // Supprime les séparateurs pour obtenir HHMMSSSSS
     }
 
     function formatDateToCustomString(date, format) {
@@ -2045,6 +2204,15 @@ if (typeof jQuery === 'undefined') {
             adjustedValueBottom: '-',
           };
         },
+        systime: () => {
+          return {
+            index: prefix,
+            showTop: value === 'PM',
+            showBottom: value === 'AM',
+            adjustedValueTop: 'AM',
+            adjustedValueBottom: 'PM',
+          };
+        },
         list: () => {
           const { valueTop, valueBottom } = calculateAdjacentValues(value);
           const valueLimits = calculateVisibilityAndAdjustLimits(
@@ -2096,6 +2264,11 @@ if (typeof jQuery === 'undefined') {
         },
         sign: () => {
           updateCurrentValues('sign', value);
+          setElement('input', $(inputElement), value, settings);
+          return value;
+        },
+        systime: () => {
+          updateCurrentValues('systime', value);
           setElement('input', $(inputElement), value, settings);
           return value;
         },
@@ -2436,6 +2609,9 @@ if (typeof jQuery === 'undefined') {
         case 'sign':
           handleSignScroll(inputElement, delta, type);
           break;
+        case 'systime':
+          handleSysTimeScroll(inputElement, delta, type);
+          break;
         case 'list':
           handleListScroll(inputElement, delta, type);
           break;
@@ -2498,6 +2674,24 @@ if (typeof jQuery === 'undefined') {
         // Contrôler les limites de la valeur
         if (currentValue < 0) setValueInput(inputElement, '+', 'sign', type);
         if (currentValue > 1) setValueInput(inputElement, '-', 'sign', type);
+      }
+    }
+
+    function handleSysTimeScroll(inputElement, delta, type) {
+      let currentValue = -1;
+
+      if (inputElement.val() == 'PM') currentValue = 0;
+      if (inputElement.val() == 'AM') currentValue = 1;
+
+      if (currentValue != -1) {
+        // Incrémenter ou décrémenter la valeur en fonction de la direction du scroll
+        currentValue += delta < 0 ? -1 : 1;
+
+        // Contrôler les limites de la valeur
+        if (currentValue < 0)
+          setValueInput(inputElement, 'AM', 'systime', type);
+        if (currentValue > 1)
+          setValueInput(inputElement, 'PM', 'systime', type);
       }
     }
 
@@ -2637,6 +2831,11 @@ if (typeof jQuery === 'undefined') {
             ? settings.months[parseInt(valueLimites.valueBottom) - 1]
             : valueLimites.valueBottom
         );
+      } else if (prefix == 'systime') {
+        gIdHover = type + prefix;
+        let showTop = $(inputElement).val() == 'PM';
+        let showBottom = $(inputElement).val() == 'AM';
+        updatePeripheralDigit(type, prefix, showTop, showBottom, 'AM', 'PM');
       } else if (prefix == 'sign') {
         gIdHover = type + prefix;
         let showTop = $(inputElement).val() == '-';
@@ -2673,7 +2872,7 @@ if (typeof jQuery === 'undefined') {
           .attr('id')
           .replace(prefix + '_' + type + '_input_', '');
         updatePeripheralDigit(type, id, false, false, 0, 0);
-      } else if (prefix == 'sign' || prefix == 'list') {
+      } else if (prefix == 'sign' || prefix == 'list' || prefix == 'systime') {
         updatePeripheralDigit(type, prefix, false, false, 0, 0);
       }
       gIdHover = null;
@@ -2702,8 +2901,8 @@ if (typeof jQuery === 'undefined') {
         handleDigitsClick(element, suffix, prefix, type);
       } else if (prefix === 'month') {
         handleMonthClick(element, suffix, prefix, type);
-      } else if (prefix === 'sign') {
-        handleSignClick(element, prefix, type);
+      } else if (prefix === 'sign' || prefix === 'systime') {
+        handleSignAndSysTimeClick(element, prefix, type);
       } else if (prefix === 'list') {
         handleListClick(element, suffix, prefix, type);
       }
@@ -2783,8 +2982,8 @@ if (typeof jQuery === 'undefined') {
       gIdHover = null;
     }
 
-    // Gestion du préfixe 'sign'
-    function handleSignClick(element, prefix, type) {
+    // Gestion du préfixe 'sign' et 'systime'
+    function handleSignAndSysTimeClick(element, prefix, type) {
       const value = $(element).html();
       if (!isValidValue(value)) return;
 
@@ -3260,6 +3459,24 @@ if (typeof jQuery === 'undefined') {
         $container.append($inputContainer);
         updateCurrentValues('current', settings.values[settings.defaultValue]);
       } else if (settings.type === 'time') {
+        if (settings.hourCycle == '12h') {
+          addInputElement(
+            'systime',
+            'systime',
+            null,
+            null,
+            getCurrentValueByIndex('systime'),
+            '2',
+            true
+          );
+
+          $inputContainer.append(
+            $('<div>', {
+              html: '&nbsp;',
+            })
+          );
+        }
+
         const prefix = 'digits';
         addInputTimeElement();
 
@@ -3269,6 +3486,9 @@ if (typeof jQuery === 'undefined') {
           settings.numInputs - 1,
           settings
         );
+
+        fillSysTime(settings.defaultValue, settings.type);
+
         updateFinalValue(
           $(`#${prefix}_${uniqueTypeShort}_input_${settings.numInputs}`),
           value,
@@ -3478,6 +3698,8 @@ if (typeof jQuery === 'undefined') {
 
       const newValue = setting.format(date, setting.formatSetting);
 
+      fillSysTime(askValue, type);
+
       fillDigits(newValue, uniqueTypeShort);
 
       updateCurrentValues(
@@ -3598,7 +3820,7 @@ if (typeof jQuery === 'undefined') {
     return this;
   };
 
-  $.fn.codeInputBuilder.version = '0.0.21';
+  $.fn.codeInputBuilder.version = '0.0.22';
   $.fn.codeInputBuilder.title = 'CodeInputBuilder';
   $.fn.codeInputBuilder.description =
     "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";

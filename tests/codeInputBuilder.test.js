@@ -261,6 +261,33 @@ describe("CodeInputBuilder Plugin Test des options dans initCodeInputBuilderOpti
         }).to.throw("Incorrect locale information provided");
     });
 
+    it("devrait lancer une erreur si 'hoursCycle' est vide", function() {
+        expect(() => {
+            $('#element').codeInputBuilder({
+                type: 'time',
+                hourCycle: null
+            });
+        }).to.throw("L'option 'hourCycle' n'est pas définie. Valeur par défaut utilisée : '24h'.");
+    });
+
+    it("devrait lancer une erreur si 'hoursCycle' doit un string", function() {
+        expect(() => {
+            $('#element').codeInputBuilder({
+                type: 'time',
+                hourCycle: 10
+            });
+        }).to.throw("L'option 'hourCycle' doit être une chaîne de caractères ('24h' ou '12h').");
+    });
+
+    it("devrait lancer une erreur si 'hoursCycle' doit etre soit 24h ou 12h", function() {
+        expect(() => {
+            $('#element').codeInputBuilder({
+                type: 'time',
+                hourCycle: "13h"
+            });
+        }).to.throw("L'option 'hourCycle' doit être une des valeurs suivantes : 24h, 12h.");
+    });
+
     it("devrait accepter des options valides sans lancer d'erreur", function() {
         expect(() => {
             codeInputTest = $('#element').codeInputBuilder({

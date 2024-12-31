@@ -1339,42 +1339,53 @@ if (typeof jQuery === 'undefined') {
 
     function fillSysTime(askValue, type) {
       if (type === 'time' && settings.hourCycle === '12h') {
-        let period = ''; // Variable pour stocker AM/PM
+        const period = determinePeriod(askValue); // Déterminer AM/PM
 
-        // Si la valeur est une Date
-        if (askValue instanceof Date) {
-          const hours = askValue.getUTCHours();
-          period = hours >= 12 ? 'PM' : 'AM';
-        }
-        // Si la valeur est une chaîne de caractères
-        else if (typeof askValue === 'string') {
-          const valueUpper = askValue.toUpperCase(); // Convertir pour ignorer la casse
-          if (valueUpper.includes('AM')) {
-            period = 'AM';
-          } else if (valueUpper.includes('PM')) {
-            period = 'PM';
-          } else {
-            // Conversion de la chaîne en secondes
-            const seconds = timeStringToSeconds(
-              askValue,
-              settings.formatTime,
-              '24h'
-            );
-            const hours = Math.floor(seconds / 3600);
-            period = hours >= 12 ? 'PM' : 'AM';
-          }
-        }
-        // Si la valeur est un nombre
-        else if (typeof askValue === 'number') {
-          const hours = Math.floor(askValue / 3600);
-          period = hours >= 12 ? 'PM' : 'AM';
-        }
-
-        // Mise à jour de l'input avec la valeur calculée
         if (period) {
-          $('input[id^=systime_' + uniqueTypeShort + '_input]').val(period);
+          updateSystemTimeInput(period); // Mettre à jour l'input
         }
       }
+    }
+
+    // Détermine si la période est AM ou PM
+    function determinePeriod(value) {
+      if (value instanceof Date) {
+        return getPeriodFromDate(value);
+      } else if (typeof value === 'string') {
+        return getPeriodFromString(value);
+      } else if (typeof value === 'number') {
+        return getPeriodFromNumber(value);
+      }
+      return ''; // Aucun résultat valide
+    }
+
+    // Retourne AM ou PM pour une Date
+    function getPeriodFromDate(date) {
+      const hours = date.getUTCHours();
+      return hours >= 12 ? 'PM' : 'AM';
+    }
+
+    // Retourne AM ou PM pour une chaîne
+    function getPeriodFromString(value) {
+      const valueUpper = value.toUpperCase();
+      if (valueUpper.includes('AM')) return 'AM';
+      if (valueUpper.includes('PM')) return 'PM';
+
+      // Conversion de la chaîne en secondes si AM/PM n'est pas explicite
+      const seconds = timeStringToSeconds(value, settings.formatTime, '24h');
+      const hours = Math.floor(seconds / 3600);
+      return hours >= 12 ? 'PM' : 'AM';
+    }
+
+    // Retourne AM ou PM pour un nombre (secondes)
+    function getPeriodFromNumber(seconds) {
+      const hours = Math.floor(seconds / 3600);
+      return hours >= 12 ? 'PM' : 'AM';
+    }
+
+    // Met à jour l'input avec la période calculée
+    function updateSystemTimeInput(period) {
+      $('input[id^=systime_' + uniqueTypeShort + '_input]').val(period);
     }
 
     function fillDigits(number, type) {
@@ -1654,6 +1665,34 @@ if (typeof jQuery === 'undefined') {
       return Math.min(Math.max(defaultValueSecond, 0), 253402214400);
     }
 
+    function adjustHoursByTimeCycle(hours, timeString, hourCycle) {
+      // Normaliser la chaîne de temps pour ignorer la casse
+      const timeStringNormalized = timeString.toUpperCase();
+
+      // Conversion en fonction du cycle horaire
+      if (timeStringNormalized.includes('AM')) {
+        if (hourCycle === '24h' && hours === 12) {
+          hours = 0; // Minuit pour 12 AM
+        }
+      } else if (timeStringNormalized.includes('PM')) {
+        if (hourCycle === '24h' && hours < 12) {
+          hours += 12; // Ajouter 12 heures pour PM
+        }
+      } else if (hourCycle === '12h') {
+        // Si aucun AM/PM spécifié et le cycle est 12h, ajuster les heures
+        hours = hours % 12 || 12; // Convertit 0 en 12
+      }
+
+      // Validation des heures en fonction du cycle horaire
+      if (hourCycle === '24h') {
+        hours = Math.max(0, Math.min(hours, 23)); // Limite à 0-23
+      } else {
+        hours = Math.max(0, Math.min(hours, 12)); // Limite à 0-12
+      }
+
+      return hours;
+    }
+
     function timeStringToSeconds(timeString, format, hourCycle) {
       const { parts, separators } = analyzeTimeFormat(format);
       // Construction de l'expression régulière pour découper la chaîne
@@ -1668,26 +1707,7 @@ if (typeof jQuery === 'undefined') {
         const value = values[i] || 0;
         switch (part) {
           case 'HH':
-            hours = value;
-            if (timeString.includes('AM') || timeString.includes('am')) {
-              if (hourCycle == '24h') {
-                if (hours == 12) hours = 0;
-              }
-            } else if (timeString.includes('PM') || timeString.includes('pm')) {
-              if (hourCycle == '24h') {
-                if (hours < 12) hours += 12;
-              }
-            } else {
-              if (hourCycle == '12h') {
-                hours = hours % 12 || 12;
-              }
-            }
-
-            if (hourCycle == '24h') {
-              hours = Math.max(0, Math.min(hours, 23));
-            } else {
-              hours = Math.max(0, Math.min(hours, 12));
-            }
+            hours = adjustHoursByTimeCycle(value, timeString, hourCycle);
             break;
           case 'MM':
             minutes = Math.max(0, Math.min(value, 59));
@@ -1887,16 +1907,16 @@ if (typeof jQuery === 'undefined') {
     }
 
     // Fonction pour extraire le temps d'une instance de Date
-    function formatTimeFromDate(date, format) {
+    function formatTimeFromDate(date, format, hourCycle) {
       function convertTo12HourFormat(hours) {
         const amOrPm = hours >= 12 ? 'PM' : 'AM';
         const hours12 = hours % 12 || 12; // Convertit 0 en 12 pour minuit
         return { hours12, amOrPm };
       }
 
-      let hours = '00';
+      let hours;
 
-      if (settings.hourCycle === '12h') {
+      if (hourCycle === '12h') {
         hours = convertTo12HourFormat(date.getUTCHours())
           .hours12.toString()
           .padStart(2, '0');
@@ -1928,7 +1948,10 @@ if (typeof jQuery === 'undefined') {
     }
 
     function formatTimeToCustomString(date, format) {
-      return formatTimeFromDate(date, format).replace(/[^a-zA-Z0-9]/g, ''); // Supprime les séparateurs pour obtenir HHMMSSSSS
+      return formatTimeFromDate(date, format, settings.hourCycle).replace(
+        /[^a-zA-Z0-9]/g,
+        ''
+      ); // Supprime les séparateurs pour obtenir HHMMSSSSS
     }
 
     function formatDateToCustomString(date, format) {
@@ -1943,10 +1966,7 @@ if (typeof jQuery === 'undefined') {
       if (backValue != finalValue) {
         fillDigits(finalValue, type);
       }
-      updateCurrentValues(
-        'current',
-        getTotalTimeSeconds(time, settings.hourCycle)
-      );
+      updateCurrentValues('current', getTotalTimeSeconds(time));
     }
 
     function updateCurrentDateValues(type, format) {

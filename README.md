@@ -61,6 +61,7 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
   - 1970 ≤ Année ≤ 9999  
 - **Support des langues localisées pour les mois** : Grâce à l'option `defaultLanguage`, le plugin supporte les noms de mois localisés, en utilisant des langues compatibles avec `Intl.DateTimeFormat`.
 - **Format des mois dynamiques (`MH`)** : Ajout du format `MH` pour afficher les mois sous leur nom complet dans la langue choisie (`Janvier`, `February`, etc.).
+- **Gestion des cycles horaires (12h/24h)** : Ajout de l'option `hourCycle` pour basculer entre le format 12 heures (AM/PM) et 24 heures. Les heures en 12 heures affichent et valident correctement les valeurs avec le système AM/PM.
 
 ## Installation
 
@@ -122,7 +123,7 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
 | `formatTime`  | `string`  | Format de l'heure à utiliser (par exemple : HH:MM:SS, HH:MM:SS.SSS, etc.) avec des séparateurs dynamiques (: ou ., etc.). | `HH:MM:SS`           |
 | `formatDate` | `string` | Format de la date à utiliser (par exemple : DD/MM/YYYY, DD/MH/YYYY, MM-DD-YYYY, etc.) avec des séparateurs dynamiques (/ ou -, etc.). | `DD/MM/YYYY` |
 | `defaultLanguage`   | `string`        | Définit la langue par défaut utilisée pour les mois ou autres formats liés à la localisation. La langue doit être compatible avec l’API `Intl.DateTimeFormat`. Valeurs possibles : `'fr'`, `'en'`, `'es'`, etc. | `'fr'` |
-
+| `hourCycle`         | `string`         | Définit le cycle horaire pour les champs de type `time`. Valeurs possibles : `'12h'`, `'24h'`. | `'24h'`          |
 
 ## Exemples
 
@@ -195,6 +196,23 @@ $('#codeInputTime').codeInputBuilder({
     gap: '10px', // Espace entre les inputs
     onValueChange: function($input, newValue) {
         // Affichage de la valeur modifiée
+        console.log(`Valeur complète : ${newValue}`);
+    }
+});
+```
+
+### Exemple pour une heure en format 12h (AM/PM)
+
+![Exemple pour une heure](img/exemple_input_time_ampm.png)
+
+```javascript
+$('#codeInputTime').codeInputBuilder({
+    type: 'time',
+    formatTime: 'HH:MM:SS', // Format valide
+    hourCycle: '12h', // Cycle horaire 12 heures avec AM/PM
+    defaultValue: new Date(Date.UTC(1970, 0, 1, 1, 34, 55, 20)), // Exemple : 1h34m55s AM
+    gap: '10px', // Espace entre les inputs
+    onValueChange: function($input, newValue) {
         console.log(`Valeur complète : ${newValue}`);
     }
 });
@@ -369,7 +387,7 @@ Le projet inclut des tests unitaires pour garantir le bon fonctionnement du plug
 - **Callbacks et interactivité** : Teste le déclenchement de certains événements, comme `onValueChange`, et l’interaction avec des fonctionnalités dynamiques (par exemple, la gestion des signes, les limites de valeurs).
 - Les tests couvrent l’utilisation de l’option `defaultLanguage` pour vérifier la compatibilité des langues et le rendu correct des noms de mois en fonction de la langue choisie.
 - Des cas spécifiques pour le format `MH` sont inclus pour s’assurer que les noms de mois sont traduits correctement.
-
+- Les tests incluent la validation de l'option `hourCycle`, en vérifiant les comportements pour les formats 12h (AM/PM) et 24h, ainsi que leur impact sur les calculs de temps.
 
 ### Exécution des tests
 

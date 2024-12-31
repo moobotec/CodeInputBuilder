@@ -435,10 +435,7 @@ if (typeof jQuery === 'undefined') {
       }
 
       // Vérifie si la langue est prise en charge par Intl.DateTimeFormat
-      Intl.DateTimeFormat.supportedLocalesOf([
-        defaultLanguage,
-      ]);
-
+      Intl.DateTimeFormat.supportedLocalesOf([defaultLanguage]);
     }
 
     function validateOptions() {
@@ -1206,9 +1203,9 @@ if (typeof jQuery === 'undefined') {
         }
       });
 
-      // Parcourt les chiffres et les assigne aux inputs
-      //for (let digit of digitString.split('').reverse()) {
-      for (var i = digitString.length - 1; i >= 0; i--) {
+      let i = digitString.length - 1;
+
+      while (i >= 0) {
         if (!$(digitInputs[index]).attr('id').includes('month')) {
           const { value } = getAdjustedValueSettings(
             index,
@@ -1226,9 +1223,10 @@ if (typeof jQuery === 'undefined') {
             settings
           );
           updateCurrentValues(index, settings.months[value - 1]);
-          i--;
+          i--; // Sauter un élément supplémentaire pour les mois
         }
 
+        i--; // Décrémentation générale
         index--;
         if (index < 0) break;
       }
@@ -1468,11 +1466,14 @@ if (typeof jQuery === 'undefined') {
         }
       }
 
+      const sizes = parts.map((p) => `${p.part != 'MH' ? p.length : 1}`);
+
       return {
-        sizes: parts.map((p) => `${p.part != 'MH' ? p.length : 1}`),
+        sizes: sizes,
         parts: parts.map((p) => `${p.part}`),
         maxlimits: parts.map((p) => `${p.maxlimit}`),
         minlimits: parts.map((p) => `${p.minlimit}`),
+        numinputs: sizes.reduce((sum, size) => sum + parseInt(size, 10), 0),
         separators,
       };
     }
@@ -3151,11 +3152,7 @@ if (typeof jQuery === 'undefined') {
 
       function addInputTimeElement() {
         const result = analyzeTimeFormat(settings.formatTime);
-
-        settings.numInputs = result.sizes.reduce(
-          (sum, size) => sum + parseInt(size, 10),
-          0
-        );
+        settings.numInputs = result.numinputs;
 
         const defaultValue = parseDefaultTimeValue(
           settings.defaultValue,
@@ -3174,11 +3171,7 @@ if (typeof jQuery === 'undefined') {
 
       function addInputDateElement() {
         const result = analyzeDateFormat(settings.formatDate);
-
-        settings.numInputs = result.sizes.reduce(
-          (sum, size) => sum + parseInt(size, 10),
-          0
-        );
+        settings.numInputs = result.numinputs;
 
         const defaultValueSecond = parseDefaultDateValue(
           settings.defaultValue,

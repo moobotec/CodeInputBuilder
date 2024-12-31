@@ -117,6 +117,9 @@ Options disponibles:
 
     - `defaultLanguage`: (string) Pangue par défaut utilisée pour les noms des mois ou toute autre fonctionnalité nécessitant une localisation. Elle est compatible avec les locales supportées par l'API `Intl.DateTimeFormat` de JavaScript.
       * Par défaut : 'fr' (français)
+
+    - `hourCycle`: (string) Définit le système horaire à utiliser, soit le format 24 heures (par défaut) ou 12 heures avec gestion AM/PM.
+      * Par défaut : '24h'.
    
 Usage basique :
     $('#element').codeInputBuilder({
@@ -444,10 +447,9 @@ if (typeof jQuery === 'undefined') {
 
       // Si aucune valeur n'est fournie, retourner la valeur par défaut
       if (!hourCycle) {
-        console.warn(
+        throw new Error(
           "L'option 'hourCycle' n'est pas définie. Valeur par défaut utilisée : '24h'."
         );
-        return '24h';
       }
 
       // Vérifie si la valeur est une chaîne valide

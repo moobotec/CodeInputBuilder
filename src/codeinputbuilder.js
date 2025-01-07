@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.19
+Version: 0.0.22
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com

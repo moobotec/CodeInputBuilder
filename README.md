@@ -283,7 +283,7 @@ Le plugin `Code Input Builder` offre plusieurs méthodes pour interagir avec et 
     - **Retour** : La valeur du chiffre à l'index spécifié.
     - **Exemple** :
       ```javascript
-      $('#element').codeInputBuilder().getDigitAt(2);
+        instance.getDigitAt(2);
       ```
 
 - ### `setDigitAt(index, value)`
@@ -293,7 +293,7 @@ Le plugin `Code Input Builder` offre plusieurs méthodes pour interagir avec et 
       - `value` (integer/string) : La nouvelle valeur à définir pour ce chiffre.
     - **Exemple** :
       ```javascript
-      $('#element').codeInputBuilder().setDigitAt(2, 5);
+        instance.setDigitAt(2, 5);
       ```
 
 - ### `getCompleteValue()`
@@ -301,7 +301,7 @@ Le plugin `Code Input Builder` offre plusieurs méthodes pour interagir avec et 
     - **Retour** : La valeur complète sous forme de nombre ou de chaîne de caractères, en fonction du type d'input configuré.
     - **Exemple** :
       ```javascript
-      const fullValue = $('#element').codeInputBuilder().getCompleteValue();
+        instance.getCompleteValue();
       ```
 
 - ### `setCompleteValue(value, onchange = false)`
@@ -311,7 +311,7 @@ Le plugin `Code Input Builder` offre plusieurs méthodes pour interagir avec et 
       - `onchange` (boolean, optionnel) : Si défini sur `true`, déclenche le callback `onValueChange` après la mise à jour de la valeur. Par défaut `false`.
     - **Exemple** :
       ```javascript
-      $('#element').codeInputBuilder().setCompleteValue("1234", true);
+        instance.setCompleteValue("1234", true);
       ```
 
 - ### `toggleInputs(disabled)`
@@ -320,7 +320,7 @@ Le plugin `Code Input Builder` offre plusieurs méthodes pour interagir avec et 
       - `disabled` (boolean) : Si `true`, désactive les inputs ; si `false`, les active.
     - **Exemple** :
       ```javascript
-      $('#element').codeInputBuilder().toggleInputs(true); // Désactive tous les inputs
+        instance.toggleInputs(true); // Désactive tous les inputs
       ```
 
 - ### `changeMaskInputs(isPassword)`
@@ -329,39 +329,39 @@ Le plugin `Code Input Builder` offre plusieurs méthodes pour interagir avec et 
       - `isPassword` (boolean) : Si `true`, les champs sont masqués (type `password`). Si `false`, ils redeviennent des champs texte.
     - **Exemple** :
       ```javascript
-       // Activer ou désactiver dynamiquement le mode masqué
-      instance.changeMaskInputs(true); // Masquer les champs
-      instance.changeMaskInputs(false); // Afficher les champs
+        // Activer ou désactiver dynamiquement le mode masqué
+        instance.changeMaskInputs(true); // Masquer les champs
+        instance.changeMaskInputs(false); // Afficher les champs
       ```
 
 - ### `changeTextValues(values, index_0 = 0, onchange = false)`
-  - **Description** : Permet de changer dynamiquement la liste des valeurs disponibles pour un champ de type `text` et de définir une valeur initiale.
-  - **Paramètres** :
-    - `values` (array) : Une nouvelle liste de valeurs possibles pour l'input de type `text`.
-    - `index_0` (integer, optionnel) : L'index de la valeur initiale à afficher dans la nouvelle liste. Doit être compris entre 0 et `values.length - 1`. Par défaut : `0`.
-    - `onchange` (boolean, optionnel) : Si défini sur `true`, déclenche le callback `onValueChange` après la mise à jour de la valeur. Par défaut : `false`.
-  - **Exemple** :
-    ```javascript
-    instance.changeTextValues(['Option1', 'Option2', 'Option3'], 1, true );
-    ```
+    - **Description** : Permet de changer dynamiquement la liste des valeurs disponibles pour un champ de type `text` et de définir une valeur initiale.
+    - **Paramètres** :
+      - `values` (array) : Une nouvelle liste de valeurs possibles pour l'input de type `text`.
+      - `index_0` (integer, optionnel) : L'index de la valeur initiale à afficher dans la nouvelle liste. Doit être compris entre 0 et `values.length - 1`. Par défaut : `0`.
+      - `onchange` (boolean, optionnel) : Si défini sur `true`, déclenche le callback `onValueChange` après la mise à jour de la valeur. Par défaut : `false`.
+    - **Exemple** :
+      ```javascript
+        instance.changeTextValues(['Option1', 'Option2', 'Option3'], 1, true );
+      ```
 
 - ### `changeHourCycle(hourCycle)`
-  - **Description** : Permet de basculer dynamiquement entre les cycles horaires de 12 heures (AM/PM) et 24 heures.
-  - **Paramètre** :
-    - `hourCycle` (string) : Le nouveau cycle horaire. Les valeurs possibles sont `'12h'` et `'24h'`.
-  - **Exemple** :
-    ```javascript
-    instance.changeHourCycle('12h');
-    ```
+    - **Description** : Permet de basculer dynamiquement entre les cycles horaires de 12 heures (AM/PM) et 24 heures.
+    - **Paramètre** :
+      - `hourCycle` (string) : Le nouveau cycle horaire. Les valeurs possibles sont `'12h'` et `'24h'`.
+    - **Exemple** :
+      ```javascript
+        instance.changeHourCycle('12h');
+      ```
 
 - ### `changeLanguage(locale)`
-  - **Description** : Modifie la langue utilisée pour les mois (et autres éléments localisés) dans un champ de type `date` avec le format `MH`.
-  - **Paramètre** :
-    - `locale` (string) : La nouvelle langue à utiliser, compatible avec `Intl.DateTimeFormat`.
-  - **Exemple** :
-    ```javascript
-    instance.changeLanguage('en-US');
-    ```
+    - **Description** : Modifie la langue utilisée pour les mois (et autres éléments localisés) dans un champ de type `date` avec le format `MH`.
+    - **Paramètre** :
+      - `locale` (string) : La nouvelle langue à utiliser, compatible avec `Intl.DateTimeFormat`.
+    - **Exemple** :
+      ```javascript
+        instance.changeLanguage('en-US');
+      ```
 
 - ### `destroy()`
     - **Description** : Supprime l'instance actuelle du plugin et restaure l'élément d'origine.
@@ -372,7 +372,6 @@ Le plugin `Code Input Builder` offre plusieurs méthodes pour interagir avec et 
         formatTime: 'HH:MM:SS',
         maskInput: false
       });
-      const instance = $('#codeInputTime').codeInputBuilder();
       instance.destroy(); // Supprime l'instance et restaure l'élément d'origine
       ```
 

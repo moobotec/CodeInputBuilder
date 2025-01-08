@@ -236,7 +236,7 @@ describe("CodeInputBuilder Plugin Tests avec type Date ( avec mois en letter)", 
         codeInputTest = $('#element').codeInputBuilder({
             type: 'date',
             formatDate: 'DD/MH/YYYY',
-            defaultLanguage: 'fr',
+            defaultLanguage: 'fr-FR',
             defaulValue: 0,
             scrollSensitivity: 0.1,
         });
@@ -401,6 +401,19 @@ describe("CodeInputBuilder Plugin Tests avec type Date ( avec mois en letter)", 
         expect(codeInputTest.getCompleteValue()).to.equal(1744243200);          
     });
 
+    it("devrait changer la langue du mois sélectionné ", function() {
+        const codeInputs = $('#element').find("input[id^='month_date_']");
+        expect(codeInputs.val()).to.equal('janvier');
+        codeInputTest.changeLanguage('en-US');
+        expect(codeInputs.val()).to.equal('january');
+    });
+
+    it("devrait lancer une erreur si le paramètre est différent de string", function() {
+        expect(() => {
+            codeInputTest.changeLanguage(null);
+        }).to.throw("Parameter 'locale' doit être une chaîne de caractères.");
+    });
+    
 });
 
 

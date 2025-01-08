@@ -305,6 +305,19 @@
                     </div>
                 </div>
             </div>
+
+            <div class="row">
+                <div class="col-4">
+                <label for="listTextSelect" class="form-label">Sélectionnez une liste de texte à utiliser :</label>
+                <div class="input-group mb-3">
+                    <select id="listTextSelect" class="form-control">
+                        <option value="1,2,3,4,5,6,7,8,9,10">1,2,3,4,5,6,7,8,9,10</option>
+                        <option value="Lorem,Consectetur,Eiusmod,Nulla,Vestibulum,Sollicitudin" selected>Lorem,Consectetur,Eiusmod,Nulla,Vestibulum,Sollicitudin</option>
+                    </select>
+                </div>
+                </div>
+            </div>
+
             <h4 class="mt-3">Valeur de l'input modifié (Text) :</h4>
             <p id="changeValueDisplayText">Aucun changement</p>
             <h4>Valeur complète (Text) :</h4>
@@ -380,6 +393,18 @@
                 }</code>
                         <div id="codeInputTimeB"></div>
                     </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-4">
+                <label for="hourCycleSelect" class="form-label">Sélectionnez un cycle d'heure :</label>
+                <div class="input-group mb-3">
+                    <select id="hourCycleSelect" class="form-control">
+                        <option value="24h">24h</option>
+                        <option value="12h" selected>12h</option>
+                    </select>
+                </div>
                 </div>
             </div>
  
@@ -463,12 +488,28 @@
                         <h3 id="test-date-b"><i class="fas fa-calendar text-primary"></i> 10b. Sélectionnez une date avec le champ de type Date (mois en lettre)</h3>
                         <code> { type: 'date', <br>
                 formatDate: 'DD/MH/YYYY', <br>
-                defaultLanguage : 'en', <br>
+                defaultLanguage : 'en-US', <br>
                 defaultValue : 0, <br>
                 gap: '10px', // Espace entre les inputs <br>
                 }</code>
                         <div id="codeInputDateB"></div>
                     </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-4">
+                <label for="languageSelect" class="form-label">Sélectionnez une langue :</label>
+                <div class="input-group mb-3">
+                    <select id="languageSelect" class="form-control">
+                        <option value="fr-FR">Français (France)</option>
+                        <option value="en-US" selected>Anglais (États-Unis)</option>
+                        <option value="es-ES">Espagnol (Espagne)</option>
+                        <option value="de-DE">Allemand (Allemagne)</option>
+                        <option value="zh-CN">Chinois (Chine)</option>
+                        <option value="ar-EG">Arabe (Égypte)</option>
+                    </select>
+                </div>
                 </div>
             </div>
 
@@ -836,7 +877,14 @@
                 gap: '10px', // Espace entre les inputs
                 onValueChange: function($input, newValue) {
                     // Affichage de la valeur de l'input modifié
-                    $('#changeValueDisplayText').text(`Input ${$input.attr('id')} a changé de valeur : ${newValue}`);
+                    if ($input != null)
+                    {
+                        $('#changeValueDisplayText').text(`Input ${$input.attr('id')} a changé de valeur : ${newValue}`);
+                    }
+                    else
+                    {
+                        $('#changeValueDisplayText').text(`Action externe a changé de valeur : ${newValue}`);
+                    }
                     
                     // Met à jour l'affichage de la valeur complète
                     const completeText = codeInputText.getCompleteValue();
@@ -844,6 +892,11 @@
                 }
             });
             
+            $('#listTextSelect').on('change', function () {
+                const listText = $('#listTextSelect').val();
+                codeInputText.changeTextValues(listText.split(','),0,true);
+            });
+
             // Gestionnaire de clic pour afficher la valeur complète
             $('#getCompleteValueButtonText').on('click', function() {
                 const completeText = codeInputText.getCompleteValue();
@@ -924,6 +977,12 @@
                     const completeTime = codeInputTimeB.getCompleteValue();
                     $('#completeValueDisplayTimeB').text(`Valeur actuelle : ${completeTime}`);
                 }
+            });
+
+            // Ajouter un gestionnaire d'événement pour le changement de langue
+            $('#hourCycleSelect').on('change', function () {
+                const hourCycle = $('#hourCycleSelect').val();
+                codeInputTimeB.changeHourCycle(hourCycle);
             });
 
             const timePickerB = new tempusDominus.TempusDominus(document.getElementById('timepickerB'), {
@@ -1019,7 +1078,7 @@
                 type: 'date',
                 formatDate: 'DD/MH/YYYY', // Format valide
                 defaultValue : 0, //new Date(Date.now()) - '10/12/2025' - 1739145600
-                defaultLanguage : 'en',
+                defaultLanguage : 'en-US',
                 gap: '10px', // Espace entre les inputs
                 onValueChange: function($input, newValue) {
                     // Affichage de la valeur de l'input modifié
@@ -1045,6 +1104,12 @@
                         next: 'fa fa-chevron-right',    // Icône pour "mois suivant"
                     },
                 },
+            });
+
+            // Ajouter un gestionnaire d'événement pour le changement de langue
+            $('#languageSelect').on('change', function () {
+                const locale = $('#languageSelect').val();
+                codeInputDateB.changeLanguage(locale);
             });
 
             $('#datepickerB').on('change.td', function (e) {

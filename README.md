@@ -59,7 +59,7 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
   - 1 ≤ Jours ≤ [31,30,29,28] en fonction de l'année et du mois  
   - 1 ≤ Mois ≤ 12  
   - 1970 ≤ Année ≤ 9999  
-- **Support des langues localisées pour les mois** : Grâce à l'option `defaultLanguage`, le plugin supporte les noms de mois localisés, en utilisant des langues compatibles avec `Intl.DateTimeFormat`.
+- **Support des langues localisées pour les mois** : Grâce à l'option `defaultLanguage`, le plugin supporte les noms de mois localisés, en utilisant des langues compatibles avec `Intl.DateTimeFormat`. [Liste des locales disponibles - IANA Language Subtag Registry](https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry).
 - **Format des mois dynamiques (`MH`)** : Ajout du format `MH` pour afficher les mois sous leur nom complet dans la langue choisie (`Janvier`, `February`, etc.).
 - **Gestion des cycles horaires (12h/24h)** : Ajout de l'option `hourCycle` pour basculer entre le format 12 heures (AM/PM) et 24 heures. Les heures en 12 heures affichent et valident correctement les valeurs avec le système AM/PM.
 
@@ -122,7 +122,7 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
 | `maskInput`  | `boolean`  | Permet de masquer la saisie des champs par des * (utilisé comme mode mot de passe). | `false`           |
 | `formatTime`  | `string`  | Format de l'heure à utiliser (par exemple : HH:MM:SS, HH:MM:SS.SSS, etc.) avec des séparateurs dynamiques (: ou ., etc.). | `HH:MM:SS`           |
 | `formatDate` | `string` | Format de la date à utiliser (par exemple : DD/MM/YYYY, DD/MH/YYYY, MM-DD-YYYY, etc.) avec des séparateurs dynamiques (/ ou -, etc.). | `DD/MM/YYYY` |
-| `defaultLanguage`   | `string`        | Définit la langue par défaut utilisée pour les mois ou autres formats liés à la localisation. La langue doit être compatible avec l’API `Intl.DateTimeFormat`. Valeurs possibles : `'fr'`, `'en'`, `'es'`, etc. | `'fr'` |
+| `defaultLanguage`   | `string`        | Définit la langue par défaut utilisée pour les mois ou autres formats liés à la localisation. La langue doit être compatible avec l’API `Intl.DateTimeFormat`. [Liste des locales disponibles - IANA Language Subtag Registry](https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry). Valeurs possibles : `'fr-FR'`, `'en-US'`, `'es-ES'`, etc. | `'fr-FR'` |
 | `hourCycle`         | `string`         | Définit le cycle horaire pour les champs de type `time`. Valeurs possibles : `'12h'`, `'24h'`. | `'24h'`          |
 
 ## Exemples
@@ -329,9 +329,39 @@ Le plugin `Code Input Builder` offre plusieurs méthodes pour interagir avec et 
       - `isPassword` (boolean) : Si `true`, les champs sont masqués (type `password`). Si `false`, ils redeviennent des champs texte.
     - **Exemple** :
       ```javascript
-      const instance = $('#codeInputTime').codeInputBuilder();
-      instance.destroy(); // Supprime l'instance et restaure l'élément d'origine
+       // Activer ou désactiver dynamiquement le mode masqué
+      instance.changeMaskInputs(true); // Masquer les champs
+      instance.changeMaskInputs(false); // Afficher les champs
       ```
+
+- ### `changeTextValues(values, index_0 = 0, onchange = false)`
+  - **Description** : Permet de changer dynamiquement la liste des valeurs disponibles pour un champ de type `text` et de définir une valeur initiale.
+  - **Paramètres** :
+    - `values` (array) : Une nouvelle liste de valeurs possibles pour l'input de type `text`.
+    - `index_0` (integer, optionnel) : L'index de la valeur initiale à afficher dans la nouvelle liste. Doit être compris entre 0 et `values.length - 1`. Par défaut : `0`.
+    - `onchange` (boolean, optionnel) : Si défini sur `true`, déclenche le callback `onValueChange` après la mise à jour de la valeur. Par défaut : `false`.
+  - **Exemple** :
+    ```javascript
+    instance.changeTextValues(['Option1', 'Option2', 'Option3'], 1, true );
+    ```
+
+- ### `changeHourCycle(hourCycle)`
+  - **Description** : Permet de basculer dynamiquement entre les cycles horaires de 12 heures (AM/PM) et 24 heures.
+  - **Paramètre** :
+    - `hourCycle` (string) : Le nouveau cycle horaire. Les valeurs possibles sont `'12h'` et `'24h'`.
+  - **Exemple** :
+    ```javascript
+    instance.changeHourCycle('12h');
+    ```
+
+- ### `changeLanguage(locale)`
+  - **Description** : Modifie la langue utilisée pour les mois (et autres éléments localisés) dans un champ de type `date` avec le format `MH`.
+  - **Paramètre** :
+    - `locale` (string) : La nouvelle langue à utiliser, compatible avec `Intl.DateTimeFormat`.
+  - **Exemple** :
+    ```javascript
+    instance.changeLanguage('en-US');
+    ```
 
 - ### `destroy()`
     - **Description** : Supprime l'instance actuelle du plugin et restaure l'élément d'origine.
@@ -342,17 +372,17 @@ Le plugin `Code Input Builder` offre plusieurs méthodes pour interagir avec et 
         formatTime: 'HH:MM:SS',
         maskInput: false
       });
-      // Activer ou désactiver dynamiquement le mode masqué
-      instance.changeMaskInputs(true); // Masquer les champs
-      instance.changeMaskInputs(false); // Afficher les champs
+      const instance = $('#codeInputTime').codeInputBuilder();
+      instance.destroy(); // Supprime l'instance et restaure l'élément d'origine
       ```
 
 Ces méthodes permettent de contrôler et manipuler les valeurs des champs d'input générés par le plugin, offrant une grande flexibilité et une intégration aisée dans des applications interactives.
 
 ### Notes importantes sur l'option `defaultLanguage`
 
-- La langue par défaut est `'fr'` (français).
+- La langue par défaut est `'fr-FR'` (français).
 - Les langues doivent être compatibles avec l’API `Intl.DateTimeFormat`. Si une langue non valide est spécifiée, une erreur sera levée.
+- [Liste des locales disponibles - IANA Language Subtag Registry](https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry).
 - Les noms des mois affichés dans le format `MH` sont automatiquement traduits en fonction de la langue choisie. Exemple : `'Janvier'` en français, `'January'` en anglais, `'Enero'` en espagnol.
 - Le format `MH` ne peut être utilisé que dans les options de type `date`.
 

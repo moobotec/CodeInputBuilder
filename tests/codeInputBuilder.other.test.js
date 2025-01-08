@@ -1061,6 +1061,11 @@ describe("CodeInputBuilder Plugin Tests Other init isDisbled = true et toggleInp
 
     });
 
+    it("devrait lancer une erreur si le paramètre est différent de booléen", function() {
+        expect(() => {
+            codeInputTest.toggleInputs(null);
+        }).to.throw("Parameter 'disabled' doit être un booléen.");
+    });
 
 });
 
@@ -1739,6 +1744,13 @@ describe("CodeInputBuilder Plugin Tests Password", function () {
             expect($(input).attr('type')).to.equal('password');
         });
     });
+
+    it("devrait lancer une erreur si le paramètre est différent de booléen", function() {
+        expect(() => {
+            codeInputTest.changeMaskInputs(null);
+        }).to.throw("Parameter 'isPassword' doit être un booléen.");
+    });
+
 });
 
 

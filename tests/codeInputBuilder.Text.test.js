@@ -223,5 +223,23 @@ describe("CodeInputBuilder Plugin Tests avec type Text", function() {
         
     });
 
-   
+    it("devrait changer la liste des textes et setter la nouvelle valeur ", function () {
+        codeInputTest.changeTextValues(['1', '2', '3', '4', '5', '6'],3);
+        expect(codeInputTest.getCompleteValue()).to.equal('4'); 
+    });
+
+    it("devrait lancer une erreur si le paramètre est différent d'un array", function() {
+        expect(() => {
+            codeInputTest.changeTextValues(null);
+        }).to.throw("Parameter 'values' doit être liste.");
+    });
+
+    it("devrait lancer une erreur si le paramètre index est différent d'un index cohérent", function() {
+        expect(() => {
+            codeInputTest.changeTextValues(['1', '2', '3', '4', '5', '6'],-1,false);
+        }).to.throw("Parameter 'index_0' doit être une valeur comprise entre 0 et values.length.");
+        expect(() => {
+            codeInputTest.changeTextValues(['1', '2', '3', '4', '5', '6'],6,false);
+        }).to.throw("Parameter 'index_0' doit être une valeur comprise entre 0 et values.length.");
+    });
 });

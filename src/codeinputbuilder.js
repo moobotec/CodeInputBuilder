@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.22
+Version: 0.0.23
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -112,11 +112,13 @@ Options disponibles:
       * Formats acceptés :
         - `DD`: Jour.
         - `MM`: Mois (numérique, 1 à 12).
-        - `MH`: Mois (en caractères, Jan à Dec).
+        - `MH`: Mois (en caractères).
         - `YYYY`: Année complète.
 
-    - `defaultLanguage`: (string) Pangue par défaut utilisée pour les noms des mois ou toute autre fonctionnalité nécessitant une localisation. Elle est compatible avec les locales supportées par l'API `Intl.DateTimeFormat` de JavaScript.
-      * Par défaut : 'fr' (français)
+    - `defaultLanguage`: (string) Pangue par défaut utilisée pour les noms des mois ou toute autre fonctionnalité nécessitant une localisation. 
+        Elle est compatible avec les locales supportées par l'API `Intl.DateTimeFormat` de JavaScript. 
+        Liste des locales disponibles - IANA Language Subtag Registry (https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry).
+      * Par défaut : 'fr-FR' (français)
 
     - `hourCycle`: (string) Définit le système horaire à utiliser, soit le format 24 heures (par défaut) ou 12 heures avec gestion AM/PM.
       * Par défaut : '24h'.
@@ -152,7 +154,7 @@ if (typeof jQuery === 'undefined') {
 
     for (let i = 0; i < 12; i++) {
       const date = new Date(2000, i, 1); // Année arbitraire
-      const monthName = formatter.format(date); // Nom du mois dans la langue choisie
+      const monthName = formatter.format(date).toLowerCase(); // Nom du mois dans la langue choisie
       const formattedNumber = String(i + 1).padStart(2, '0'); // Formatage en deux chiffres
       monthMap.set(monthName, formattedNumber); // Ajoute le mois et le numéro formaté
     }
@@ -173,7 +175,7 @@ if (typeof jQuery === 'undefined') {
       formatTime: 'HH:MM:SS.SSS',
       formatDate: 'DD/MM/YYYY',
       hourCycle: '24h',
-      defaultLanguage: 'fr',
+      defaultLanguage: 'fr-FR',
       defaultValue: 0,
       allowSign: false,
       defaultSign: '+',
@@ -1901,11 +1903,7 @@ if (typeof jQuery === 'undefined') {
     }
 
     function getTotalDateSeconds(date) {
-      const day = String(date.getUTCDate()).padStart(2, '0'); // Jour du mois (1-31)
-      const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Mois (0-11, donc +1)
-      const year = String(date.getUTCFullYear()); // Année complète (ex: 2024)
-      const totalSeconds = new Date(Date.UTC(year, month - 1, day));
-      return totalSeconds.getTime() / 1000;
+      return date.getTime() / 1000;
     }
 
     // Fonction pour extraire le temps d'une instance de Date
@@ -1939,14 +1937,14 @@ if (typeof jQuery === 'undefined') {
     }
 
     function formatDateFromDate(date, format) {
-      const jours = String(date.getUTCDate()).padStart(2, '0'); // Jour du mois (1-31)
-      const mois = String(date.getUTCMonth() + 1).padStart(2, '0'); // Mois de l'année (1-12)
-      const année = String(date.getUTCFullYear()); // Année complète (ex: 2024)
+      const days = String(date.getDate()).padStart(2, '0'); // Jour du mois (1-31)
+      const months = String(date.getMonth() + 1).padStart(2, '0'); // Mois de l'année (1-12)
+      const years = String(date.getFullYear()); // Année complète (ex: 2024)
       return format
-        .replace('DD', jours)
-        .replace('MM', mois)
-        .replace('MH', mois)
-        .replace('YYYY', année);
+        .replace('DD', days)
+        .replace('MM', months)
+        .replace('MH', months)
+        .replace('YYYY', years);
     }
 
     function formatTimeToCustomString(date, format) {
@@ -3459,24 +3457,17 @@ if (typeof jQuery === 'undefined') {
         $container.append($inputContainer);
         updateCurrentValues('current', settings.values[settings.defaultValue]);
       } else if (settings.type === 'time') {
-        if (settings.hourCycle == '12h') {
-          addInputElement(
-            'systime',
-            'systime',
-            null,
-            null,
-            getCurrentValueByIndex('systime'),
-            '2',
-            true
-          );
+        addInputElement(
+          'systime',
+          'systime',
+          null,
+          null,
+          getCurrentValueByIndex('systime'),
+          '2',
+          true
+        );
 
-          $inputContainer.append(
-            $('<div>', {
-              html: '&nbsp;',
-            })
-          );
-        }
-
+        $('#btAddMosquitoRelease').css('display', 'none');
         const prefix = 'digits';
         addInputTimeElement();
 
@@ -3495,6 +3486,13 @@ if (typeof jQuery === 'undefined') {
           uniqueTypeShort,
           false
         );
+
+        if (settings.hourCycle == '24h') {
+          $('input[id^=systime_' + uniqueTypeShort + '_input]')
+            .parent()
+            .parent()
+            .css('display', 'none');
+        }
       } else if (settings.type === 'date') {
         const prefix = 'digits';
         addInputDateElement();
@@ -3565,6 +3563,9 @@ if (typeof jQuery === 'undefined') {
     };
 
     this.changeMaskInputs = function (isPassword) {
+      if (typeof isPassword !== 'boolean') {
+        throw new Error("Parameter 'isPassword' doit être un booléen.");
+      }
       settings.maskInput = isPassword; // Met à jour l'option dans les paramètres
       this.find('input').each(function () {
         $(this).attr('type', isPassword ? 'password' : 'text'); // Change le type d'input
@@ -3572,8 +3573,81 @@ if (typeof jQuery === 'undefined') {
     };
 
     this.toggleInputs = function (disabled) {
+      if (typeof disabled !== 'boolean') {
+        throw new Error("Parameter 'disabled' doit être un booléen.");
+      }
       settings.isDisabled = disabled; // Met à jour l'option dans les paramètres
       this.find('input').prop('disabled', isDisabled(settings)); // Applique le changement à tous les inputs
+    };
+
+    this.changeLanguage = function (locale) {
+      if (typeof locale !== 'string') {
+        throw new Error(
+          "Parameter 'locale' doit être une chaîne de caractères."
+        );
+      }
+      // Vérifie si la langue est prise en charge par Intl.DateTimeFormat
+      Intl.DateTimeFormat.supportedLocalesOf([locale]);
+      settings.defaultLanguage = locale; // Met à jour l'option dans les paramètres
+      const monthMap = getMonthMapByLocale(locale);
+      settings.months = Array.from(monthMap.keys());
+      settings.monthMap = monthMap;
+      updateValue(getCurrentValueByIndex('current'));
+    };
+
+    this.changeHourCycle = function (hourCycle) {
+      const validOptions = ['24h', '12h']; // Les valeurs possibles pour hourCycle
+      // Si aucune valeur n'est fournie, retourner la valeur par défaut
+      if (!hourCycle) {
+        throw new Error(
+          "Parameter 'hourCycle' n'est pas définie. Valeur par défaut utilisée : '24h'."
+        );
+      }
+      // Vérifie si la valeur est une chaîne valide
+      if (typeof hourCycle !== 'string') {
+        throw new Error(
+          "Parameter 'hourCycle' doit être une chaîne de caractères ('24h' ou '12h')."
+        );
+      }
+      // Vérifie si la valeur est valide
+      if (!validOptions.includes(hourCycle)) {
+        throw new Error(
+          `Parameter 'hourCycle' doit être une des valeurs suivantes : ${validOptions.join(
+            ', '
+          )}.`
+        );
+      }
+      settings.hourCycle = hourCycle; // Met à jour l'option dans les paramètres
+
+      if (settings.hourCycle == '24h') {
+        $('input[id^=systime_' + uniqueTypeShort + '_input]')
+          .parent()
+          .parent()
+          .css('display', 'none');
+      } else {
+        $('input[id^=systime_' + uniqueTypeShort + '_input]')
+          .parent()
+          .parent()
+          .css('display', 'block');
+      }
+
+      updateValue(getCurrentValueByIndex('current'));
+    };
+
+    this.changeTextValues = function (values, index_0 = 0, onchange = false) {
+      if (settings.type === 'text') {
+        if (!Array.isArray(values)) {
+          throw new Error("Parameter 'values' doit être liste.");
+        }
+
+        if (index_0 < 0 || index_0 >= values.length) {
+          throw new Error(
+            "Parameter 'index_0' doit être une valeur comprise entre 0 et values.length."
+          );
+        }
+        settings.values = values;
+        this.setCompleteValue(values[index_0], onchange);
+      }
     };
 
     // Méthode pour récupérer la valeur complète
@@ -3820,7 +3894,7 @@ if (typeof jQuery === 'undefined') {
     return this;
   };
 
-  $.fn.codeInputBuilder.version = '0.0.22';
+  $.fn.codeInputBuilder.version = '0.0.23';
   $.fn.codeInputBuilder.title = 'CodeInputBuilder';
   $.fn.codeInputBuilder.description =
     "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";

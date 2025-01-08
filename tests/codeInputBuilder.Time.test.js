@@ -556,4 +556,47 @@ describe("CodeInputBuilder Plugin Tests avec type Time (avec millisecondes) au f
         
     });
 
+
+    it("devrait changer la valeur du system d'heure", function() {
+
+        const codeInputs = $('#element').find("input[id^='systime_time_']");
+
+        expect(codeInputs.parent().parent().css('display')).to.equal('block');
+
+        let previous = codeInputTest.getCompleteValue();
+        
+        codeInputTest.changeHourCycle('24h');
+
+        expect(codeInputTest.getCompleteValue()).to.equal(previous); 
+        
+        expect(codeInputs.parent().parent().css('display')).to.equal('none');
+
+        previous = codeInputTest.getCompleteValue();
+
+        codeInputTest.changeHourCycle('12h');
+
+        expect(codeInputTest.getCompleteValue()).to.equal(previous); 
+
+        expect(codeInputs.parent().parent().css('display')).to.equal('block');
+        
+    });
+
+    it("devrait lancer une erreur si 'hoursCycle' est vide", function() {
+        expect(() => {
+            codeInputTest.changeHourCycle(null);
+        }).to.throw("Parameter 'hourCycle' n'est pas définie. Valeur par défaut utilisée : '24h'.");
+    });
+
+    it("devrait lancer une erreur si 'hoursCycle' doit un string", function() {
+        expect(() => {
+            codeInputTest.changeHourCycle(10);
+        }).to.throw("Parameter 'hourCycle' doit être une chaîne de caractères ('24h' ou '12h').");
+    });
+
+    it("devrait lancer une erreur si 'hoursCycle' doit etre soit 24h ou 12h", function() {
+        expect(() => {
+            codeInputTest.changeHourCycle("13h");
+        }).to.throw("Parameter 'hourCycle' doit être une des valeurs suivantes : 24h, 12h.");
+    });
+
 });

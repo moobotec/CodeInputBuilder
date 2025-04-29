@@ -71,6 +71,11 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
    <link href="src/codeinputbuilder.css" rel="stylesheet">
    <script src="src/codeinputbuilder.js"></script>
    ```
+   
+## **Démo en ligne**
+
+Testez Codeinputbuilder directement ici :  
+➡️ [[https://checkmat.timecaps.fr/](https://checkmat.timecaps.fr/)](https://codeinputbuilder.timecaps.fr/)
 
 ## Utilisation
 

@@ -37,14 +37,6 @@ jobs:
       - name: Minify JavaScript
         if: success() && github.event_name == 'push' 
         run: npm run minify
-
-      # Upload
-      - name: Upload minified file
-        if: success() && github.event_name == 'push' 
-        uses: actions/upload-artifact@v2
-        with:
-          name: codeinputbuilder-minified
-          path: src/codeinputbuilder.min.js
       
       # Commit
       - name: Commit and Push changes

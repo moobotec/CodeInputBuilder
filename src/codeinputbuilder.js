@@ -3577,9 +3577,7 @@ if (typeof jQuery === 'undefined') {
         throw new Error("Parameter 'disabled' doit être un booléen.");
       }
       settings.isDisabled = disabled; // Met à jour l'option dans les paramètres
-
-      this.find('input:not([id^="month_"]):not([id^="list_"])')
-          .prop('disabled', isDisabled(settings)); // Applique le changement
+      this.find('input:not([id^="month_"]):not([id^="list_"])').prop('disabled', isDisabled(settings)); // Applique le changement
     };
 
     this.changeLanguage = function (locale) {

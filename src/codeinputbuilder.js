@@ -3577,7 +3577,9 @@ if (typeof jQuery === 'undefined') {
         throw new Error("Parameter 'disabled' doit être un booléen.");
       }
       settings.isDisabled = disabled; // Met à jour l'option dans les paramètres
-      this.find('input').prop('disabled', isDisabled(settings)); // Applique le changement à tous les inputs
+
+      this.find('input:not([id^="month_"]):not([id^="list_"])')
+          .prop('disabled', isDisabled(settings)); // Applique le changement
     };
 
     this.changeLanguage = function (locale) {
@@ -3894,7 +3896,7 @@ if (typeof jQuery === 'undefined') {
     return this;
   };
 
-  $.fn.codeInputBuilder.version = '0.0.23';
+  $.fn.codeInputBuilder.version = '0.0.24';
   $.fn.codeInputBuilder.title = 'CodeInputBuilder';
   $.fn.codeInputBuilder.description =
     "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";

@@ -324,7 +324,7 @@ if (typeof jQuery === 'undefined') {
       const buildTimeRegex = (format) => {
         const escapeRegex = (str) =>
           str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const tokenRegex = /(HH|MM|SS|SSS|A)/g;
+        const tokenRegex = /(HH|MM|SSS|SS|A)/g;
         const parts = format.split(tokenRegex).filter(Boolean);
         const pattern = parts
           .map((part) => {
@@ -338,8 +338,8 @@ if (typeof jQuery === 'undefined') {
       };
 
       const errorMessages = {
-        time: `Option 'defaultValue' : doit être un nombre (secondes), une chaîne formatée '${settings.formatTime}' ou un objet Date.`,
-        date: `Option 'defaultValue' : doit être un nombre (secondes), une chaîne formatée '${settings.formatDate}' ou un objet Date.`,
+        time: "Option 'defaultValue' : doit être un nombre (secondes), une chaîne formatée 'HH:MM:SS' ou un objet Date.",
+        date: "Option 'defaultValue' : doit être un nombre (secondes), une chaîne formatée 'DD/MM/YYYY' ou un objet Date.",
         generic: "Option 'defaultValue' doit être un nombre ou une chaîne.",
       };
 
@@ -467,7 +467,11 @@ if (typeof jQuery === 'undefined') {
       }
 
       // Vérifie si la langue est prise en charge par Intl.DateTimeFormat
-      Intl.DateTimeFormat.supportedLocalesOf([defaultLanguage]);
+      try {
+        Intl.DateTimeFormat.supportedLocalesOf([defaultLanguage]);
+      } catch (error) {
+        throw new Error('Incorrect locale information provided');
+      }
     }
 
     function validateHourCycle(type, hourCycle) {
@@ -3144,7 +3148,7 @@ if (typeof jQuery === 'undefined') {
         for: `${prefix}_${uniqueTypeShort}_input_${id}`,
         id: labelId,
         text: `Entrée ${id} pour ${settings.type}`,
-        class: 'visually-hidden',
+        class: 'sr-only visually-hidden',
       });
 
       const $description = $('<div>', {

@@ -1,6 +1,6 @@
 /*
 Plugin: Code Input Builder
-Version: 0.0.23
+Version: 0.0.25
 Author: Daumand David
 Website: https://www.timecaps.io
 Contact: daumanddavid@gmail.com
@@ -306,9 +306,35 @@ if (typeof jQuery === 'undefined') {
       const isValidDate = (value) =>
         value instanceof Date && !isNaN(value.getTime());
 
-      const formatRegex = {
-        time: /^(\d{2}):(\d{2}):(\d{2})(\.\d{1,3})?$/,
-        date: /^(\d{2})\/(\d{2})\/(\d{4})$/,
+      const buildDateRegex = (format) => {
+        const escapeRegex = (str) =>
+          str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const tokenRegex = /(DD|MM|MH|YYYY)/g;
+        const parts = format.split(tokenRegex).filter(Boolean);
+        const pattern = parts
+          .map((part) => {
+            if (part === 'YYYY') return '\\d{4}';
+            if (part === 'DD' || part === 'MM' || part === 'MH') return '\\d{1,2}';
+            return escapeRegex(part);
+          })
+          .join('');
+        return new RegExp(`^${pattern}$`);
+      };
+
+      const buildTimeRegex = (format) => {
+        const escapeRegex = (str) =>
+          str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const tokenRegex = /(HH|MM|SSS|SS|A)/g;
+        const parts = format.split(tokenRegex).filter(Boolean);
+        const pattern = parts
+          .map((part) => {
+            if (part === 'HH' || part === 'MM' || part === 'SS') return '\\d{1,2}';
+            if (part === 'SSS') return '\\d{1,3}';
+            if (part === 'A') return '(AM|PM)?';
+            return escapeRegex(part);
+          })
+          .join('');
+        return new RegExp(`^${pattern}$`, 'i');
       };
 
       const errorMessages = {
@@ -320,11 +346,15 @@ if (typeof jQuery === 'undefined') {
       if (['time', 'date'].includes(type)) {
         if (isPositiveNumber(defaultValue)) return;
 
-        if (
-          typeof defaultValue === 'string' &&
-          formatRegex[type].test(defaultValue)
-        )
-          return;
+        if (typeof defaultValue === 'string') {
+          if (type === 'time') {
+            const timeRegex = buildTimeRegex(settings.formatTime);
+            if (timeRegex.test(defaultValue)) return;
+          } else if (type === 'date') {
+            const dateRegex = buildDateRegex(settings.formatDate);
+            if (dateRegex.test(defaultValue)) return;
+          }
+        }
 
         if (isValidDate(defaultValue)) return;
 
@@ -437,7 +467,11 @@ if (typeof jQuery === 'undefined') {
       }
 
       // Vérifie si la langue est prise en charge par Intl.DateTimeFormat
-      Intl.DateTimeFormat.supportedLocalesOf([defaultLanguage]);
+      try {
+        Intl.DateTimeFormat.supportedLocalesOf([defaultLanguage]);
+      } catch (error) {
+        throw new Error('Incorrect locale information provided');
+      }
     }
 
     function validateHourCycle(type, hourCycle) {
@@ -3113,8 +3147,8 @@ if (typeof jQuery === 'undefined') {
       const $label = $('<label>', {
         for: `${prefix}_${uniqueTypeShort}_input_${id}`,
         id: labelId,
-        text: `Entrée ${id} pour ${settings.type}`, // Remplacez le texte par un libellé plus spécifique si nécessaire
-        class: 'sr-only', // Utilisez 'sr-only' pour les lecteurs d'écran si vous ne voulez pas d'affichage visuel
+        text: `Entrée ${id} pour ${settings.type}`,
+        class: 'sr-only visually-hidden',
       });
 
       const $description = $('<div>', {
@@ -3245,45 +3279,67 @@ if (typeof jQuery === 'undefined') {
       minlimits,
       maxlimits,
       stringDefaultValue,
-      inputIndex
+      inputIndex,
+      stringIndex,
+      monthValue,
+      monthStringLength
     ) {
       for (let i = 0; i < partLength; i++) {
-        const value = stringDefaultValue[inputIndex];
+        const value =
+          part == 'MH' ? monthValue : stringDefaultValue[stringIndex];
         funcAddInputElement(
           part == 'MH' ? 'month' : 'digits',
           inputIndex + 1,
           minlimits[i],
           maxlimits[i],
-          part == 'MH' ? settings.months[value] : value,
+          part == 'MH' ? settings.months[value - 1] : value,
           part == 'MH' ? '30' : '1',
           part == 'MH' ? true : isDisabled(settings)
         );
         updateCurrentValues(
           inputIndex,
-          part == 'MH' ? settings.months[value] : value
+          part == 'MH' ? settings.months[value - 1] : value
         );
         inputIndex++;
+        if (part != 'MH') {
+          stringIndex++;
+        }
       }
-      return inputIndex;
+      if (part == 'MH') {
+        stringIndex += monthStringLength;
+      }
+      return { inputIndex, stringIndex };
     }
 
-    function processParts(funcAddInputElement, result, stringDefaultValue) {
+    function processParts(
+      funcAddInputElement,
+      result,
+      stringDefaultValue,
+      monthValue,
+      monthStringLength
+    ) {
       let separatorIndex = 0;
       let inputIndex = 0;
+      let stringIndex = 0;
 
       result.sizes.forEach((partLength, partIndex) => {
         const minlimits = getMinLimits(result, partIndex);
         const maxlimits = getMaxLimits(result, partIndex);
 
-        inputIndex = processPartValues(
+        const indices = processPartValues(
           funcAddInputElement,
           result.parts[partIndex],
           partLength,
           minlimits,
           maxlimits,
           stringDefaultValue,
-          inputIndex
+          inputIndex,
+          stringIndex,
+          monthValue,
+          monthStringLength
         );
+        inputIndex = indices.inputIndex;
+        stringIndex = indices.stringIndex;
         separatorIndex = processSeparators(separatorIndex, result);
       });
     }
@@ -3377,13 +3433,21 @@ if (typeof jQuery === 'undefined') {
 
         const date = new Date(0);
         date.setUTCMilliseconds(Math.round(defaultValueSecond * 1000));
+        const monthValue = date.getUTCMonth() + 1;
+        const monthStringLength = String(monthValue).padStart(2, '0').length;
 
         const stringDefaultValue = formatDateToCustomString(
           date,
           settings.formatDate
         );
 
-        processParts(addInputElement, result, stringDefaultValue);
+        processParts(
+          addInputElement,
+          result,
+          stringDefaultValue,
+          monthValue,
+          monthStringLength
+        );
       }
 
       if (
@@ -3894,7 +3958,7 @@ if (typeof jQuery === 'undefined') {
     return this;
   };
 
-  $.fn.codeInputBuilder.version = '0.0.24';
+  $.fn.codeInputBuilder.version = '0.0.25';
   $.fn.codeInputBuilder.title = 'CodeInputBuilder';
   $.fn.codeInputBuilder.description =
     "Plugin jQuery permettant de générer des champs d'input configurables pour la saisie de valeurs numériques (entiers, flottants), de textes, ou de valeurs dans des systèmes spécifiques (binaire, hexadécimal). Il offre des options avancées de personnalisation incluant la gestion des signes, des positions décimales, des limites de valeurs, et des callbacks pour la gestion des changements de valeur.";

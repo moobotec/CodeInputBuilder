@@ -75,7 +75,7 @@ Il supporte plusieurs options de configuration pour gérer les entiers, les nomb
 ## **Démo en ligne**
 
 Testez Codeinputbuilder directement ici :  
-➡️ [https://codeinputbuilder.timecaps.fr/](https://codeinputbuilder.timecaps.fr/)
+➡️ [https://codeinputbuilder.moobotec.fr/](https://codeinputbuilder.moobotec.fr/)
 
 ## Utilisation
 
